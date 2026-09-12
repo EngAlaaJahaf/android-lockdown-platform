@@ -47,6 +47,7 @@
 <tr><td>معاينة السياسة على جهاز حي</td><td class="ok">REAL_DEVICE</td><td>مصدر المعاينة من ADB الحقيقي لمحاكي emulator-5554</td></tr>
 <tr><td>تطبيق سياسة على جهاز حي</td><td class="warn">COMPLETE + تحقق UNKNOWN</td><td><code>stage=COMPLETE</code>، دليل <code>EV-20260912-AB301CE8</code>، لكن التحقق <b>UNKNOWN</b> لعدم قابلية أجنحة اللوحة (كلمة صريحة وليست "نجاح")</td></tr>
 <tr><td>سلسلة التدقيق (Audit Chain)</td><td class="ok">سليمة</td><td><code>tamper_check().broken == 0</code> + تسجيل AD4_APPLY / RECOVER_R4</td></tr>
+<tr><td>تضمين المحرّكات في الحزمة المجمّدة (EXE)</td><td class="ok">مضمون</td><td>إصلاح pathex في spec؛ <code>archive_viewer</code> يُظهر capability/policy/verification/vendor/compatibility داخل الـ EXE، و0 تحذير "not found" عند البناء</td></tr>
 <tr><td>جهاز SM-J337P حقيقي</td><td class="fail">غير متاح</td><td>لا عينة فيزيائية → تصنيف SIMULATED فقط (صراحة)</td></tr>
 </table>
 

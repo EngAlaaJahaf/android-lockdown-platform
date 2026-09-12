@@ -131,3 +131,21 @@ no manual serial typing needed.
 - Tk fallback (`app.py`) gets the same detection line + auto-fill.
 - Test: `test_detected_lists_attached_state_and_registration` (mocked ADB,
   hermetic).
+
+## 9) Frozen-EXE fix: engine packages were missing — v1.0.0 rebuild #3
+> Critical fix for the packaged binaries. Rebuilt again: portable 55,996,283 B,
+> setup 63,486,299 B. New SHA256 in `SHA256SUMS.txt`. Tests unchanged (111 OK).
+
+Runtime `ModuleNotFoundError: No module named 'capability_engine'` in the EXE —
+the five engine packages are imported lazily inside
+`backend/workflows.py` functions (`capability_engine`, `policy_engine`,
+`verification_engine`, `vendor_adapters`, `compatibility`), but the PyInstaller
+spec's `pathex=[ROOT]` could not resolve them because they live under
+`*-engine/` / `vendor-adapters/` / `compatibility/` subdirectories. They were
+therefore never bundled, and every probe / apply / capabilities / preview /
+verify action failed at runtime.
+- `deployment/ALPManager.spec`: `pathex` now also includes the five engine dirs.
+- Verified via `archive_viewer`: the EXE now embeds `capability_engine(.scanner)`,
+  `policy_engine(.snapshot)`, `verification_engine(.probe/.compliance)`,
+  `vendor_adapters(.registry)`, `compatibility` — and `warn-*.txt` has 0
+  "not found" entries. Root cause: packaging, not application logic.

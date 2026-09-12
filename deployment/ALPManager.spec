@@ -13,7 +13,12 @@ ROOT = os.getcwd()
 
 a = Analysis(
     [os.path.join(ROOT, "desktop", "run_app.py")],
-    pathex=[ROOT],
+    pathex=[ROOT,
+            os.path.join(ROOT, "policy-engine"),
+            os.path.join(ROOT, "capability-engine"),
+            os.path.join(ROOT, "verification-engine"),
+            os.path.join(ROOT, "compatibility"),
+            os.path.join(ROOT, "vendor-adapters")],
     binaries=[],
     datas=[
         (os.path.join(ROOT, "database", "schema.sql"), "database"),
