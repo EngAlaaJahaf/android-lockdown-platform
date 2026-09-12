@@ -82,10 +82,13 @@ def apply_runtime_env() -> None:
 
 def add_engine_paths() -> None:
     """Make the separated engine packages importable (also drives PyInstaller
-    modulegraph when imported from run_app)."""
+    modulegraph when imported from run_app). The root itself must be on the
+    path because backend/tests live directly under it; the engine dirs expose
+    their nested underscore packages via their parent dir."""
     root = project_root()
-    for sub in ("backend", "policy-engine", "capability-engine",
-                "verification-engine", "compatibility", "vendor-adapters"):
-        p = os.path.join(root, sub)
-        if os.path.isdir(p) and p not in sys.path:
+    candidates = [root] + [os.path.join(root, s) for s in (
+        "policy-engine", "capability-engine",
+        "verification-engine", "compatibility", "vendor-adapters")]
+    for p in reversed(candidates):
+        if p not in sys.path:
             sys.path.insert(0, p)

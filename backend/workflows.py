@@ -222,7 +222,8 @@ def run_director_apply(device_id: str, policy_id: str,
         raise ValueError(f"unknown policy {policy_id!r}")
     persist_reference_policies()
     with connect() as c:
-        dev = c.execute("SELECT * FROM devices WHERE device_id=?", (device_id,)).fetchone()
+        dev = dict(c.execute("SELECT * FROM devices WHERE device_id=?",
+                             (device_id,)).fetchone() or {})
     if not dev:
         raise ValueError(f"device {device_id!r} not registered")
     api = dev["api_level"] or 0

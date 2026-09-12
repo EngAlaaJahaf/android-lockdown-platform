@@ -79,7 +79,7 @@ class VerificationEngine:
                 # A proven active restriction (RESTRICTED) satisfies an OFF or
                 # RESTRICT expectation at the enforcement level (laid on top of
                 # whatever the raw radio reports, which may lag until reboot).
-                if got == "RESTRICTED" and want in ("OFF", "RESTRICT"):
+                if got == "RESTRICTED" and want in ("OFF", "RESTRICT", "BLOCK"):
                     continue
                 mismatches.append(feat)
             # else matches

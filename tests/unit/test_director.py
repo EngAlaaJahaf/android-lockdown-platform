@@ -166,6 +166,24 @@ class TestDirector(unittest.TestCase):
         self.assertTrue(res.audit_id)
         self.assertEqual(lg.tamper_check()["broken"], 0)
 
+    def test_workflow_apply_registered_db_device(self):
+        """run_director_apply must tolerate sqlite3.Row devices (the live path
+        crashed on dev.get(...) when the device came straight from the DB)."""
+        from backend import workflows
+        from backend.db import connect
+        with connect() as c:
+            c.execute(
+                "INSERT INTO devices (device_id, serial, manufacturer, model, "
+                "android_version, api_level, is_lab) VALUES (?,?,?,?,?,?,1)",
+                ("D-REG", "SERREG1", "Samsung", "SM-A145P", 15, 35))
+        chan = FakeChannel(ok=True)
+        res = workflows.run_director_apply(
+            "D-REG", "POL-FULL_LOCKDOWN", op_role="FLEET_ADMIN",
+            mfa_ok=True, serial="SERREG1", real=False, signing_key="k",
+            channel_send=chan.send)
+        self.assertEqual(res["stage"], "COMPLETE")
+        self.assertTrue(res["evidence_id"])
+
 
 if __name__ == "__main__":
     unittest.main()

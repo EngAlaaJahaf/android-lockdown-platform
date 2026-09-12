@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير التحقق النهائي لإصدار ALP Manager v1.0.0</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:34px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}
+  .warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  .badge{display:inline-block;background:#16341f;border:1px solid #5ee0a0;color:#5ee0a0;
+         border-radius:14px;padding:3px 12px;font-size:13px}
+  .badge.warn{background:#33280f;border-color:#ffd479;color:#ffd479}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:13px}
+  small{color:#8ba3c7}
+  .status{font-size:22px;font-weight:700;text-align:center;padding:20px;border-radius:10px;margin:20px 0}
+  .status.warn{background:#33280f;color:#ffd479;border:2px solid #ffd479}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>تقرير التحقق النهائي — ALP Manager ‎v1.0.0-‎rc1</h1>
+<p><small>توليد آلي من سجلّ الفحص الفعلي · 2026-09-12 · المستهدفة: Windows 10/11 (x64) · أجهزة Android 7–15 (قيادة القدرات)</small></p>
+
+<div class="status warn">الحالة النهائية: <b>جاهز للتجربة المراقبة (READY FOR CONTROLLED PILOT)</b></div>
+<p><b>السبب:</b> كل الأنظمة الداخلية تعمل وتُختبر (108 اختبارًا OK) ومعايرة المعاينة الفعلية سليمة،
+لكن لا يوجد جهاز Samsung SM-J337P فيزيائي لإنتاج شهادة جهاز حقيقي؛ كل نتائج هذه الفئة مصنّفة
+<b>محاكاة</b> حتى تتوفر عينة مختبرية. لا يدّعي هذا التقرير نجاحًا لم يتحقق فعليًا.</p>
+
+<h2>1) ملخص الأدلة</h2>
+<table>
+<tr><th>البند</th><th>النتيجة</th><th>الدليل</th></tr>
+<tr><td>اختبار الوحدة الشامل</td><td class="ok">108 OK</td><td><code>python scripts/run_tests.py</code> → "Ran 108 tests … OK"</td></tr>
+<tr><td>واجهة المستخدم Qt العربية (RTL)</td><td class="ok">تعمل</td><td>تشغيل نافذة فعلي: 15 صفحة، حدَث حلقة العرض سليم، جدول الأجهزة يملأ (4 صفوف) </td></tr>
+<tr><td>تشغيل التطبيق المجمّد (onefile)</td><td class="ok">تعمل</td><td><code>dist/ALPManager.exe</code> يُطلق ويبقى متجاوبًا على الجهاز</td></tr>
+<tr><td>المثبّت: تثبيت → تشغيل → إزالة</td><td class="ok">دورة كاملة</td><td>نسخ إلى <code>%LOCALAPPDATA%\Programs\…</code>، اختصارات، سجل الإزالة، حذف كل القطع</td></tr>
+<tr><td>معاينة السياسة على جهاز حي</td><td class="ok">REAL_DEVICE</td><td>مصدر المعاينة من ADB الحقيقي لمحاكي emulator-5554</td></tr>
+<tr><td>تطبيق سياسة على جهاز حي</td><td class="warn">COMPLETE + تحقق UNKNOWN</td><td><code>stage=COMPLETE</code>، دليل <code>EV-20260912-AB301CE8</code>، لكن التحقق <b>UNKNOWN</b> لعدم قابلية أجنحة اللوحة (كلمة صريحة وليست "نجاح")</td></tr>
+<tr><td>سلسلة التدقيق (Audit Chain)</td><td class="ok">سليمة</td><td><code>tamper_check().broken == 0</code> + تسجيل AD4_APPLY / RECOVER_R4</td></tr>
+<tr><td>جهاز SM-J337P حقيقي</td><td class="fail">غير متاح</td><td>لا عينة فيزيائية → تصنيف SIMULATED فقط (صراحة)</td></tr>
+</table>
+
+<h2>2) تحققَ فعليًا (خطوات موثقة)</h2>
+<div class="box">
+<b>جلسة تحقق حية على emulator-5554 (ADB حقيقي):</b><br>
+<code>policy_preview → source: REAL_DEVICE</code> · WIFI/BLUETOOTH = RESTRICTED · MOBILE_DATA = OFF<br>
+<code>apply POL-FULL_LOCKDOWN</code> → <code>stage=COMPLETE · evidence=EV-20260912-AB301CE8 · audit=AUD-6B068F73E6A2</code><br>
+التحقق بعد التنفيذ: <b>UNKNOWN</b> (أجنحة كثيرة غير قابلة للرصد على المحاكي) ومرتبة الالتزام NON_COMPLIANT — النتيجة صريحة وليست مبنيّة على افتراض.<br>
+<code>probe live</code> أظهر قيودًا فعلية مطبّقة عبر قناة AlpOps على الجهاز.
+</div>
+
+<h2>3) تفتيش "النزاهة" (ما يُمنَع في هذا النظام)</h2>
+<ul>
+  <li class="ok">لا يُسجَّل نجاح بـPASS إلا بدليل evidence_id ومصدر REAL_DEVICE (بوابة الأدلة في VerificationEngine تُبقيها UNKNOWN غير ذلك).</li>
+  <li class="ok">مصدر SIMULATED لا يُحسب أبدًا نجاحًا (اختبار <code>test_simulated_source_is_never_pass</code>).</li>
+  <li class="ok">لا عملية تنفيذية على أجهزة حقيقية أو لاسلكيًا إلا عبر مفاتيح/جلسات/MFA وأذون RBAC مضمّنة.</li>
+  <li class="ok">لا أسرار في الكود: مفاتيح التوقيع/الملح تُولَّد وتُحفظ في <code>%LOCALAPPDATA%\ALPManager</code> ولا تُسجَّل في السجلات.</li>
+</ul>
+
+<h2>4) تحليل المخاطر / حدود التجربة</h2>
+<table>
+<tr><th>الخطر</th><th>الحالة</th><th>الإجراء</th></tr>
+<tr><td>لا عينة فيزيائية من SM-J337P</td><td class="warn">معلّقة</td><td>مرحلة تجربة مراقبة على جهاز مختبر SM-J337P ثم رفع الحالة إلى PRODUCTION-READY</td></tr>
+<tr><td>التحقق UNKNOWN على محاكي API 36</td><td class="warn">موثّق</td><td>تأكيد الأجنحة غير المرصودة على محاكيات إضافية (API 28/30) أو عينة حقيقية</td></tr>
+<tr><td>الواجهة الاحتياطية Tk غير مختبرة بعد تبديل Qt</td><td class="warn">احتياط فقط</td><td>غير مستخدمة افتراضيًا؛ لا أثر على المنتج</td></tr>
+<tr><td>حجم الحزم (52–60MB)</td><td class="ok">مقبول</td><td>تهيئة onefile منفردة بدون UPX لضمان الاستقرار</td></tr>
+</table>
+
+<h2>5) الحالة النهائية قرار</h2>
+<p><b>READY FOR CONTROLLED PILOT</b> — تسمح بحملة تجريبية مراقبة على أجهزة مختبرية (SM-J337P)
+لإنتاج أدلة جهاز حقيقي؛ عند اكتمالها تُرفع الحالة إلى PRODUCTION-READY بإعادة توليد هذا التقرير.</p>
+
+<p><small>انظر: <code>docs/IMPLEMENTATION_CHANGELOG.md</code> · <code>RELEASE/</code> (ملفات + SHA-256) · <code>docs/IMPLEMENTATION_BASELINE.md</code></small></p>
+</div></body></html>

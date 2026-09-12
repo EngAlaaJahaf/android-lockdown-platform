@@ -4,3 +4,8 @@ __pycache__/
 android-agent/alp-debug.keystore
 android-agent/build/
 reports/phase3/*.json.bak
+# PyInstaller build outputs (release binaries live in RELEASE/)
+build/
+dist/
+# Runtime-generated reports are not sources
+reports/DEV-1/

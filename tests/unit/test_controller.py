@@ -23,10 +23,12 @@ class ControllerFlows(unittest.TestCase):
         # Save the suite's DB routing so this module (which permanently
         # re-points global DBPATH while running) never leaks into siblings.
         self._prev = {"env": os.environ.get("ALP_DB"),
-                      "cfg": _cfg.DBPATH, "db": _dbmod.DBPATH}
+                      "cfg": _cfg.DBPATH, "db": _dbmod.DBPATH,
+                      "rpt": _cfg.REPORTS_DIR}
         os.environ["ALP_DB"] = self.db
         os.environ["ALP_SIGNING_KEY"] = "ctrl-test-key-0001"
         os.environ["ALP_AUDIT_SALT"] = "ctrl-test-salt"
+        _cfg.REPORTS_DIR = os.path.join(self.tmp, "reports")
         self.ctl = Controller(db_path=self.db, session_file=self.sess)
 
     def tearDown(self):
@@ -36,6 +38,7 @@ class ControllerFlows(unittest.TestCase):
             os.environ["ALP_DB"] = self._prev["env"]
         _cfg.DBPATH = self._prev["cfg"]
         _dbmod.DBPATH = self._prev["db"]
+        _cfg.REPORTS_DIR = self._prev["rpt"]
 
     def test_needs_bootstrap_then_bootstrap(self):
         self.assertTrue(self.ctl.needs_bootstrap())
@@ -97,6 +100,73 @@ class ControllerFlows(unittest.TestCase):
         d = self.ctl.classify("samsung", "SM-J337P", 9, 28)
         self.assertEqual(d["vendor_id"], "samsung")
         self.assertEqual(d["family"], "J3 (2018+)")
+
+    # ------------------------------------------------------------------
+    # Capabilities / policy preview / reports / diagnostics (honesty path)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _seed_device(ctl, device_id="D-CTRL-1", serial="SERCTRL1") -> str:
+        """Register a device row directly (enroll() requires a live ADB
+        device, so pure-DB seeding keeps these tests hermetic)."""
+        from backend.db import connect
+        with connect(ctl.db_path) as c:
+            c.execute(
+                "INSERT INTO devices (device_id, serial, manufacturer, model, "
+                "android_version, api_level, is_lab) "
+                "VALUES (?,?,?,?,?,?,1)",
+                (device_id, serial, "Samsung", "SM-A145P", 15, 35))
+        return device_id
+
+    def test_capabilities_unknown_device(self):
+        r = self.ctl.capabilities("NOPE")
+        self.assertFalse(r["ok"])
+        self.assertIn("error", r)
+
+    def test_capabilities_registered_device(self):
+        self._seed_device(self.ctl, "D-CTRL-1", "SERCTRL1")
+        r = self.ctl.capabilities("D-CTRL-1")
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["device_id"], "D-CTRL-1")
+        self.assertIsInstance(r["capability_profile"], dict)
+        for k in ("model", "manufacturer", "android_version", "api_level"):
+            self.assertIn(k, r)
+        for feat, entry in sorted(r["capability_profile"].items()):
+            self.assertIn("capability", entry)     # honest registry value
+            self.assertIsInstance(entry["methods"], list)   # per-vendor methods
+
+    def test_policy_preview_honest_not_attached(self):
+        self._seed_device(self.ctl, "D-CTRL-2", "SERCTRL2")
+        r = self.ctl.policy_preview("D-CTRL-2", "POL-FULL_LOCKDOWN")
+        self.assertTrue(r["ok"])
+        self.assertTrue(r["rows"])
+        sources = {row["source"] for row in r["rows"]}
+        self.assertEqual(sources, {"DEVICE_NOT_ATTACHED"})
+        self.assertIn("desired", r["rows"][0])
+
+    def test_policy_preview_unknown_policy(self):
+        self._seed_device(self.ctl, "D-CTRL-3", "SERCTRL3")
+        r = self.ctl.policy_preview("D-CTRL-3", "POL-ZZZ")
+        self.assertFalse(r["ok"])
+
+    def test_policy_preview_unregistered_device(self):
+        r = self.ctl.policy_preview("NOPE", "POL-PHONE_ONLY")
+        self.assertFalse(r["ok"])
+
+    def test_reports_list_after_generate(self):
+        self._seed_device(self.ctl, "D-CTRL-4", "SERCTRL4")
+        g = self.ctl.generate_device_report("D-CTRL-4")
+        self.assertTrue(g["ok"])
+        lst = self.ctl.reports_list("D-CTRL-4")
+        self.assertTrue(lst)
+        self.assertEqual(set(lst[0].keys()), {"path", "size", "mtime"})
+        self.assertTrue(os.path.exists(lst[0]["path"]))
+
+    def test_diagnostics_flat_shape(self):
+        d = self.ctl.diagnostics()
+        self.assertFalse(d["frozen_mode"])
+        for k in ("db_ok", "db_tables", "adb_exe", "adb_configured",
+                  "adb_devices", "bootstrap_needed", "signed_in", "audit_chain"):
+            self.assertIn(k, d)
 
 
 if __name__ == "__main__":

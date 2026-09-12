@@ -45,6 +45,16 @@ class TestVerificationEngine(unittest.TestCase):
                        evidence_id="EV-1", source="REAL_DEVICE")
         self.assertEqual(r.result, "UNKNOWN")
 
+    def test_restricted_observation_satisfies_block_intent(self):
+        """BLOCK/RESTRICT policy intents are proven by an ACTIVE restriction
+        (RESTRICTED) even before the radio re-reports OFF after reboot."""
+        eng = VerificationEngine(
+            lambda dev: {"WIFI": "RESTRICTED", "ADB": "RESTRICTED"})
+        r = eng.verify("LOCK", "D-1", {"WIFI": "BLOCK", "ADB": "BLOCK"},
+                       evidence_id="EV-LAB-0003", source="REAL_DEVICE")
+        self.assertEqual(r.result, "PASS")
+        self.assertTrue(r.is_pass)
+
 
 class TestComplianceEngine(unittest.TestCase):
     def test_full_match_compliant(self):

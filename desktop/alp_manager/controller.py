@@ -332,3 +332,113 @@ class Controller:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(text)
         return {"ok": True, "path": path, "text": text}
+
+    # ------------------------------------------------------------------
+    # Capabilities + policy preview (honest, from real registry + live probe)
+    # ------------------------------------------------------------------
+    def capabilities(self, device_id: str) -> dict:
+        from backend.workflows import capability_for_device
+        with connect(self.db_path) as c:
+            dev = c.execute("SELECT * FROM devices WHERE device_id=?",
+                            (device_id,)).fetchone()
+            if not dev:
+                return {"ok": False, "error": f"no device {device_id}"}
+            prof = capability_for_device(c, device_id)
+        caps = {}
+        if prof:
+            for feat, capability in sorted(prof.states.items()):
+                row = {"capability": capability,
+                       "methods": prof.methods.get(feat, [])}
+                if "observed" not in row:
+                    row["observed"] = ""
+                caps[feat] = row
+        return {"ok": True, "device_id": device_id,
+                "capability_profile": caps,
+                "android_version": dev["android_version"] or 0,
+                "api_level": dev["api_level"] or 0,
+                "model": dev["model"] or "",
+                "manufacturer": dev["manufacturer"] or ""}
+
+    def policy_preview(self, device_id: str, policy: str) -> dict:
+        from backend.workflows import resolve_policy
+        pol = resolve_policy(policy)
+        if not pol:
+            return {"ok": False, "error": f"policy {policy} not found"}
+        with connect(self.db_path) as c:
+            dev = c.execute("SELECT serial FROM devices WHERE device_id=?",
+                            (device_id,)).fetchone()
+        if not dev:
+            return {"ok": False, "error": f"device {device_id} not registered"}
+        serial = dev["serial"]
+        obs = {}
+        if serial in attached_serials():
+            try:
+                b = live_probe(serial)
+                obs = {f: v for f, v in (b.get("observed") or {}).items()}
+                obs["_source"] = "REAL_DEVICE"
+            except Exception as ex:
+                obs["_source"] = f"error: {ex}"
+        else:
+            obs["_source"] = "DEVICE_NOT_ATTACHED"
+        rows = []
+        for r in pol.requirements:
+            desired = r.desired_state
+            current = obs.get(r.feature, "")
+            rows.append({
+                "feature": r.feature,
+                "desired": desired,
+                "current": current,
+                "risk": r.risk,
+                "source": obs.get("_source", ""),
+            })
+        return {"ok": True, "policy_id": pol.policy_id,
+                "display_name": getattr(pol, "display_name", pol.policy_id),
+                "device_id": device_id, "rows": rows}
+
+    def reports_list(self, device_id: str = "") -> list:
+        base = os.path.join(config.REPORTS_DIR, device_id) if device_id \
+            else config.REPORTS_DIR
+        out = []
+        if os.path.isdir(base):
+            for root, _dirs, files in os.walk(base):
+                for fn in sorted(files):
+                    if fn.lower().endswith((".md", ".json", ".html")):
+                        p = os.path.join(root, fn)
+                        out.append({"path": p,
+                                    "size": os.path.getsize(p),
+                                    "mtime": time.strftime(
+                                        "%Y-%m-%d %H:%M:%S",
+                                        time.localtime(os.path.getmtime(p)))})
+        return out
+
+    def diagnostics(self) -> dict:
+        from backend.workflows import adb
+        adb_exe = adb()
+        attached = attached_serials()
+        db_ok = False
+        tables = 0
+        try:
+            with connect(self.db_path) as c:
+                tables = c.execute(
+                    "SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table'").fetchone()["n"]
+            db_ok = True
+        except Exception as ex:
+            db_ok = str(ex)
+        try:
+            tamper = audit_mod.AuditLog(self.db_path).tamper_check()
+        except Exception as ex:
+            tamper = {"error": str(ex)}
+        from .paths import is_frozen, persist_dir, project_root
+        return {
+            "frozen_mode": is_frozen(),
+            "project_root": project_root() if not is_frozen() else persist_dir(),
+            "db_path": self.db_path,
+            "db_ok": db_ok,
+            "db_tables": tables,
+            "adb_exe": adb_exe,
+            "adb_configured": os.path.exists(adb_exe) or adb_exe.lower() == "adb",
+            "adb_devices": attached,
+            "bootstrap_needed": self.needs_bootstrap(),
+            "signed_in": bool((self._load_session() or {}).get("token")),
+            "audit_chain": "OK" if (tamper.get("broken") is False) else "BROKEN",
+        }
