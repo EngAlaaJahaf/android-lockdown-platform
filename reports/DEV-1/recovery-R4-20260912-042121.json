@@ -1,0 +1,15 @@
+{
+  "mode": "R4_DIAGNOSTIC",
+  "device_id": "DEV-1",
+  "status": "COMPLETE",
+  "evidence_id": "",
+  "audit_id": "",
+  "source": "UNKNOWN",
+  "reason": "no serial — empty dump (honest)",
+  "details": {
+    "identity": {},
+    "settings": {},
+    "restrictions": [],
+    "dpc": null
+  }
+}

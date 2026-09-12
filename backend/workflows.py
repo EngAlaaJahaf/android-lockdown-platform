@@ -57,6 +57,31 @@ def adb_observe(serial: str) -> dict:
     return facts
 
 
+def live_probe(serial: str) -> dict:
+    """Rich REAL_DEVICE observation via ADB (verification-engine.probe)."""
+    from verification_engine.probe import probe_live_device
+    return probe_live_device(serial)
+
+
+def classify_device(manufacturer: str = "", model: str = "",
+                    android_version: int = 0, api_level: int = 0,
+                    build_fingerprint: str = ""):
+    """Vendor/version classification (device-agnostic)."""
+    from vendor_adapters.registry import classify
+    return classify(manufacturer=manufacturer, model=model,
+                    android_version=android_version, api_level=api_level,
+                    build_fingerprint=build_fingerprint)
+
+
+def vendor_adapter_for_device(manufacturer: str = "", model: str = "",
+                              android_version: int = 0, api_level: int = 0,
+                              build_fingerprint: str = ""):
+    from vendor_adapters.registry import select_adapter
+    dc = classify_device(manufacturer, model, android_version, api_level,
+                         build_fingerprint)
+    return select_adapter(dc, knox_sdk_present=None), dc
+
+
 def capability_for_device(conn, device_id: str):
     """Honest CapabilityProfile from Device Registry caps."""
     from capability_engine import CapabilityProfile
@@ -206,11 +231,16 @@ def run_director_apply(device_id: str, policy_id: str,
         channel, chan_state = staged_channel(serial, chan_dir)
 
     if real and attached:
-        obs = adb_observe(serial)
+        obs = live_probe(serial).get("observed", {})
         source = "REAL_DEVICE"
     else:
         obs = {}
         source = "SIMULATED"
+
+    adapter, device_class = vendor_adapter_for_device(
+        manufacturer=dev.get("manufacturer") or "", model=dev.get("model") or "",
+        android_version=dev.get("android_version") or 0,
+        api_level=api, build_fingerprint=dev.get("build_fingerprint") or "")
 
     director = Director(
         db_path=None, resolve_fn=resolve,
@@ -219,6 +249,7 @@ def run_director_apply(device_id: str, policy_id: str,
     res = director.apply(device_id, pol, cap,
                          op_role=op_role, mfa_ok=mfa_ok,
                          compat_layer=AndroidCompatibilityLayer(api),
+                         vendor_adapter=adapter,
                          evidence_src=source)
     return {
         "device_id": device_id, "policy_id": pol.policy_id, "stage": res.stage,
@@ -227,5 +258,7 @@ def run_director_apply(device_id: str, policy_id: str,
         "compliance": res.compliance,
         "source": source, "honest": res.verification.honest if res.verification else True,
         "observations": res.verification.observations if res.verification else {},
+        "device_class": device_class.to_dict() if device_class else None,
+        "vendor_adapter_status": adapter.status if adapter else None,
         "staged": chan_state.get("staged", []),
     }

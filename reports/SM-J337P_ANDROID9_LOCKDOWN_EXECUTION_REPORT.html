@@ -1,0 +1,1075 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SM-J337P — Android 9 Lockdown — Execution Report</title>
+<style>
+  :root{
+    --ink:#1a2333; --muted:#5b6b83; --line:#dbe2ec;
+    --bg:#f4f7fb; --panel:#ffffff;
+    --brand:#0b3a6e; --brand2:#0e5aa7; --accent:#e6a817;
+    --ok:#1e7e34; --okbg:#e8f6ec;
+    --cond:#8a5a00; --condbg:#fff4d6;
+    --part:#8a5a00; --partbg:#fff4d6;
+    --vend:#6b3fa0; --vendbg:#f1e9fb;
+    --nv:#8d1b3d; --nvbg:#fbe9ef;
+    --ns:#b3261e; --nsbg:#fdeaea;
+    --nf:#b3261e; --nfbg:#fdeaea;
+    --mono:"Consolas","Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI","Cairo","Rubik",system-ui,sans-serif;line-height:1.65;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 80px;}
+  header.hero{background:linear-gradient(135deg,#08284d,#0e5aa7 65%,#0b3a6e);
+              color:#fff;padding:38px 0 28px;border-bottom:6px solid var(--accent);}
+  .hero .wrap{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:center}
+  .badge{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
+         padding:3px 12px;border-radius:999px;font-size:12px;margin:2px 4px 0 0}
+  h1{font-size:26px;margin:8px 0 6px}
+  .sub{color:#cfe3ff;font-size:14px}
+  .pnl{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+       padding:22px 24px;margin:22px 0;box-shadow:0 1px 3px rgba(16,42,84,.06)}
+  h2{font-size:21px;color:var(--brand);border-right:5px solid var(--accent);
+     padding-right:12px;margin:0 0 14px}
+  h3{font-size:17px;color:var(--brand2);margin:22px 0 10px}
+  h4{font-size:15px;margin:16px 0 8px;color:var(--ink)}
+  p{margin:8px 0}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;background:#fff}
+  th,td{border:1px solid var(--line);padding:7px 9px;vertical-align:top;text-align:right}
+  th{background:#eef3fa;color:var(--brand);font-size:12.5px}
+  tr:nth-child(even) td{background:#fafcff}
+  .mono{font-family:var(--mono);font-size:12px;direction:ltr;text-align:left}
+  code{font-family:var(--mono);background:#eef2f8;padding:1px 6px;border-radius:4px;
+       font-size:12.5px;direction:ltr;display:inline-block}
+  pre{background:#101a2c;color:#dce6f5;padding:14px;border-radius:10px;overflow:auto;
+      font-family:var(--mono);font-size:12.5px;direction:ltr;text-align:left}
+  pre code{background:none;padding:0}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;
+       vertical-align:middle;letter-spacing:.3px}
+  .t-doc{background:#e3f0fb;color:#0b4e8c}
+  .t-tested{background:#e8f6ec;color:#1e7e34}
+  .t-infer{background:#f1e9fb;color:#6b3fa0}
+  .t-unk{background:#fbe9ef;color:#8d1b3d}
+  .st{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .s-ok{background:var(--okbg);color:var(--ok)}
+  .s-cond{background:var(--condbg);color:var(--cond)}
+  .s-part{background:var(--partbg);color:var(--part)}
+  .s-vend{background:var(--vendbg);color:var(--vend)}
+  .s-nv{background:var(--nvbg);color:var(--nv)}
+  .s-ns{background:var(--nsbg);color:var(--ns)}
+  .s-nf{background:var(--nfbg);color:var(--nf)}
+  ul,ol{margin:8px 0;padding-right:22px}
+  li{margin:4px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi b{display:block;font-size:22px;color:var(--brand)}
+  .kpi span{font-size:12px;color:var(--muted)}
+  .callout{border-right:4px solid var(--accent);background:#fffdf2;padding:12px 16px;
+           border-radius:8px;margin:12px 0}
+  .warn{border-right-color:#b3261e;background:#fff8f8}
+  .okbox{border-right-color:var(--ok);background:var(--okbg)}
+  .note{font-size:12.5px;color:var(--muted)}
+  .toc{columns:2;font-size:13.5px}
+  .toc li{margin:3px 0}
+  .toc a{color:var(--brand2);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  svg text{font-family:"Segoe UI",sans-serif}
+  .mockup-frame{border:2px solid #b9c6d8;border-radius:10px;overflow:hidden;background:#fff}
+  .mockup-bar{background:#0b3a6e;color:#fff;padding:8px 14px;font-size:13px;display:flex;
+              justify-content:space-between;align-items:center}
+  .mockup-win{display:grid;grid-template-columns:200px 1fr;min-height:340px}
+  .mockup-nav{background:#101a2c;color:#cfe3ff;padding:12px;font-size:12.5px}
+  .mockup-nav div{padding:6px 8px;border-radius:6px;margin-bottom:2px}
+  .mockup-nav .on{background:#0e5aa7;color:#fff}
+  .mockup-body{padding:14px;background:#f4f7fb;font-size:12.5px;direction:rtl}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px}
+  .pill-g{background:var(--okbg);color:var(--ok)} .pill-r{background:var(--nsbg);color:var(--ns)}
+  .pill-y{background:var(--condbg);color:var(--cond)} .pill-b{background:#e3f0fb;color:#0b4e8c}
+  .btn{display:inline-block;background:var(--brand2);color:#fff;padding:5px 14px;border-radius:6px;font-weight:600}
+  .btn.gray{background:#738199}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+  .flow .step{background:#eef3fa;border:1px solid var(--line);padding:5px 12px;border-radius:999px;
+              font-size:12.5px}
+  .flow .arr{color:var(--muted)}
+  .printonly{display:none}
+  @media print{
+    body{background:#fff;font-size:11px}
+    .pnl{page-break-inside:avoid;box-shadow:none}
+    h2{page-break-after:avoid}
+    table{font-size:10px}
+    .no-print{display:none!important}
+    .printonly{display:block}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:100%;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="badge">ANDROID LOCKDOWN PILOT — EXECUTION-READY</div>
+      <div class="badge">GOVERNMENT / ENTERPRISE USE</div>
+      <h1>تقرير تنفيذ قفل الأجهزة — Samsung SM-J337P على Android&nbsp;9</h1>
+      <div class="sub">Windows Desktop Manager + Android Agent (DPC/Device Owner) + Samsung Knox 3.3 — تطبيق + تحقق + استعادة</div>
+      <div style="margin-top:10px">
+        <span class="badge">SM-J337P</span><span class="badge">Android 9 (API 28)</span>
+        <span class="badge">One UI 1.1</span><span class="badge">Knox 3.3 / Knox API 28</span>
+        <span class="badge">SEAndroid Enforcing</span>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:12px 18px">
+        <div style="font-size:12px;color:#cfe3ff">الحالة</div>
+        <div style="font-size:18px;font-weight:700;color:#fff">REPORT READY — AWAITING APPROVAL</div>
+        <div style="font-size:11px;color:#cfe3ff;margin-top:4px">لم تُنفَّذ أي عملية على الجهاز في هذه المرحلة</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="pnl no-print">
+    <button onclick="window.print()" style="margin-bottom:10px;padding:8px 16px;background:var(--brand2);color:#fff;border:0;border-radius:8px;cursor:pointer;font-weight:600">🖨️ طباعة / PDF</button>
+    <h2 style="border:0;font-size:15px;margin-bottom:8px">محتويات التقرير</h2>
+    <ol class="toc">
+      <li><a href="#s1">الملخص التنفيذي</a></li>
+      <li><a href="#s2">ملف الجهاز (Device Profile)</a></li>
+      <li><a href="#s3">هدف المشروع</a></li>
+      <li><a href="#s4">المعمارية العامة</a></li>
+      <li><a href="#s5">المكونات المطلوبة</a></li>
+      <li><a href="#s6">بيئة Windows</a></li>
+      <li><a href="#s7">بيئة Android على الجهاز</a></li>
+      <li><a href="#s8">تحليل Samsung / Knox</a></li>
+      <li><a href="#s9">استراتيجية Provisioning</a></li>
+      <li><a href="#s10">معمارية السياسات</a></li>
+      <li><a href="#s11">سياسة PHONE_ONLY</a></li>
+      <li><a href="#s12">مصفوفة القدرات (Capability Matrix)</a></li>
+      <li><a href="#s13">معمارية EXE (Windows)</a></li>
+      <li><a href="#s14">معمارية وكيل Android</a></li>
+      <li><a href="#s15">معمارية الاتصال</a></li>
+      <li><a href="#s16">سيناريو التشغيل الكامل</a></li>
+      <li><a href="#s17">سير العمل الخاص بالاختبار</a></li>
+      <li><a href="#s18">مصفوفة الاختبارات (Test Matrix)</a></li>
+      <li><a href="#s19">اختبار الاختراق (Bypass Testing)</a></li>
+      <li><a href="#s20">الاستعادة (Recovery)</a></li>
+      <li><a href="#s21">Factory Reset</a></li>
+      <li><a href="#s22">سيناريوهات الفشل</a></li>
+      <li><a href="#s23">نموذج التهديدات الأمنية</a></li>
+      <li><a href="#s24">الواجهة (Wireframe / Mockup)</a></li>
+      <li><a href="#s25">خطة التطوير</a></li>
+      <li><a href="#s26">خطة البناء</a></li>
+      <li><a href="#s27">التغليف EXE</a></li>
+      <li><a href="#s28">معايير القبول</a></li>
+      <li><a href="#s29">المخاطر</a></li>
+      <li><a href="#s30">الحدود المعروفة</a></li>
+      <li><a href="#s31">المراجع الرسمية</a></li>
+      <li><a href="#s32">التوصية النهائية + GO / NO-GO</a></li>
+    </ol>
+  </div>
+
+  <div class="pnl">
+    <h2>0) الحقائق المثبتة بناءً على مصادر رسمية — بدون تخمين</h2>
+    <p>كل ادعاء في هذا التقرير يحمل وسماً من أربعة أنواع فقط، على النحو المطلوب:</p>
+    <p>
+      <span class="tag t-doc">DOCUMENTED</span> موثَّق في مصدر رسمي (AOSP / Android Docs / Knox Docs)
+      <span class="tag t-tested">TESTED</span> مُثبَت باختبار معملي مضبوط
+      <span class="tag t-infer">INFERRED</span> استنتاج هندسي معلَّم بوضوح (غير مُثبَت بعد على هذا الجهاز)
+      <span class="tag t-unk">UNKNOWN</span> غير معروف ويجب التحقق عمليًا قبل الادعاء
+    </p>
+    <p>وسوم الحالة مقصورة على: <span class="st s-ok">SUPPORTED</span> <span class="st s-cond">SUPPORTED WITH CONDITIONS</span> <span class="st s-part">PARTIALLY SUPPORTED</span> <span class="st s-vend">VENDOR DEPENDENT</span> <span class="st s-nv">NOT VERIFIED</span> <span class="st s-ns">NOT SUPPORTED</span> <span class="st s-nf">NOT FEASIBLE</span></p>
+    <div class="callout">
+      <b>معلومة حرجة مثبتة مصدريًا (AOSP android-28):</b> قائمة <code>GLOBAL_SETTINGS_WHITELIST</code> في
+      <code>DevicePolicyManagerService</code> لإصدار API 28 <b>لا تتضمن</b> <code>Settings.Global.WIFI_ON</code> ولا
+      <code>BLUETOOTH_ON</code> (نُقلتا إلى مجموعة <code>GLOBAL_SETTINGS_DEPRECATED</code>). أي أن إيقاف Wi-Fi/Bluetooth
+      عبر <code>setGlobalSetting</code> من Device Owner على Android 9 سيرمي <code>SecurityException</code>.
+      لذلك إطفاء الراديوهات يتم عبر تطبيق الوكيل نفسه (<code>WifiManager.setWifiEnabled</code> /
+      <code>BluetoothAdapter.disable</code>) ثم تُمنع إعادة التشغيل عبر تقييدات DPM وكسب Knox.
+    </div>
+  </div>
+
+  <div class="pnl" id="s1">
+    <h2>1) الملخص التنفيذي — Executive Summary</h2>
+    <p>يهدف هذا المشروع إلى تحويل <b>Samsung Galaxy J3 Achieve (SM-J337P)</b> الذي يعمل حاليًا بنظام
+      <b>Android 9 (Pie) / API 28 / One UI 1.1</b> مع <b>Knox 3.3 (Knox API 28)</b> و
+      <b>SEAndroid في وضع Enforcing</b> إلى <b>جهاز مؤسسي مخصص (Locked-Down Enterprise Phone)</b> عبر
+      برنامج إدارة سطح مكتب (Windows EXE) ووكيل Android يعمل كـ <b>Device Owner (DPC)</b>، مع آلية تحقق واستعادة
+      كاملة. هذا مشروع <b>Pilot على جهاز واحد</b> كخطوة تمهيدية قبل التعميم. الهدف <b>ليس</b> ترقية النظام إلى Android 15،
+      بل قياس القدرات الفعلية والحدود الحقيقية لـ Android 9 + Knox 3.3 على هذا الطراز بالتحديد.</p>
+
+    <div class="grid3">
+      <div class="kpi"><b>13+</b><span>لانة قيود أولية في PHONE_ONLY</span></div>
+      <div class="kpi"><b>3</b><span>طبقات تنفيذ: DPM + Agent + Knox</span></div>
+      <div class="kpi"><b>10</b><span>مستويات اختبار متدرجة</span></div>
+      <div class="kpi"><b>7</b><span>حالات حالة مُصنّفة للميزات</span></div>
+      <div class="kpi"><b>2</b><span>مسارات Provisioning (ADB أساسي / QR مشروط)</span></div>
+      <div class="kpi"><b>0</b><span>روoot / Bootloader / Reflash في التدفق الأساسي</span></div>
+    </div>
+
+    <h3>النتائج الرئيسية (ملخص)</h3>
+    <ul>
+      <li><b>الكاميرا، المواقع، تثبيت التطبيقات، المصادر غير المعروفة، USB، ADB، المصنع:</b> يمكن قفلها عبر
+        Device Owner بالكامل <span class="tag t-doc">DOCUMENTED</span>.</li>
+      <li><b>Wi-Fi وBluetooth والمكالمات فقط والإيقاف الحقيقي للبيانات:</b> القفل النهائي (Hard-Off + منع إعادة التشغيل)
+        يعتمد على <b>Knox</b> (<code>allowWiFi</code> ،<code>allowBluetooth</code> ،<code>setCellularData</code>)
+        <span class="tag t-doc">DOCUMENTED</span> ويحتاج اختبارًا عمليًا على هذه الوحدة تحديدًا
+        <span class="tag t-infer">INFERRED</span>.</li>
+      <li><b>الميكروفون:</b> لا توجد آلية DPM قياسية على API 28؛ المتاح <b>Knox فقط</b> (<code>setMicrophoneState</code>)
+        <span class="tag t-doc">DOCUMENTED</span>، مع اختبار أثرها على المكالمات.</li>
+      <li><b>منع الوصول للإنترنت مع إبقاء المكالمات والرسائل القصيرة:</b> ممكن تقنيًا (إيقاف البيانات الخلوية + Wi-Fi +
+        hotspot + tethering + VPN) لأن المكالمات/SMS تسير عبر نطاق CS وليس IP — مع تحفظات (MMS يتعطل، وتجاوز Wi-Fi
+        يحتاج طبقة Knox)، وهو <b>هدف قابل للإنجاز تجريبيًا</b>.</li>
+      <li><b>Factory Reset:</b> يمكن تقييده من الإعدادات، لكن <b>لا يمكن ضمان منعه</b> عبر Recovery/Odin؛ تُدار عبر
+        إعادة-provisioning يدوية من المدير + FRP.</li>
+      <li><b>إعادة تسجيل الجهاز بعد الـ reset:</b> لن تُجري تلقائيًا (لا يوجد EMM سحابي في هذه المرحلة)؛ يحتاج
+        خطوة مدير عبر الـ EXE.</li>
+    </ul>
+  </div>
+
+  <div class="pnl" id="s2">
+    <h2>2) ملف الجهاز — Baseline Device Profile</h2>
+    <p>هذه المعلومات هي المرجع المعتمد، ولا يجوز الاستبدال بطراز آخر:</p>
+    <table>
+      <tr><th>الحقل</th><th>القيمة</th><th>المصدر / الوسم</th></tr>
+      <tr><td>Manufacturer</td><td>Samsung</td><td>BASELINE <span class="tag t-tested">BASELINE</span></td></tr>
+      <tr><td>Model</td><td>SM-J337P (Galaxy J3 Achieve — Sprint/Boost/Virgin، USA)</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>Android</td><td>9 (Pie)</td><td>BASELINE <span class="tag t-tested">BASELINE</span></td></tr>
+      <tr><td>One UI</td><td>1.1</td><td>BASELINE</td></tr>
+      <tr><td>API Level</td><td>28</td><td>BASELINE</td></tr>
+      <tr><td>Baseband</td><td>J337PVPSABUI1</td><td>BASELINE</td></tr>
+      <tr><td>Kernel</td><td>4.4.111-16191886</td><td>BASELINE</td></tr>
+      <tr><td>Build Number</td><td>PPR1.180610.011.J337PVPSABUI1</td><td>BASELINE</td></tr>
+      <tr><td>SEAndroid</td><td>Enforcing / SEPF_SM-J337P_9_0004</td><td>BASELINE</td></tr>
+      <tr><td>Knox Version</td><td>Knox 3.3 / Knox API Level 28</td><td>BASELINE</td></tr>
+      <tr><td>Hardware (معروف)</td><td>2GB RAM، 16GB تخزين، microSD حتى 400GB، Exynos 7570 (موارد متضاربة حول 7884 — يجب قراءته من الجهاز <code>ro.board.platform</code>)، شاشة 5" 720p، BT 4.2، USB 2.0، شريحة nano-SIM واحدة</td><td><span class="tag t-infer">INFERRED</span> — يُستكمل بقراءة الخصائص</td></tr>
+      <tr><td>NFC</td><td>غير مؤكد على هذا الطراز — يُتحقق ميديًا بقارئ الخصائص</td><td><span class="tag t-unk">UNKNOWN</span></td></tr>
+    </table>
+
+    <h3>لقطة ما قبل-التعديل (PRE-CHANGE SNAPSHOT)</h3>
+    <div class="callout okbox">
+      <b>المطلوب التقاطه على الجهاز قبل أي تطبيق:</b> <code>getprop</code> كامل، <code>settings list global/secure/system</code>,
+      قائمة الحزم المثبتة، صلاحيات عامة، حالة Wi-Fi/Bluetooth/Location/USB/ADB/Developer Options، حالة Device Owner
+      (<code>dpm list-owners</code>)، حالة Knox (<code>dumpsys knox*</code>)، ونتائج <code>adb shell pm list packages</code>.
+      تُحفظ النتيجة كـ <b>mobile_scan.json</b> المرتبط بمعرّف مرجعي <code>J337P-BASELINE-001</code>. بعد التنفيذ تُلتقط
+      لقطة POST-CHANGE وتُقارن سطرًا بسطر في تقرير <b>BEFORE vs AFTER</b>.
+    </div>
+  </div>
+
+  <div class="pnl" id="s3">
+    <h2>3) هدف المشروع — Project Objective</h2>
+    <ul>
+      <li>تجهيز وتشغيل منصة <b>Android Lockdown Pilot</b> على هذا الجهاز تحديدًا عبر أدوات Windows.</li>
+      <li>تلبية سيناريو <b>PHONE-ONLY LOCKDOWN</b>: جهاز مؤسسي للمكالمات والرسائل فقط.</li>
+      <li>قياس القدرات والحدود الفعلية لـ Android 9 + Knox 3.3 + SEAndroid Enforcing على طراز J337P.</li>
+      <li>بناء وتشغيل <b>Windows Desktop Manager (EXE)</b> يتصل بالجهاز ويُدير دورة حياة كاملة: اكتشاف ← هوية ←
+        provisioning ← سياسة ← تطبيق ← تحقق ← استعادة ← تقارير.</li>
+      <li>إنتاج منهجية قابلة للتكرار لاحقًا على أسطول 1000+ جهاز.</li>
+    </ul>
+  </div>
+
+  <div class="pnl" id="s4">
+    <h2>4) المعمارية العامة — Architecture Diagram</h2>
+    <svg viewBox="0 0 900 430" width="100%" style="max-width:900px">
+      <defs>
+        <marker id="a" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 z" fill="#0e5aa7"/>
+        </marker>
+      </defs>
+      <rect x="20" y="20" width="200" height="60" rx="10" fill="#08284d"/>
+      <text x="120" y="48" fill="#fff" text-anchor="middle" font-size="14" font-weight="700">Windows PC</text>
+      <text x="120" y="66" fill="#cfe3ff" text-anchor="middle" font-size="11">USB / ADB / Drivers</text>
+
+      <line x1="120" y1="80" x2="120" y2="120" stroke="#0e5aa7" stroke-width="2" marker-end="url(#a)"/>
+
+      <rect x="20" y="122" width="200" height="290" rx="10" fill="#0e5aa7"/>
+      <text x="120" y="148" fill="#fff" text-anchor="middle" font-size="14" font-weight="700">Lockdown Manager EXE</text>
+      <g font-size="11.5" fill="#08284d">
+        <rect x="40" y="162" width="160" height="30" rx="6" fill="#eef3fa"/><text x="120" y="181" text-anchor="middle">Device Detection / Scan</text>
+        <rect x="40" y="200" width="160" height="30" rx="6" fill="#eef3fa"/><text x="120" y="219" text-anchor="middle">Capability Engine</text>
+        <rect x="40" y="238" width="160" height="30" rx="6" fill="#eef3fa"/><text x="120" y="257" text-anchor="middle">Policy Engine (Director)</text>
+        <rect x="40" y="276" width="160" height="30" rx="6" fill="#eef3fa"/><text x="120" y="295" text-anchor="middle">Verification Engine</text>
+        <rect x="40" y="314" width="160" height="30" rx="6" fill="#eef3fa"/><text x="120" y="333" text-anchor="middle">Recovery / Audit / Reports</text>
+        <rect x="40" y="352" width="160" height="30" rx="6" fill="#eef3fa"/><text x="120" y="371" text-anchor="middle">Samsung Adapter (Knox)</text>
+      </g>
+
+      <line x1="220" y1="260" x2="290" y2="260" stroke="#0e5aa7" stroke-width="2" marker-end="url(#a)"/>
+      <text x="255" y="250" fill="#5b6b83" font-size="10.5" text-anchor="middle">USB / ADB</text>
+
+      <rect x="292" y="205" width="250" height="120" rx="10" fill="#e6a817"/>
+      <text x="417" y="230" fill="#08284d" text-anchor="middle" font-size="13" font-weight="700">Android Agent (DPC)</text>
+      <text x="417" y="248" fill="#4a3410" text-anchor="middle" font-size="11">com.alp.agent — Device Owner</text>
+      <text x="417" y="266" fill="#4a3410" text-anchor="middle" font-size="11">CommandReceiver · AlpDeviceAdminReceiver</text>
+      <text x="417" y="284" fill="#4a3410" text-anchor="middle" font-size="11">Envelope (توقيع + anti-replay)</text>
+      <text x="417" y="302" fill="#4a3410" text-anchor="middle" font-size="11">Knox MDM `EnterpriseDeviceManager`</text>
+
+      <line x1="542" y1="260" x2="610" y2="260" stroke="#0e5aa7" stroke-width="2" marker-end="url(#a)"/>
+      <text x="576" y="250" fill="#5b6b83" font-size="10.5" text-anchor="middle">IPC / Binder</text>
+
+      <rect x="612" y="190" width="270" height="150" rx="10" fill="#08284d"/>
+      <g fill="#cfe3ff" font-size="11.5">
+        <text x="747" y="218" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">SM-J337P — Android 9</text>
+        <text x="747" y="240" text-anchor="middle">DevicePolicyManager (API 28) — DO</text>
+        <text x="747" y="260" text-anchor="middle">UserManager Restrictions</text>
+        <text x="747" y="280" text-anchor="middle">Samsung Knox 3.3 (API 28)</text>
+        <text x="747" y="300" text-anchor="middle">SEAndroid Enforcing</text>
+        <text x="747" y="320" text-anchor="middle">Telephony: مكالمات + SMS (+ MMS مشروط)</text>
+      </g>
+    </svg>
+    <p class="note">المبدأ: الـ EXE يبني «مغلف أوامر» موقّعًا (Envelope) ويطلقه عبر ADB إلى الوكيل، والوكيل (بصفته DO)
+      ينفذ القيود عبر DPM ويستدعي كسب Knox عند الحاجة، ثم يُعيد الـ EXE قراءة الحالة الفعلية <b>من الجهاز نفسه</b>
+      للتحقق — لا نكمل PASS بالاعتماد على نية السياسة.</p>
+  </div>
+
+  <div class="pnl" id="s5">
+    <h2>5) المكونات المطلوبة — Required Components</h2>
+    <div class="grid2">
+      <div>
+        <h4>على Windows (توأم مع مستودع ALP الحالي)</h4>
+        <ul>
+          <li><b>LockdownManager.exe</b> — مدير سطح المكتب (البناء موضّح في §26).</li>
+          <li><b>محفظة أزواج:</b> <code>adb.exe</code>, <code>fastboot.exe</code> (للاستخدام الخارجي فقط للتشخيص)،
+            <code>AdbWinApi.dll</code>.</li>
+          <li><b>Samsung USB Driver:</b> رسمي من Samsung — للـ J337P الإصدار <code>1.5.65.0</code>
+            <span class="tag t-doc">DOCUMENTED</span> (Win 7/8/8.1/10، 32/64bit).</li>
+          <li><b>Backend ALP</b> (مستودع موجود): policy engine، capability engine، verification engine، Director،
+            SQLite DB، audit.</li>
+          <li><b>Keystore / مفتاح توقيع المغلفات</b> — خارج الريبو (قاعدة §62 و§23).</li>
+          <li>مجلد السجلات <code>%PROGRAMDATA%\ALP\LockdownManager\logs</code> (§57).</li>
+        </ul>
+      </div>
+      <div>
+        <h4>على الهاتف (Android)</h4>
+        <ul>
+          <li><b>Enterprise Lockdown Agent</b> (الاسم النهائي نختاره؛ المقترح <code>com.alp.agent</code> موجود فعلًا).</li>
+          <li>الوكيل يعمل <b>Device Owner</b> على user 0.</li>
+          <li>يمتلك أنظمة النظام المطلوبة (Settings، Phone، Telephony، Messaging، Camera) — لا حذف النظم.</li>
+          <li>لا root، لا فتح bootloader، لا تغيير firmware.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="pnl" id="s6">
+    <h2>6) بيئة Windows — Windows Environment</h2>
+    <table>
+      <tr><th>العنصر</th><th>المتطلب</th><th>السبب</th></tr>
+      <tr><td>نظام التشغيل</td><td>Windows 10 22H2 / 11 (x64)</td><td>توافق Samsung USB Driver و ADB</td></tr>
+      <tr><td>Samsung USB Driver</td><td>1.5.65.0 (رسمي) — VID_04E8</td><td>كشف أدوات Samsung وجسر ADB</td></tr>
+      <tr><td>Platform Tools (ADB)</td><td>1.0.41+ (نسخة حديثة 34.x/35.x)</td><td>أوامر shell/push/broadcast مستقرة</td></tr>
+      <tr><td>Python</td><td>3.11+ (بيئة تطوير فقط؛ النهائي EXE مستقل)</td><td>بناء وأتمتة اختبارات الـ engine</td></tr>
+      <tr><td>.NET</td><td>غير مطلوب للخيار المختار (Python)</td><td>—</td></tr>
+      <tr><td>مساحة العمل</td><td>C:\ALP\pilot\</td><td>مستودع ALP + build + بيانات الجهاز</td></tr>
+    </table>
+    <div class="callout">
+      <b>USB Driver Check في البرنامج:</b> يفصح الـ EXE عن وجود <code>SAMSUNG Android ADB Interface</code> عبر
+      <code>pnputil /enum-devices /connected</code> وواجهة USB (VID_04E8). إذا توفّر مثبت غير موجود → ينبه
+      «Driver Missing» ويتيح فتح صفحة التثبيت الرسمية؛ ثم يعيد الفحص تلقائيًا بعد النقر «إعادة فحص». انظر §22.
+    </div>
+  </div>
+
+  <div class="pnl" id="s7">
+    <h2>7) بيئة Android على الجهاز — Android/Firmware Environment</h2>
+    <table>
+      <tr><th>العنصر</th><th>الحالة على SM-J337P</th><th>الأثر</th></tr>
+      <tr><td>Android 9 / API 28</td><td>مثبت (Build J337PVPSABUI1)</td><td>كل آلية DPM في هذا التقرير مقصور على إصدار API 28</td></tr>
+      <tr><td>One UI 1.1</td><td>طبقة Samsung فوق AOSP</td><td>قد يُخفي/يُضيف عناصر UI للقفل؛ سلوك «التبديل السريع» VENDOR DEPENDENT</td></tr>
+      <tr><td>SEAndroid Enforcing</td><td>قيد التشغيل (SEPF 0004)</td><td>يزيد صلابة ضد التلاعب؛ لا root عملي</td></tr>
+      <tr><td>Knox 3.3 / API 28</td><td>متاح</td><td>وصول إلى Restriction/Network/WifiPolicy لهذا الجيل</td></tr>
+      <tr><td>GMS / Play Store</td><td>مثبت (جهاز Sprint معتمد)</td><td>يتيح مسار QR المشروط (§9) ويتطلب قفله ضمن السياسة</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s8">
+    <h2>8) تحليل Samsung / Knox — Samsung Knx Analysis</h2>
+    <h3>8.1 ما الذي تضيفه Knox مقابل Android القياسي</h3>
+    <table>
+      <tr><th>القدرة</th><th>API (Knox 3.x)</th><th>سلوك موثّق</th><th>الوسم</th></tr>
+      <tr><td>إيقاف Wi-Fi ومنع التفعيل</td><td><code>RestrictionPolicy.allowWiFi(false)</code> + <code>WifiPolicy.setWifiStateChangeAllowed(false)</code></td><td>«إيقاف الوصول إلى Wi-Fi» — أقوى من DISALLOW_CONFIG_WIFI لأنه يطال حالة التبديل نفسها</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>إيقاف Bluetooth كليًا</td><td><code>RestrictionPolicy.allowBluetooth(false)</code></td><td>يوقف الجهاز قسرًا ويمنع إعادة تشغيل BT</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>قفل الكاميرا (عتاد/خدمة)</td><td><code>setCameraState(false)</code> — صلاحية <code>KNOX_HW_CONTROL</code> (signature)</td><td>تعطيل كلي للكاميرا الأمامية/الخلفية وفيديو الاتصال؛ لا يمكن للمستخدم أو تطبيق ثالث إعادة تفعيلها</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>قفل الميكروفون</td><td><code>setMicrophoneState(false)</code></td><td>يرصد أي تسجيل صوتي؛ أثر على «إدخال» المكالمة يُختبَر على الوحدة</td><td><span class="tag t-infer">INFERRED</span></td></tr>
+      <tr><td>قفل البيانات الخلوية</td><td><code>setCellularData(false)</code></td><td>إيقاف بيانات IP الخلوية (المكالمات/SMS غير متأثرة مبدئيًا، ميلّ للتحقق)</td><td><span class="tag t-infer">INFERRED</span></td></tr>
+      <tr><td>قفل جميع أنماط Tethering/Hotspot</td><td><code>setTethering(false)</code> + <code>setUsbTethering(false)</code></td><td>يمنع مشاركة الشبكة عبر كل الواجهات</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>قفل USB Data / MTP / ADB</td><td><code>setUsbDebuggingEnabled(false)</code>, <code>setUsbMediaPlayerAvailability(false)</code></td><td>«إيقاف نقل البيانات عبر USB» + تعطيل وضع Developer Options بالكامل</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>منع التقاط الشاشة</td><td><code>setScreenCapture(false)</code></td><td>يمنع السكرين شوت على مستوى النظام</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>حجب تحديث Firmware OTA</td><td><code>AdvancedRestrictionPolicy.allowFirmwareUpdates(false)</code></td><td>يمنع تنزيل تحديثات النظام من الإعدادات — صلابة ضد تغيير البرنامج الثابت برمجيًا</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+      <tr><td>حجب Wi-Fi Scanning / BLE</td><td><code>allowWifiScanning(false)</code>, <code>allowBLE(false)</code></td><td>يغلق مسارات اكتشاف شبكات إضافية</td><td><span class="tag t-doc">DOCUMENTED</span></td></tr>
+    </table>
+
+    <h3>8.2 المقارنة الثنائية: Android-only مقابل Knox vs غير قابل للضمان</h3>
+    <table>
+      <tr><th>قابل للتنفيذ عبر Android DPM (DO) فقط</th><th>يحتاج Samsung Knox</th><th>لا يمكن ضمانه برمجيًا</th></tr>
+      <tr>
+        <td>قفل الكاميرا (setCameraDisabled)، منع تثبيت APK، منع Unknown Sources، USB File Transfer،
+          منع Factory Reset من الإعدادات، قفل App Install، قفل Safe Boot، حفظ الصلاحيات،
+          تعطيل الإعادة للعديد من الإعدادات، قفل Location sharing، قفل Accounts/Settings جزئيًا،
+          إخفاء/تعليق تطبيقات</td>
+        <td>الإيقاف الحقيقي + منع إعادة التشغيل لـ Wi-Fi، Bluetooth، Cellular Data، الميكروفون،
+          كل الـ tethering، ADB/USB عميق، Screen Capture، تحديث OTA، منع «Scanning»</td>
+        <td>منع Factory Reset عبر Recovery/Odin، منع إعادة تفليش الـ firmware، منع إزالة
+          الجهاز من يد مادي، إيقاف المكالمات الإجبارية (Emergency)، ضمان عدم تجاوز من قبل OEM-specific UI</td>
+      </tr>
+    </table>
+
+    <div class="callout warn">
+      <b>تضارب موثق — يُدار صراحة:</b> لا يمكن ضمان موثقة تفعيل «allowWiFi» / «setCellularData» بسلوك واحد على كل
+      Firmwares؛ سلوك Samsung قد يختلف بين الإصدارات، ولا نعد بنتيجة قبل اختبار T-matrix على الوحدة الحالية. أي نتيجة تُظهر تحفظات تُدرج
+      كـ «PARTIALLY SUPPORTED» وتُوصف بالضبط. <b>الادعاءات «UNBREAKABLE» ممنوعة في هذا التقرير.</b>
+    </div>
+  </div>
+
+  <div class="pnl" id="s9">
+    <h2>9) استراتيجية Provisioning — Device Owner / DPC / Enrollment</h2>
+    <table>
+      <tr><th>الأسلوب</th><th>التوفر على J337P (Pie)</th><th>الحالة</th><th>القرار للـ Pilot</th></tr>
+      <tr>
+        <td><b>adb <code>dpm set-device-owner</code></b> (لا حسابات على الجهاز وقت التثبيت)</td>
+        <td>مسار موثق رسميًا في Dedicated Devices Cookbook <span class="tag t-doc">DOCUMENTED</span></td>
+        <td><span class="st s-ok">SUPPORTED</span></td>
+        <td><b>المسار الأساسي للـ Pilot</b> — تحكم كامل ومباشر من الـ EXE، بلا اعتماد على سحابة.</td>
+      </tr>
+      <tr>
+        <td><b>QR-code enrollment</b> (Android 9 مزود بمكتبة QR مدمجة)</td>
+        <td>موثق على Pie <span class="tag t-doc">DOCUMENTED</span>؛ يتطلب Play/GMS لتنزيل الـ DPC</td>
+        <td><span class="st s-cond">SUPPORTED WITH CONDITIONS</span></td>
+        <td>يُعد فقط إذا نُشر الوكيل (أو عبر مسار بلاي خاص). تحتاج Wi-Fi أولًا ثم يُقفل — عكسي لغايتنا.</td>
+      </tr>
+      <tr>
+        <td><b>NFC bump</b></td>
+        <td>موثق على Android ≤10 <span class="tag t-doc">DOCUMENTED</span>؛ وجود NFC على J337P <b>UNKNOWN</b></td>
+        <td><span class="st s-nv">NOT VERIFIED</span></td>
+        <td>يُفحص توفر NFC كميزة؛ مسار ثانوي مشروط.</td>
+      </tr>
+      <tr>
+        <td><b>Managed Google Play Accounts (<code>afw#</code>)</b></td>
+        <td>موثق <span class="tag t-doc">DOCUMENTED</span> لكنه يتطلب حساب Google/EMN</td>
+        <td><span class="st s-ns">NOT SUPPORTED</span> لهذه المرحلة</td>
+        <td>مستبعد مؤقتًا (لا توجد بنية EMM سحابي في الـ Pilot).</td>
+      </tr>
+    </table>
+
+    <div class="callout warn">
+      <b>قاعدة إلزامية (مصدرsource.android.com — Provisioning):</b> «الـ Device Owner لا يُثبت إلا على جهاز غير
+      مُهيأ (unprovisioned / لم يُضبط USER_SETUP_COMPLETE) إلا في مسار adb» — أي أن الـ Pilot يبدأ من
+      <b>Factory Reset مُوثق</b> على جهاز المعمل، أو من حالة «بلا حسابات» إذا كان الجهاز جديدًا.<br>
+      الدرس من معملنا السابق: بعض الصور الحديثة تشترط ضبط <code>user_setup_complete=0</code> مؤقتًا؛ على J337P يُعتمد
+      المسار القياسي أولًا ويُوثق، و<b>أي إعادة-تسجيل بعد استهلاك</b> تكون بيد المدير عبر الـ EXE (وليس تلقائيًا).
+    </div>
+  </div>
+
+  <div class="pnl" id="s10">
+    <h2>10) معمارية السياسات — Policy Architecture</h2>
+    <p>السياسة كيان بيانات <b>وخريطة تنفيذ</b> في آنٍ واحد: كل قيمة تصريحية تُترجم دائمًا إلى آلية DPM أو Knox فعلية
+      تُثبت في الجدول المصدر. لا يعتبر JSON تنفيذًا.</p>
+    <pre>{
+  "profile": "PHONE_ONLY",
+  "wifi":       { "state": "BLOCK", "mechanism": ["Knox.RestrictionPolicy.allowWiFi(false)",
+                                                     "DPM.addUserRestriction(DISALLOW_CONFIG_WIFI)"] },
+  "bluetooth":  { "state": "BLOCK", "mechanism": ["Knox.RestrictionPolicy.allowBluetooth(false)",
+                                                     "DPM.addUserRestriction(DISALLOW_BLUETOOTH)"] },
+  "camera":     { "state": "BLOCK", "mechanism": ["DPM.setCameraDisabled(true)",
+                                                     "Knox.RestrictionPolicy.setCameraState(false)"] },
+  "location":   { "state": "BLOCK", "mechanism": ["DPM.addUserRestriction(DISALLOW_SHARE_LOCATION)",
+                                                     "DPM.setSecureSetting(LOCATION_MODE, '0')"] },
+  "mobileData": { "state": "BLOCK", "mechanism": ["Knox.RestrictionPolicy.setCellularData(false)"] },
+  "hotspot":    { "state": "BLOCK", "mechanism": ["Knox.RestrictionPolicy.setTethering(false)"] },
+  "browser":    { "state": "BLOCK", "mechanism": ["DPM.setApplicationHidden(pkg.browser)",
+                                                     "Knox.ApplicationPolicy.hideApplication(list)"] },
+  "playStore":  { "state": "BLOCK", "mechanism": ["DPM.setApplicationHidden(com.android.vending)",
+                                                     "DPM.setPackagesSuspended(...)"] },
+  "appInstall": { "state": "BLOCK", "mechanism": ["DPM.addUserRestriction(DISALLOW_INSTALL_APPS)",
+                                                     "DPM.addUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES)",
+                                                     "DPM.addUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY)"] },
+  "adb":        { "state": "BLOCK", "mechanism": ["DPM.addUserRestriction(DISALLOW_DEBUGGING_FEATURES)",
+                                                     "Knox.RestrictionPolicy.setUsbDebuggingEnabled(false)"] }
+}</pre>
+  </div>
+
+  <div class="pnl" id="s11">
+    <h2>11) سياسة PHONE_ONLY — تعريف اللائنات</h2>
+    <table>
+      <tr><th>اللانة</th><th>السلوك المطلوب</th><th>آلية التنفيذ</th><th>وظيفة المؤسسة المحفوظة</th></tr>
+      <tr><td>Wi-Fi</td><td>BLOCK (إيقاف + منع إعادة التشغيل)</td><td>Knox allowWiFi(false) + DPM DISALLOW_CONFIG_WIFI</td><td>—</td></tr>
+      <tr><td>Bluetooth</td><td>BLOCK</td><td>Knox allowBluetooth(false) + DPM DISALLOW_BLUETOOTH</td><td>—</td></tr>
+      <tr><td>Mobile Data</td><td>BLOCK (IP-data)</td><td>Knox setCellularData(false)</td><td>المكالمات/SMS على CS سليمة</td></tr>
+      <tr><td>Hotspot/Tethering/VPN/USB-Net</td><td>BLOCK</td><td>Knox setTethering(false) + DPM DISALLOW_CONFIG_TETHERING + DISALLOW_CONFIG_VPN</td><td>—</td></tr>
+      <tr><td>Location / GPS</td><td>BLOCK</td><td>DPM DISALLOW_SHARE_LOCATION + setSecureSetting(LOCATION_MODE,0)</td><td>—</td></tr>
+      <tr><td>Camera</td><td>BLOCK</td><td>DPM setCameraDisabled(true) + Knox setCameraState(false)</td><td>—</td></tr>
+      <tr><td>Microphone</td><td>BLOCK (اختياري في PHONE_ONLY)</td><td>Knox setMicrophoneState(false) — يُقيّم أثر المكالمات</td><td>اختبار يُحدد الصيغة النهائية</td></tr>
+      <tr><td>App Install</td><td>BLOCK</td><td>DISALLOW_INSTALL_APPS + DISALLOW_INSTALL_UNKNOWN_SOURCES [+_GLOBALLY]</td><td>تحديثات الوكيل عبر EXE فقط</td></tr>
+      <tr><td>Browser / Play Store</td><td>BLOCK (إخفاء + تعليق)</td><td>setApplicationHidden / setPackagesSuspended</td><td>—</td></tr>
+      <tr><td>USB / ADB</td><td>BLOCK (مرحلة متأخرة فقط)</td><td>DISALLOW_USB_FILE_TRANSFER + DISALLOW_DEBUGGING_FEATURES + Knox setUsbDebuggingEnabled(false)</td><td>ملاحظة: يؤدي لقفل قناة ADB لاحقًا — يُنفذ آخرًا بعد اكتمال التحقق</td></tr>
+      <tr><td>Screen Capture</td><td>BLOCK</td><td>Knox setScreenCapture(false)</td><td>—</td></tr>
+      <tr><td>Factory Reset</td><td>BLOCK (من الإعدادات)</td><td>DISALLOW_FACTORY_RESET + DISALLOW_SAFE_BOOT</td><td>تحذير: Recovery/Odin خارج النطاق</td></tr>
+      <tr><td>Accounts / User Mgmt / Settings</td><td>BLOCK جزئي</td><td>DISALLOW_MODIFY_ACCOUNTS + DISALLOW_ADD_USER + الإخفاء الانتقائي لعناصر الإعدادات</td><td>—</td></tr>
+    </table>
+    <div class="callout">
+      <b>فرق هام (لا نساوي بين Hide وDisable):</b> إخفاء Wi-Fi من الإعدادات ≠ تعطيلها فعليًا. هذا التقرير يفصل لكل لانة
+      أربعة مستويات: (1) Hide UI، (2) Disable User Access (تعطيل وصول المستخدم)، (3) Restrict Configuration،
+      (4) OS/Vendor-Level disable فعلي. ويُلتقط في شهادة التحقق أي مستوى تم تحقيقه فعليًا على الجهاز.
+    </div>
+  </div>
+
+  <div class="pnl" id="s12">
+    <h2>12) مصفوفة القدرات — Feature Capability Matrix</h2>
+    <p>عمود «النتيجة» يستخدم التصنيفات السبعة؛ «دليل» يوضح الوثائق أو يشرح خطط التحقق حيث لم يُثبَت بعد.</p>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Android API (28)</th><th>DPM/DO Support</th><th>Samsung Support</th><th>Knox</th><th>Permission مطلوبة</th><th>Device State</th><th>Implementation</th><th>Verification</th><th>Limitations</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Wi-Fi</td><td>DISALLOW_CONFIG_WIFI; WifiManager</td><td>يمنع إعداد الـ AP فقط</td><td>One UI</td><td>allowWiFi(false)+WifiPolicy</td><td>—/CHANGE_WIFI_STATE</td><td>DO</td><td>Knox off ثم DPM restriction</td><td>dumpsys wifi + toggle test</td><td>QS tile على AOSP غير مغطى بـ DPM؛ يُغطيه Knox — يلزم قياس على LS</td><td><span class="st s-vend">VENDOR DEPENDENT</span></td></tr>
+        <tr><td>Bluetooth</td><td>DISALLOW_BLUETOOTH; BluetoothAdapter</td><td>يمنع الاستخدام</td><td>One UI</td><td>allowBluetooth(false)</td><td>BLUETOOTH(+ADMIN)</td><td>DO</td><td>Knox off ثم DPM</td><td>dumpsys bluetooth_manager</td><td>يعتمد على طبقة Samsung للتبديل السريع</td><td><span class="st s-cond">SUPPORTED WITH CONDITIONS</span></td></tr>
+        <tr><td>Mobile Data</td><td>— (لا restriction)</td><td>لا يوجد API قياسي لإيقاف data على 28</td><td>—</td><td>setCellularData(false)</td><td>KNOX perms</td><td>DO</td><td>Knox</td><td>TelephonyManager.isData... + اختبار Ping</td><td>سلوك متعدد عبر Firmwares — يُختبَر</td><td><span class="st s-vend">VENDOR DEPENDENT</span></td></tr>
+        <tr><td>Internet (جميع المسارات)</td><td>DISALLOW_CONFIG_VPN/TETHERING</td><td>جزئي</td><td>—</td><td>setTethering/USB/Bt + WifiScan + setCellularData</td><td>متنوعة</td><td>DO</td><td>مركّب (§11)</td><td>اختبارات Ping/DNS/MMS + وضع الطيران</td><td>MMS يتعطل؛ IMS/Wi-Fi Call حسب المشغل</td><td><span class="st s-cond">SUPPORTED WITH CONDITIONS</span> (بالطبقة المزدوجة)</td></tr>
+        <tr><td>Location / GPS</td><td>DISALLOW_SHARE_LOCATION + setSecureSetting(LOCATION_MODE)</td><td>نعم (DO)</td><td>—</td><td>—</td><td>—</td><td>DO</td><td>DPM</td><td>LocationManager.isLocationEnabled + provider</td><td>بطاقة العتاد نفسها تبقى؛ المنع برمجي</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>Camera</td><td>setCameraDisabled(true)</td><td>نعم (DO، منذ 21)</td><td>—</td><td>setCameraState(false)</td><td>—</td><td>DO</td><td>DPM (+Knox مضاعف)</td><td>فتح Camera + كاميرا طرف ثالث</td><td>شاشة القفل Quick Launch تُختبَر</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>Microphone</td><td>لا يوجد DPM على 28</td><td>لا</td><td>—</td><td>setMicrophoneState(false)</td><td>KNOX HARD</td><td>DO</td><td>Knox فقط</td><td>تسجيل صوت + أثر على المكالمة</td><td>قد يُعطّل إدخال المكالمة؛ تُقرر الصيغة</td><td><span class="st s-vend">VENDOR DEPENDENT</span></td></tr>
+        <tr><td>Hotspot / Tethering</td><td>DISALLOW_CONFIG_TETHERING</td><td>منع الإعداد</td><td>—</td><td>setTethering(false) (+USB/Bt)</td><td>—</td><td>DO</td><td>DPM + Knox</td><td>رفع hotspot + مشاركة USB</td><td>—</td><td><span class="st s-ok">SUPPORTED</span> (ضمن القيد المعملي)</td></tr>
+        <tr><td>USB (File Transfer)</td><td>DISALLOW_USB_FILE_TRANSFER</td><td>نعم (DO)</td><td>—</td><td>setUsbMediaPlayerAvailability(false)</td><td>—</td><td>DO</td><td>DPM + Knox</td><td>اتصال USB MTP/PTP</td><td>يؤثر على قناة التحديث عبر USB لاحقًا</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>ADB / Developer Options</td><td>DISALLOW_DEBUGGING_FEATURES</td><td>نعم (DO)</td><td>—</td><td>setUsbDebuggingEnabled(false)</td><td>—</td><td>DO</td><td>DPM + Knox</td><td>adb devices + Authorization</td><td>يقطع قناة التحقق نفسها → مرحلة متأخرة</td><td><span class="st s-ok">SUPPORTED</span> (بترتيب زمني)</td></tr>
+        <tr><td>Unknown Sources</td><td>DISALLOW_INSTALL_UNKNOWN_SOURCES (+_GLOBALLY)</td><td>نعم (DO)</td><td>—</td><td>setAllowNonMarketApps(false)</td><td>—</td><td>DO</td><td>DPM</td><td>تثبيت APK خارجي</td><td>—</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>Application Installation</td><td>DISALLOW_INSTALL_APPS</td><td>نعم (DO)</td><td>—</td><td>—</td><td>—</td><td>DO</td><td>DPM</td><td>adb install + مدير الملفات</td><td>يمنع حتى تثبيت الوكيل نفسه</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>Browser / Play Store</td><td>setApplicationHidden / setPackagesSuspended</td><td>نعم (DO)</td><td>—</td><td>ApplicationPolicy.hideApplication</td><td>—</td><td>DO</td><td>DPM (+Knox مضاعف)</td><td>فتح الحزم</td><td>إخفاء ≠ إزالة</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>Screen Capture</td><td>— (لا API حقيقي علنى للـ 28)</td><td>لا</td><td>—</td><td>setScreenCapture(false)</td><td>KNOX perms</td><td>DO</td><td>Knox</td><td>محاولة سكرين شوت</td><td>—</td><td><span class="st s-vend">VENDOR DEPENDENT</span></td></tr>
+        <tr><td>Factory Reset (Settings)</td><td>DISALLOW_FACTORY_RESET + DISALLOW_SAFE_BOOT</td><td>نعم (DO)</td><td>—</td><td>—</td><td>—</td><td>DO</td><td>DPM</td><td>محاولة من الإعدادات</td><td>Recovery/Odin غير مضمون</td><td><span class="st s-ok">SUPPORTED</span> (محدود بـ Settings)</td></tr>
+        <tr><td>Accounts</td><td>DISALLOW_MODIFY_ACCOUNTS</td><td>نعم (DO)</td><td>Samsung Accounts</td><td>—</td><td>—</td><td>DO</td><td>DPM</td><td>إضافة حساب</td><td>—</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+        <tr><td>Notifications (قفل الظل)</td><td>setStatusBarDisabled(true)</td><td>نعم (DO)</td><td>—</td><td>—</td><td>—</td><td>DO</td><td>DPM (اختياري)</td><td>سحب شريط الحالة</td><td>قد يضر بتجربة المستخدم</td><td><span class="st s-cond">SUPPORTED WITH CONDITIONS</span></td></tr>
+        <tr><td>منع الإعادة LockScreen/تغيير</td><td>setKeyguardDisabled + setPasswordQuality</td><td>نعم (DO)</td><td>—</td><td>PasswordPolicy</td><td>—</td><td>DO</td><td>DPM</td><td>تعيين قفل شاشة</td><td>—</td><td><span class="st s-ok">SUPPORTED</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pnl" id="s13">
+    <h2>13) معمارية الـ EXE — Windows Desktop Manager Architecture</h2>
+    <pre>Windows PC
+      │
+      ▼
+Desktop Manager EXE
+      │
+      ├── Device Detection      (VID/PID + adb devices + dpm status)
+      ├── Device Information    (getprop / settings / packages — PRE-CHANGE SNAPSHOT)
+      ├── Capability Scan       (capability-engine → capability matrix per lane)
+      ├── Provisioning          (dpm set-device-owner flow ، وإعادة-تسجيل)
+      ├── Policy Management     (policy engine → PHONE_ONLY مؤلفة)
+      ├── Apply Policy          (envelope موقّع → push → broadcast → run-as)
+      ├── Verification          (verification-engine → PASS/FAIL/PARTIAL/UNKNOWN)
+      ├── Recovery              (Restore / Partial / Full Unenroll)
+      ├── Logs                  (docs-eng مجلد سجلات محلي)
+      └── Reports               (JSON + HTML + PDF)
+      │
+      ▼
+Samsung SM-J337P</pre>
+    <h3>مقارنة تقنيات بناء الـ EXE</h3>
+    <table>
+      <tr><th>المعيار</th><th>C#/.NET</th><th>Python + PyInstaller</th><th>C++/Qt</th><th>Electron</th><th>Rust</th></tr>
+      <tr><td>Reliability</td><td>عالية</td><td>عالية للنماذج CLI</td><td>عالية</td><td>متوسطة (حجم/ذاكرة)</td><td>عالية جدًا</td></tr>
+      <tr><td>Security</td><td>توقيع قوي وسهل</td><td>يتطلب المزيد من الحذر</td><td>جيد</td><td>سطح هجوم أكبر (Chromium)</td><td>ممتاز</td></tr>
+      <tr><td>USB/ADB Integration</td><td>جيد (P/Invoke/WMI)</td><td>جيد (subprocess على adb)</td><td>جيد</td><td>جيد</td><td>جيد</td></tr>
+      <tr><td>Windows Support</td><td>ممتاز</td><td>ممتاز (أحادي الملف)</td><td>جيد (توزيع DLL)</td><td>جيد</td><td>جيد</td></tr>
+      <tr><td>Performance</td><td>جيد</td><td>كافٍ (حمولة خفيفة)</td><td>ممتاز</td><td>أضعف</td><td>ممتاز</td></tr>
+      <tr><td>Maintainability</td><td>جيد</td><td><b>الأفضل هنا:</b> يعيد استخدام محرك ALP (Director/Verification/Policy) دون إعادة كتابة</td><td>متوسط</td><td>جيد</td><td>منخفض (إعادة كتابة كل شيء)</td></tr>
+      <tr><td>Packaging</td><td>جيد</td><td>ممتاز (onefile)</td><td>متوسط</td><td>ثقيل</td><td>متوسط</td></tr>
+      <tr><td>Enterprise Deployment</td><td>ممتاز</td><td>جيد (مع توقيع + Inno)</td><td>جيد</td><td>متوسط</td><td>جيد</td></tr>
+    </table>
+    <div class="callout okbox">
+      <b>القرار:</b> <b>Python 3.11 + PyInstaller (single EXE)</b> لنواة الـ engine (لأن كل منطق ALP المبني والمُختبر
+      61/61 موجود بلغة Python — إعادة استخدامه أفضل موثوقية وقابلية صيانة من إعادة كتابة بالغة أخرى)، مع واجهة
+      سطح مكتب خفيفة عبر Tkinter أو نص أدوات CLI. .NET يُدوَّن كبديل قابل للترقية عند التعميم للتوزيع المؤسسي
+      الكبير مع توقيع Code-Signing. الحجة: لا نختار تقنية «لأنها أسهل»، بل لأنها تقلل سطح الأخطاء وتعيد استخدام
+      المكوّن المُختبَر.
+    </div>
+  </div>
+
+  <div class="pnl" id="s14">
+    <h2>14) معمارية وكيل Android — Android Agent / DPC Spec</h2>
+    <table>
+      <tr><th>الخاصية</th><th>القيمة / المواصفة</th></tr>
+      <tr><td>Package Name</td><td><code>com.alp.agent</code> (اسم الشاشة: Enterprise Lockdown Agent)</td></tr>
+      <tr><td>Min SDK / Target SDK</td><td>minSdk 24 (يدعم J337P) / targetSdk 28 (Android 9)</td></tr>
+      <tr><td>Device Owner</td><td>نعم — من خلال <code>AlpDeviceAdminReceiver</code> مع <code>android:testOnly="false"</code> ليسمح لإصدار الإنتاج بالتثبيت</td></tr>
+      <tr><td>الصلاحيات</td><td>BIND_DEVICE_ADMIN، CHANGE_WIFI_STATE، BLUETOOTH(BLUETOOTH_ADMIN)، كاميرا اختيارية، RECEIVE_BOOT_COMPLETED، FOREGROUND_SERVICE</td></tr>
+      <tr><td>Services</td><td>CommandService (معالجة مغلفات دون طلب المستخدم)، PeriodicVerifier (إعادة تحقق دورية، إذا أُقرّت)</td></tr>
+      <tr><td>Receivers</td><td><code>AlpDeviceAdminReceiver</code> (DO/عرض التنشيط)، <code>CommandReceiver</code> (APPLY_POLICY / REPORT_CAPABILITY / ENROLL / RESTORE / UNENROLL)، <code>BootReceiver</code> (إعادة تأكيد السياسة بعد الإقلاع + إرسال تقرير)</td></tr>
+      <tr><td>Security</td><td>التحقق من توقيع المغلف (HMAC/توقيع المفتاح المفصول)، nonce ضد إعادة التشغيل (anti-replay)، لا يوجد «secret» داخل الـ APK (قاعدة §23)</td></tr>
+      <tr><td>Update Mechanism</td><td>عبر الـ EXE: <code>adb install -r</code> بالإصدار الموقّع بنفس الشهادة؛ لا تحديث ذاتي من الإنترنت</td></tr>
+      <tr><td>Recovery</td><td>أوامر موقّعة: RESTORE_POLICY، PARTIAL_UNLOCK (TTL محدد)، UNENROLL (إزالة DO + مسح القيود + حذف بيانات الوكيل)</td></tr>
+      <tr><td>Logging</td><td>سجل أحداث موقّع للجهة المحلية + تصدير عبر الـ EXE فحسب؛ لا إرسال لأي سجل إلى الإنترنت</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s15">
+    <h2>15) معمارية الاتصال — Desktop ↔ Android Channel</h2>
+    <h3>القناة المختارة لهذه المرحلة: USB/ADB (أساسية) + Backend محلي اختياري</h3>
+    <table>
+      <tr><th>الجانب</th><th>التصميم</th></tr>
+      <tr><td>النقل</td><td>ADB عبر USB (الإصدار الرسمي Platform-Tools من Google). لا نعتمد ADB «حلًا سحريًا» — الناقل فقط.</td></tr>
+      <tr><td>التوثيق</td><td>هوية الجلسة على الحاسوب؛ والجهاز مستخدم في وضع DO — أوامر التطبيق تصل عبر الوكيل الذي يتحقق من التوقيع.</td></tr>
+      <tr><td>الترخيص</td><td>RBAC محلي (المشغل: Admin / Auditor) — مشغّل محدد يملك «كلمة توقيع الإدارة» خارج الريبو.</td></tr>
+      <tr><td>التشفير</td><td>ADB عبر USB محلي؛ المغلفات موقّعة (توقيع متماثل HS&#8226;HMAC على الحقل + timestamp). HTTPS للتكامل مع Backend مستقبليًا.</td></tr>
+      <tr><td>هوية الجهاز</td><td>serial (ADB) + <code>ro.serialno</code> + معرّف الالتحاق <code>device_id</code> في DB (مرتبط بملف J337P-BASELINE-001).</td></tr>
+      <tr><td>سلامة الأمر</td><td>كل أمر يحوي: cmd_id (UUID)، device_id، timestamp، admin، policy_version، توقيع، و receiver يرفض أي أمر لا يطابق.</td></tr>
+      <tr><td>منع إعادة التشغيل</td><td>nonce/عجلة زمنية في الـ DB (<code>command_nonces</code>) — رفض أي cmd_id أو nonce مكرر.</td></tr>
+      <tr><td>السجلات</td><td>سجل الأحداث الكامل في الـ EXE (audit) + سجل جهاز في الوكيل؛ وتصدير عبر تقارير فقط.</td></tr>
+    </table>
+    <h3>نموذج الأوامر — Command Model</h3>
+    <pre>DISCOVER_DEVICE · GET_CAPABILITIES · ENROLL · APPLY_POLICY · VERIFY_POLICY
+GET_STATUS · ENTER_MAINTENANCE · RESTORE_POLICY · PARTIAL_UNLOCK · RECOVER · UNENROLL</pre>
+    <p>كل أمر في المغلف:</p>
+    <pre>{
+  "cmd_id": "c7f09a1b…", "device_id": "ALP-J337P-0001",
+  "ts": 1730000000000,        "admin": "ALP-ADMIN-01",
+  "policy_version": "PHONE_ONLY-1", "op": "APPLY_POLICY",
+  "payload": { …الونات والآليات… },
+  "sig": "base64(mac(timestamp+cmd_id+payload))"
+}</pre>
+    <div class="callout warn">
+      <b>أمان الاستعادة:</b> لا يُوضع <code>Recovery Password</code>، <code>Master Key</code>، <code>Token</code>،
+      <code>Private Key</code> داخل الـ APK أو الـ EXE أو الريبو أو السجلات أو ملفات الإعداد. مفتاح توقيع الإدارة
+      يُدار خارج المستودع (احتياطي معزول بجهاز المسؤول). أي «باب خلفي» ممنوع؛ الاستعادة تتم عبر أمر موقّع يوقعه
+      المسؤول المسموح له فقط.
+    </div>
+  </div>
+
+  <div class="pnl" id="s16">
+    <h2>16) سيناريو التشغيل الكامل — Full Operation Scenario</h2>
+    <div class="flow">
+      <span class="step">تشغيل Windows PC</span><span class="arr">←</span>
+      <span class="step">تشغيل LockdownManager.exe</span><span class="arr">←</span>
+      <span class="step">توصيل SM-J337P</span><span class="arr">←</span>
+      <span class="step">اكتشاف الجهاز</span><span class="arr">←</span>
+      <span class="step">قراءة معلومات الجهاز</span><span class="arr">←</span>
+      <span class="step">إنشاء Device Profile</span><span class="arr">←</span>
+      <span class="step">فحص Capabilities</span><span class="arr">←</span>
+      <span class="step">عرض النتائج</span>
+    </div>
+    <div class="flow">
+      <span class="step">اختيار PHONE_ONLY</span><span class="arr">←</span>
+      <span class="step">Validate Policy</span><span class="arr">←</span>
+      <span class="step">Provision / Enrollment</span><span class="arr">←</span>
+      <span class="step">Apply</span><span class="arr">←</span>
+      <span class="step">Verify</span><span class="arr">←</span>
+      <span class="step">Generate Report</span><span class="arr">←</span>
+      <span class="step">Monitor</span>
+    </div>
+    <h4>التسلسل الزمني الآمن للـ Pilot (يمنع «تصعيد القفل الكامل» قبل الأوان)</h4>
+    <ol>
+      <li>التقاط PRE-CHANGE SNAPSHOT الكامل (§2).</li>
+      <li>Level 1–3: الاكتشاف والهوية وفحص القدرة (لا تغيير).</li>
+      <li>Level 4: Provisioning (DO) على جهاز معمل مُعاد ضبطه/Mوثق أو جديد بلا حسابات.</li>
+      <li>Level 5: قيد واحد → تحقق → التالي (تدرج §37).</li>
+      <li>Level 6: السياسة المركبة PHONE_ONLY.</li>
+      <li>Level 7: إعادة التشغيل وغيرها من اختبارات الثبات.</li>
+      <li>Level 8: اختبارات الـ Bypass (QS toggle، Settings، اتصال USB، إلخ).</li>
+      <li>Level 9: Recovery / Restore.</li>
+      <li>Level 10: End-to-End كامل + تقرير.</li>
+    </ol>
+    <div class="callout">
+      <b>القاعدة الحاسمة:</b> لانه نمنع ADB وUSB كمرحلة متأخرة (لأنها «قناة التحقق» نفسها) — يكتمل التحقق قبل
+      إغلاق هذه اللائنات، ويظهر ذلك في خطة الـ Phase (§53).
+    </div>
+  </div>
+
+  <div class="pnl" id="s17">
+    <h2>17) سير عمل الاختبار — Verification/Testing Workflow</h2>
+    <pre>DISCOVERY → CAPABILITY TEST → ONE FEATURE → VERIFY → NEXT → COMBINED POLICY → PERSISTENCE → BYPASS → RECOVERY → E2E</pre>
+    <h3>تسلسل التحقق من أي قيد (Verification Pipeline)</h3>
+    <pre>APPLY
+  ↓
+WAIT (التأكد من استقرار النظام + مسح الطبقات)
+  ↓
+QUERY DEVICE (ADB / run-as / agent state / Knox getters)
+  ↓
+VERIFY ACTUAL STATE (مطابقة القيمة الفعلية مع المتوقع)
+  ↓
+COMPARE (policy vs actual per lane)
+  ↓
+GENERATE EVIDENCE (evidence row موثقة بمعرّف) — النتيجة: PASS | FAIL | PARTIAL | UNKNOWN</pre>
+    <div class="callout okbox">
+      <b>مبادئ النزاهة المثبتة في مستودعنا (مرتبطة بقواعد هذا التقرير):</b>
+      لا PASS بدون observation فعلي من الجهاز؛ المصدر SIMULATED لا يُنتج PASS أبدًا؛
+      الـ Director يصرف <code>evidence_id</code> قبل التحقق؛
+      والـ compliance يعكس النتيجة الحقيقية (FAIL→NON_COMPLIANT). يطبق هذا على J337P كما طُبق سابقًا على الـ AVD.
+    </div>
+  </div>
+
+  <div class="pnl" id="s18">
+    <h2>18) مصفوفة الاختبارات — Test Matrix (على الجهاز الحقيقي)</h2>
+    <table>
+      <tr><th>ID</th><th>Feature</th><th>Action</th><th>Expected</th><th>Actual (يُملأ في التنفيذ)</th><th>Result</th></tr>
+      <tr><td>T001</td><td>Wi-Fi</td><td>Disable + toggle</td><td>Off ولا يعاود التفعيل من QS/Settings</td><td></td><td></td></tr>
+      <tr><td>T002</td><td>Bluetooth</td><td>Disable + pairing</td><td>Off ولا يعاود التفعيل</td><td></td><td></td></tr>
+      <tr><td>T003</td><td>Camera</td><td>فتح تطبيق الكاميرا + طرف ثالث</td><td>Blocked</td><td></td><td></td></tr>
+      <tr><td>T004</td><td>Location</td><td>Block</td><td>Restricted (location off)</td><td></td><td></td></tr>
+      <tr><td>T005</td><td>Mobile Data</td><td>Block</td><td>Blocked (نتيجته المعملية موثقة)</td><td></td><td></td></tr>
+      <tr><td>T006</td><td>Browser</td><td>Block</td><td>Blocked</td><td></td><td></td></tr>
+      <tr><td>T007</td><td>APK Install</td><td>Attempt</td><td>Denied</td><td></td><td></td></tr>
+      <tr><td>T008</td><td>ADB</td><td>Attempt</td><td>Denied (مرحلة متأخرة)</td><td></td><td></td></tr>
+      <tr><td>T009</td><td>Reboot</td><td>Restart</td><td>Policy Persists</td><td></td><td></td></tr>
+      <tr><td>T010</td><td>Recovery</td><td>Restore</td><td>Restored</td><td></td><td></td></tr>
+      <tr><td>T011</td><td>Voice Call</td><td>إجراء مكالمة</td><td>يُنجز رغم قفل البيانات</td><td></td><td></td></tr>
+      <tr><td>T012</td><td>SMS</td><td>إرسال/استقبال</td><td>يُنجز (MMS متعطل موثقًا)</td><td></td><td></td></tr>
+      <tr><td>T013</td><td>Microphone</td><td>تسجيل</td><td>Blocked (والأثر على المكالمة موثق)</td><td></td><td></td></tr>
+      <tr><td>T014</td><td>Factory Reset (Settings)</td><td>محاولة</td><td>Denied</td><td></td><td></td></tr>
+      <tr><td>T015</td><td>Screen Capture</td><td>محاولة</td><td>Blocked</td><td></td><td></td></tr>
+      <tr><td>T016</td><td>Tethering/Hotspot</td><td>محاولة</td><td>Blocked</td><td></td><td></td></tr>
+    </table>
+    <h3>مستويات الاختبار (10 مستويات)</h3>
+    <table>
+      <tr><th>Level</th><th>المحتوى</th><th>البوابة (Gate)</th></tr>
+      <tr><td>1</td><td>Device Detection (USB/ADB/دريف سامسونج)</td><td>الجهاز يظهر serial ظاهر + اتصال مستقر</td></tr>
+      <tr><td>2</td><td>Device Information (ملف J337P كامل)</td><td>قيم getprop مطابقة للـ baseline</td></tr>
+      <tr><td>3</td><td>Capability Detection (نظام الـ capability)</td><td>كل لانة لها وضع داعم/غير داعم</td></tr>
+      <tr><td>4</td><td>Provisioning (DO بلا حسابات)</td><td><code>dpm list-owners</code> يعرض الوكيل</td></tr>
+      <tr><td>5</td><td>Individual Restrictions (لانة-لانة)</td><td>كل واحدة تُثبت فعليًا</td></tr>
+      <tr><td>6</td><td>PHONE_ONLY المركّب</td><td>التطبيق الكامل بلا استثناء حاسم</td></tr>
+      <tr><td>7</td><td>Persistence (reboot + power + unlock + reconnect)</td><td>السياسة حاضرة بعد كل حدث</td></tr>
+      <tr><td>8</td><td>Bypass Testing (QS/Settings/USB/ADB/تطبيقات)</td><td>لا مسار بسيط للتجاوز</td></tr>
+      <tr><td>9</td><td>Recovery (LOCK→VERIFY→RECOVER→VERIFY + Partial)</td><td>استعادة موثقة بدون باب خلفي</td></tr>
+      <tr><td>10</td><td>Full E2E (إعادة-تسجيل وإغلاق نهائي وتقرير)</td><td>الكل وفق التقرير النهائي</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s19">
+    <h2>19) اختبار الاختراق — Bypass Testing</h2>
+    <table>
+      <tr><th>محاولة التجاوز</th><th>الضابط</th><th>الاحتمال المتبقي</th></tr>
+      <tr><td>تبديل Wi-Fi من Quick Settings</td><td>Knox allowWiFi(false) + DPM DISALLOW_CONFIG_WIFI</td><td>سلوكات One UI — يُختبَر</td></tr>
+      <tr><td>فتح الإعدادات وتعديل القيود</td><td>DPM restrictions + إخفاء عناصر الإعدادات</td><td>بعض أقسام One UI قد تظهر</td></tr>
+      <tr><td>تشغيل تطبيق ميتخدام ADB</td><td>DISALLOW_DEBUGGING_FEATURES + Knox USB</td><td>بعد إغلاق قناة التحقق نهائيًا</td></tr>
+      <tr><td>إعادة تثبيت حزم</td><td>DISALLOW_INSTALL_APPS + Unknown Sources <b>+ <code>INSTALL_NON_MARKET_APPS</code> secure</b></td><td>منخفض داخل النظام</td></tr>
+      <tr><td>Factory Reset عبر Recovery</td><td>خارج النطاق (لا يمكن منعه برمجيًا) — تُدار عبر FRP وإعادة-provisioning</td><td>يُقبل كخطر موثق</td></tr>
+      <tr><td>إزالة DO عبر <code>dpm remove-active-admin</code></td><td>الوكيل يرفض الإزالة ما لم يُوقَّع أمر UNENROLL؛ وADB الـ DO قُنِ](اختبار)</td><td>اختبار مطلوب على الوحدة</td></tr>
+      <tr><td>تغيير SIM/شبكة</td><td>قفل الشبكات = ميزة مشغل؟ — خارج نطاق DO</td><td>مقبول كخطر</td></tr>
+      <tr><td>تشغيل وضع الطيران وإعادة التنشيط</td><td>إعادة القفل + إعادة التأكيد بعد الإقلاع</td><td>يُختبَر في Level 7</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s20">
+    <h2>20) الاستعادة — ADMIN RECOVERY</h2>
+    <h3>سيناريوهات مشروعة للمسؤول المخول</h3>
+    <table>
+      <tr><th>السيناريو</th><th>الإجراء عبر الـ EXE</th><th>التحقق</th></tr>
+      <tr><td>Restore Corporate Default</td><td>RESTORE_POLICY (موقّع): مسح كل قيود DPM + Knox وإعادة تشغيل الوكيل للافتراضي</td><td>إعادة <code>dpm get-restrictions</code> + Knox getters</td></tr>
+      <tr><td>Partial Unlock</td><td>PARTIAL_UNLOCK بإحدى اللائنات وTTL محدود (مثل فك Wi-Fi لمدة <code>n</code>)</td><td>بيان TTL + إعادة قفل تلقائي بعد انتهائه</td></tr>
+      <tr><td>Maintenance Mode</td><td>ENTER_MAINTENANCE: سياسة «تشخيص» تكشف أدوات + تفتح لقطة تشخيص، مع تسجيل صارم</td><td>سجل تدقيق كامل لكل إجراء</td></tr>
+      <tr><td>Full Unlock / Retirement</td><td>UNENROLL (موقّع): مسح القيود + إزالة admin النشط + تعطيل/إزالة الوكيل</td><td><code>dpm list-owners</code> → بلا owner</td></tr>
+      <tr><td>Re-enrollment</td><td>بعد Factory Reset: إعادة تنفيذ سير الـ Level 4</td><td>مرتبط بالشهادة + log</td></tr>
+    </table>
+    <div class="callout warn">
+      كل أوامر الاستعادة تتطلب أيضاً مدة توقيع حالة المسؤول ولا يوجد أي <b>secret</b> داخل الكود/الريبو (§23، §62).
+    </div>
+  </div>
+
+  <div class="pnl" id="s21">
+    <h2>21) Factory Reset — التحليل الخاص</h2>
+    <ul>
+      <li><b>ماذا يحدث للسياسة؟</b> بعد أي Bring Reset كامل يُمسح Device Owner (DO لا يعيش إلا مع بيانات النظام)؛ الجهاز يرجع للحالة المقت. <span class="tag t-doc">DOCUMENTED</span></li>
+      <li><b>هل يمكن إعادته تلقائيًا؟</b> لا — لا توجد بنية EMM/بث في هذه المرحلة. إعادة التسجيل بيد المدير عبر الـ EXE (لقطة ما بعد-reset → DO ← سياسة).</li>
+      <li><b>الطريقة الرسمية للإعادة:</b> Factory Reset موثق في المعمل فقط (§42) → إعادة provision عبر adb أو QR (بشرط بلا حسابات) → إعادة تطبيق.</li>
+      <li><b>منع الـ factory reset من الإعدادات:</b> <code>DISALLOW_FACTORY_RESET</code> و<code>DISALLOW_SAFE_BOOT</code> <span class="tag t-doc">DOCUMENTED</span>.</li>
+      <li><b>خارج النطاق:</b> Recovery-mode reset وإعادة تفليش عبر Odin لا يمكن منعها برمجيًا؛ تُحد بالاعتماد على عمليات الإصلاح الداخلية، وكلمة FRP على الجهاز الذي كان مسجلًا بحساب (إذا فُعلت).</li>
+      <li><b>ماذا يحتاج تدخل المدير؟</b> أي إعادة-تسجيل بعد reset؛ وأي إجراء على جهاز معرض لـ Odin.</li>
+    </ul>
+  </div>
+
+  <div class="pnl" id="s22">
+    <h2>22) سيناريوهات الفشل — Failure Scenarios</h2>
+    <table>
+      <tr><th>السيناريو</th><th>Detection</th><th>Cause</th><th>Action</th><th>Recovery</th><th>Logging</th><th>Final Status</th></tr>
+      <tr><td>Device Not Detected</td><td>adb devices / USB tree</td><td>كابل/درايفر/منفذ</td><td>التحقق من الكابل والمنفذ والتأكد من إعادة تثبيت الدرايفر</td><td>إعادة المحاولة بعد الفحص</td><td>event=no-device</td><td>RETRY</td></tr>
+      <tr><td>ADB Unauthorized</td><td>ظهور <code>unauthorized</code></td><td>تفويض شاشة الجهاز لم يُقبل</td><td>طلب قبول التفويض + إعادة المحاولة</td><td>تأكيد التفويض يدويًا</td><td>event=adb-unauthorized</td><td>ACTION_REQUIRED</td></tr>
+      <tr><td>Driver Missing</td><td>pnputil / VID</td><td>درايفر USB غير مثبت</td><td>توجيه إلى التثبيت الرسمي</td><td>إعادة فحص تلقائي</td><td>event=driver-missing</td><td>ACTION_REQUIRED</td></tr>
+      <tr><td>Unsupported Capability</td><td>capability-engine لكل لانة</td><td>ميزة غير متاحة على هذه الوحدة</td><td>Capability Report → Fallback → Partial Policy (§48)</td><td>لا حظر؛ تقرير حالة</td><td>event=feature-partial</td><td>PARTIAL</td></tr>
+      <tr><td>Provisioning Failed</td><td>dpm غير active</td><td>حسابات موجودة / provisioned</td><td>توثيق الحالة + مسار إعادة الضبط للمعمل</td><td>حذف الحسابات أو إعادة الضبط</td><td>event=provision-fail</td><td>BLOCKED</td></tr>
+      <tr><td>Policy Partially Applied</td><td>تحقق لانة-لانة</td><td>لانة فشلت أو عُدت</td><td>متابعة التقرير بـ«ماجزئ»</td><td>لا PASS مزيف</td><td>event=partial-apply</td><td>PARTIAL</td></tr>
+      <tr><td>Device Offline</td><td>adb/توقف الاستجابة</td><td>قفل ADB مؤقت/فصل</td><td>إعادة اتصال أو قناة بريد محلية للوضع الآمن</td><td>إعادة الاقتران</td><td>event=offline</td><td>RETRY</td></tr>
+      <tr><td>Verification Failed</td><td>عدم تطابق بين الفعلي والمرجو</td><td>سلوك Samsung</td><td>رفع التقرير كـ FAIL/UNKNOWN</td><td>تصحيح الآلية أو توثيق</td><td>event=verification-fail</td><td>FAIL/UNKNOWN</td></tr>
+      <tr><td>Recovery Failed</td><td>فشل RESTORE</td><td>توقيع/اتصال</td><td>تكرار بمعزل + سجل تدقيق</td><td>مسار Restore ثانوي (فئة NO-claim)</td><td>event=recovery-fail</td><td>BLOCKED</td></tr>
+    </table>
+
+    <h3>§48 — سيناريو ميزة غير مدعومة</h3>
+    <pre>Feature = NOT SUPPORTED
+   ↓
+Capability Report (تفصيلي خال من التضليل)
+   ↓
+Fallback (آلية بديلة إن وُجدت — مثل DPM بدل Knox)
+   ↓
+Partial Policy (تطبيق ما يمكن — مع إشعار واضح)
+   ↓
+Compliance Status (PARTIAL / NON-COMPLIANT — لا PASS مزيف)</pre>
+  </div>
+
+  <div class="pnl" id="s23">
+    <h2>23) نموذج التهديدات الأمنية — Threat Model</h2>
+    <table>
+      <tr><th>التهديد (Threat)</th><th>التحكم (Control)</th><th>الخطر المتبقي (Residual Risk)</th></tr>
+      <tr><td>مستخدم عادي</td><td>DPM restrictions + Knox + إخفاء الإعدادات</td><td>منخفض</td></tr>
+      <tr><td>مستخدم خبير</td><td>أضف منع QS/الحالة + setStatusBarDisabled + فحص قوائم الحزم</td><td>متوسط (سلوك One UI)</td></tr>
+      <tr><td>مهاجم فيزيائي</td><td>قفل شاشة DO، منع Factory Reset من Settings، منع Safe Boot</td><td>مرتفع (Recovery/Odin لا يمكن ضمانه)</td></tr>
+      <tr><td>هـ USB</td><td>DISALLOW_USB_FILE_TRANSFER + Knox USB/MTP + منع ADB</td><td>منخفض بعد المرحلة المتأخرة</td></tr>
+      <tr><td>ADB Attacker</td><td>DISALLOW_DEBUGGING_FEATURES + Knox + منع التفويض</td><td>منخفض بعد الإغلاق؛ قبلها معرّفًا</td></tr>
+      <tr><td>Malicious APK</td><td>DISALLOW_INSTALL_APPS + Unknown Sources + verify apps</td><td>منخفض</td></tr>
+      <tr><td>Settings Bypass</td><td>تغطية DPM+Knox المضاعفة</td><td>متوسط حتى اكتمال T-matrix</td></tr>
+      <tr><td>Factory Reset / Recovery / Reflash</td><td>FRP + سياسة إعادة-provisioning</td><td>مرتفع — طريق واحد متبقٍ يستوجب تصميم المؤسسة</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s24">
+    <h2>24) الواجهة — UI Wireframe / Mockup</h2>
+    <p>mockup أدناه <b>تصوّر هندسي (CONCEPT / MOCKUP)</b> — ليس لقطة شاشة حقيقية.</p>
+    <div class="mockup-frame">
+      <div class="mockup-bar">
+        <span><b>Lockdown Manager</b> — SM-J337P Pilot</span>
+        <span><span class="pill pill-g">DEVICE ONLINE</span> <span class="btn gray">Export PDF</span></span>
+      </div>
+      <div class="mockup-win">
+        <div class="mockup-nav" style="direction:rtl">
+          <div class="on">🎛️ لوحة التحكم</div>
+          <div>📱 الجهاز</div>
+          <div>📍 القدرات</div>
+          <div>🛡️ السياسات</div>
+          <div>⚙️ تطبيق / تحقق</div>
+          <div>↩️ الاستعادة</div>
+          <div>📄 السجلات</div>
+          <div>📑 التقارير</div>
+          <div>🔧 الإعدادات</div>
+        </div>
+        <div class="mockup-body">
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <div style="flex:1;background:#fff;border:1px solid #dbe2ec;border-radius:8px;padding:8px 12px">
+              <div style="color:#5b6b83;font-size:11px">الجهاز</div>
+              <div style="font-weight:700">SM-J337P</div>
+              <div style="font-size:11px;color:#5b6b83">Android 9 · Knox 3.3</div>
+            </div>
+            <div style="flex:1;background:#fff;border:1px solid #dbe2ec;border-radius:8px;padding:8px 12px">
+              <div style="color:#5b6b83;font-size:11px">الحالة</div>
+              <div style="font-weight:700"><span class="pill pill-g">DEVICE OWNER</span></div>
+              <div style="font-size:11px;color:#5b6b83">com.alp.agent</div>
+            </div>
+            <div style="flex:1;background:#fff;border:1px solid #dbe2ec;border-radius:8px;padding:8px 12px">
+              <div style="color:#5b6b83;font-size:11px">السياسة</div>
+              <div style="font-weight:700">PHONE_ONLY v1</div>
+              <div style="font-size:11px;color:#5b6b83">13 lanes</div>
+            </div>
+          </div>
+          <table style="font-size:11px">
+            <tr><th>اللانة</th><th>الحالة المستهدفة</th><th>الفعلي</th><th>النتيجة</th></tr>
+            <tr><td>Wi-Fi</td><td>BLOCK</td><td>Off</td><td><span class="pill pill-g">PASS</span></td></tr>
+            <tr><td>Bluetooth</td><td>BLOCK</td><td>Off</td><td><span class="pill pill-g">PASS</span></td></tr>
+            <tr><td>Camera</td><td>BLOCK</td><td>Blocked</td><td><span class="pill pill-g">PASS</span></td></tr>
+            <tr><td>Mobile Data</td><td>BLOCK</td><td>Off</td><td><span class="pill pill-y">PARTIAL</span></td></tr>
+            <tr><td>ADB</td><td>BLOCK (متأخر)</td><td>—</td><td><span class="pill pill-b">PENDING</span></td></tr>
+          </table>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <span class="btn">تطبيق</span><span class="btn gray">تحقّق</span><span class="btn gray">استعادة</span><span class="btn gray">تقرير</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:#e6a817;color:#08284d;text-align:center;font-size:11px;font-weight:700;padding:4px">CONCEPT / MOCKUP — للتخطيط الهندسي فقط وليس واجهة حقيقية</div>
+    </div>
+  </div>
+
+  <div class="pnl" id="s25">
+    <h2>25) خطة التطوير — Development Plan (الملفات والمجلدات)</h2>
+    <pre>/windows-manager        ← EXE shell + واجهة + أتمة التثبيت
+/android-agent           ← الوكيل (Android) — يعيد استخدام com.alp.agent الموجود
+/policy-engine           ← السياسات وخريطة الآليات (مستودع ALP الحالي)
+/capability-engine       ← فحص قوة الجهاز لكل لانة (يُطوَّر لقراءة J337P)
+/verification-engine     ← pipeline التحقق + evidence (مستودع ALP الحالي)
+/samsung-adapter         ← طبقة Knox (Restriction/Wifi/Network) عبر قراءة الإمكانات
+/device-profiles         ← ملف J337P الافتراضي + templates
+/tests                   ← Test Matrix + Levels 1–10 (نصية + scripted)
+/docs                    ← هذا التقرير + دليل التشغيل
+/build                   ← سكربت البناء (بالـ §26)
+/installer               ← Inno Setup (اختياري للتعميم)</pre>
+    <h3>الترتيب الزمني — Phases</h3>
+    <table>
+      <tr><th>Phase</th><th>المحتوى</th><th>البوابة</th></tr>
+      <tr><td>PHASE 0</td><td>Environment: Windows + drivers + JDK/SDK + adb + نسخ مستودع ALP</td><td>adb يرى الجهاز</td></tr>
+      <tr><td>PHASE 1</td><td>Windows Manager Foundation (نواة + واجهة CLI/Desktop)</td><td>DISCOVER/GET_INFO يعملان</td></tr>
+      <tr><td>PHASE 2</td><td>Android Agent (تحديثات J337P: توقيع المغلف، boot receiver)</td><td>APK موقّع ومُبنى</td></tr>
+      <tr><td>PHASE 3</td><td>Device Owner / Enrollment (Level 4)</td><td>DO نشط</td></tr>
+      <tr><td>PHASE 4</td><td>Capability Engine (قراءة كل لانة + ملف J337P)</td><td>نتائج capability مطابقة</td></tr>
+      <tr><td>PHASE 5</td><td>Policy Engine PHONE_ONLY + خريطة الآليات</td><td>Validate يمر</td></tr>
+      <tr><td>PHASE 6</td><td>Samsung Adapter (Knox APIs مع fallback)</td><td>الطرق تُرجع قيم حقيقية</td></tr>
+      <tr><td>PHASE 7</td><td>Verification Engine (Level 5–6)</td><td>لا PASS بدون evidence</td></tr>
+      <tr><td>PHASE 8</td><td>Recovery (Level 9) + RESTORE/PARTIAL/UNENROLL</td><td>كل Scenario موثق</td></tr>
+      <tr><td>PHASE 9</td><td>Testing (Levels 1–10 + Bypass + Persistence)</td><td>Acceptance Criteria</td></tr>
+      <tr><td>PHASE 10</td><td>EXE Packaging (PyInstaller + توقيع + سكربت)</td><td>EXE مستقل يعمل</td></tr>
+      <tr><td>PHASE 11</td><td>Pilot Acceptance (تقرير نهائي + GO/NO-GO نهائي)</td><td>موافقة المسؤول</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s26">
+    <h2>26) خطة البناء — Build Plan (أوامر فعلية)</h2>
+    <h4>Dependencies & إصداراتها</h4>
+    <table>
+      <tr><th>الأداة</th><th>الإصدار الموصى</th><th>الغرض</th><th>التحقق</th></tr>
+      <tr><td>JDK</td><td>11 (LTS) x64</td><td>بناء الوكيل Android (javac/d8)</td><td><code>java -version</code></td></tr>
+      <tr><td>Android SDK Build-Tools</td><td>28.0.3 + 34.0.0 (aapt2/d8/apksigner)</td><td>build APK يدويًا بلا Gradle</td><td><code>aapt2 version</code></td></tr>
+      <tr><td>platform-tools (ADB)</td><td>34.x/35.x</td><td>قناة الاتصال</td><td><code>adb version</code></td></tr>
+      <tr><td>Samsung USB Driver</td><td>1.5.65.0 رسمي</td><td>كشف الجهاز</td><td>pnputil VID_04E8</td></tr>
+      <tr><td>Python</td><td>3.11+</td><td>محرك ALP</td><td><code>python --version</code></td></tr>
+      <tr><td>PyInstaller</td><td>6.x</td><td>تعبئة EXE</td><td>—</td></tr>
+      <tr><td>شهادة التوقيع</td><td>جلسة توقيع خارج الريبو</td><td>توقيع الـ EXE والـ APK (الإنتاج)</td><td>signtool/аpksigner</td></tr>
+    </table>
+    <h4>بناء الـ APK (الوكيل)</h4>
+    <pre># من مستودع ALP — بلا Gradle/Docker
+python scripts\build_agent.py            # aapt2 → javac → d8 → zipalign → apksigner
+adb install -r android-agent\alp-agent.apk</pre>
+    <h4>بناء LockdownManager.exe (Win)</h4>
+    <pre>pip install pyinstaller
+pyinstaller --onefile --windowed --name LockdownManager ^
+  --add-data "core;core" --add-data "platform-tools;platform-tools" ^
+  --icon windows-manager\assets\alp.ico windows-manager\main.py
+# الإصدار النهائي سكّر وقّع:
+signtool sign /fd SHA256 /a /f "C:\ALP\certs\alp.pfx" ^
+  /p "***" dist\LockdownManager.exe</pre>
+    <div class="note">كلمة مرور الشهادة تُمرَّر من متغير بيئة الإعداد وليس تثبيتًا في السكربت (§62).</div>
+
+    <h4>الـ Installer (اختياري — للتعميم)</h4>
+    <pre># Inno Setup
+setup.exe:
+ 1) Dependency Check (Windows version, driver)
+ 2) Driver Check (Samsung USB)
+ 3) Install components (EXE + adb + examples)
+ 4) Configure (paths, logs folder)
+ 5) Shortcuts
+ 6) Logs to %PROGRAMDATA%\ALP\
+ 7) Uninstall (ودولا)</pre>
+  </div>
+
+  <div class="pnl" id="s27">
+    <h2>27) التغليف EXE — Packaging Decision</h2>
+    <table>
+      <tr><th>البند</th><th>القرار</th><th>التبرير</th></tr>
+      <tr><td>Single EXE أم Installer+Components</td><td><b>Single EXE للـ Pilot</b> (مع خيار Installer عند التعميم)</td><td>Pilot: سرعة ونقل؛ EK في البداية حمل واحد فقط. تعميم 1000+: Installer لأنشطة التحديث واللوائح</td></tr>
+      <tr><td>EXE يشمل أدواته</td><td>نعم — يضم <code>adb.exe</code> وجوهر الـ platform-tools</td><td>تناسق النقل عبر المؤسسات</td></tr>
+      <tr><td>Drivers</td><td>لا يُضمن مع الـ EXE؛ يُفحص ويُثبَّت من المصدر الرسمي</td><td>قيود توقيع السائقين</td></tr>
+      <tr><td>Configuration</td><td>ملف إعداد <code>alp.ini</code> بلا أسرار</td><td>سريان وتفضيلات فقط</td></tr>
+      <tr><td>Certificates</td><td>منفصلة خارج الريبو</td><td>قاعدة §23/§62</td></tr>
+      <tr><td>Logging</td><td><code>%PROGRAMDATA%\ALP\LockdownManager\logs\</code></td><td>سجل محفوظ متقدم</td></tr>
+      <tr><td>Versioning</td><td>SemVer <code>1.0.0</code> + hash في نسخة التنفيذ</td><td>تتبع البناء</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s28">
+    <h2>28) معايير القبول — Final Acceptance Criteria</h2>
+    <table>
+      <tr><th>Criterion</th><th>Required</th><th>Test</th><th>Evidence</th><th>Status</th></tr>
+      <tr><td>Device Detection</td><td>YES</td><td>L1</td><td></td><td></td></tr>
+      <tr><td>Device Identification</td><td>YES</td><td>L2</td><td></td><td></td></tr>
+      <tr><td>Device Owner</td><td>YES/CONDITIONAL</td><td>L4</td><td></td><td></td></tr>
+      <tr><td>Policy Engine</td><td>YES</td><td>L5–6</td><td></td><td></td></tr>
+      <tr><td>Wi-Fi Restriction</td><td>YES</td><td>T001</td><td></td><td></td></tr>
+      <tr><td>Bluetooth Restriction</td><td>YES</td><td>T002</td><td></td><td></td></tr>
+      <tr><td>Camera Restriction</td><td>YES</td><td>T003</td><td></td><td></td></tr>
+      <tr><td>Location Restriction</td><td>YES</td><td>T004</td><td></td><td></td></tr>
+      <tr><td>Internet Restriction</td><td>YES</td><td>T005+T011</td><td></td><td></td></tr>
+      <tr><td>Application Restriction</td><td>YES</td><td>T006–T007</td><td></td><td></td></tr>
+      <tr><td>ADB Restriction</td><td>YES</td><td>T008</td><td></td><td></td></tr>
+      <tr><td>Persistence</td><td>YES</td><td>T009</td><td></td><td></td></tr>
+      <tr><td>Recovery</td><td>YES</td><td>T010</td><td></td><td></td></tr>
+      <tr><td>Audit</td><td>YES</td><td>E2E</td><td></td><td></td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s29">
+    <h2>29) المخاطر — Risks</h2>
+    <table>
+      <tr><th>الخطر</th><th>الأثر</th><th>الاحتمال</th><th>التخفيف</th></tr>
+      <tr><td>سلوكات Knox/One UI غير متوقعة على J337P</td><td>PARTIAL في Wi-Fi/Data</td><td>متوسط</td><td>اختبار T-matrix مبدئي على وحدة معمل قبل أي تمديد</td></tr>
+      <tr><td>تعطيل ADB يقطع قناة التحقق</td><td>توقف إدارة خفيف</td><td>مرتفع</td><td>تسلسل المراحل (§16)؛ قناة Backend للـ Dev</td></tr>
+      <tr><td>الموثوقية العقotherapy على جهاز 2GB</td><td>استجابة غير مستقرة</td><td>متوسط</td><td>معمل حصري؛ لا تشغيل تطبيقات ثقيلة</td></tr>
+      <tr><td>عدم تأكيد توفر NFC وPlay</td><td>قيود في QR/NFC</td><td>منخفض</td><td>ADB هو المسار الأساسي</td></tr>
+      <tr><td>فقدان التحكم بعد Recovery/Odin</td><td>فقدان الإدارة</td><td>منخفض (جهاز معمل)</td><td>FRP + إعادة-provisioning</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s30">
+    <h2>30) الحدود المعروفة — Known Limitations</h2>
+    <ul>
+      <li>لا يمكن برمجيًا ضمان منع إعادة تفليش الـ firmware أو الـ factory reset عبر Recovery.</li>
+      <li>لا يوجد ميزة «منع مستخدم إعادة تشغيل Wi-Fi» من Android-basic — لا بد من Knox على طراز Samsung.</li>
+      <li>قفل البيانات مع إبقاء مكالمات/SMS: MMS يتعطل؛ سلوك المشغل (IMS/Wi-Fi Calling) خارج نطاق التحكم الكامل.</li>
+      <li>تثبيت الـ DO يتطلب حالة «بلا حسابات» أو إعادة احتيال (قيود FRP حسب الحساب).</li>
+      <li>الـ hardening النهائي (ADB/USB) يُغلق أيضًا قناة الإدارة الخاصة بنا — قيد تصميمي مقصود.</li>
+      <li>نتائج T-matrix المعلقة تُترك as-is حاليًا: <span class="st s-ok">SUPPORTED</span> لنقاط AOSP، و
+        <span class="st s-vend">VENDOR DEPENDENT</span> مع اختبار إلزامي لكل ما يقع على طبقة Samsung.</li>
+    </ul>
+  </div>
+
+  <div class="pnl" id="s31">
+    <h2>31) المراجع الرسمية — Official References</h2>
+    <table>
+      <tr><th>المنطقة</th><th>المرجع</th></tr>
+      <tr><td>DevicePolicyManager</td><td>developer.android.com/reference/android/app/admin/DevicePolicyManager</td></tr>
+      <tr><td>UserManager restrictions</td><td>developer.android.com/reference/android/os/UserManager</td></tr>
+      <tr><td>AOSP API 28 — DPMS (GLOBAL whitelist)</td><td>android.googlesource.com — com/android/server/devicepolicy/DevicePolicyManagerService (android-28)</td></tr>
+      <tr><td>Provisioning / Device Owner</td><td>source.android.com/docs/devices/admin/provision + developer.android.com/work/dpc/dedicated-devices/cookbook</td></tr>
+      <tr><td>Android Enterprise — what's in Android 9</td><td>developer.android.com/work/versions/android-9.0 (QR code on Pie)</td></tr>
+      <tr><td>Knox SDK — RestrictionPolicy / WifiPolicy / AdvancedRestrictionPolicy</td><td>docs.samsungknox.com/devref/knox-sdk/reference/…</td></tr>
+      <tr><td>Samsung — دعم SM-J337P ودرايفر USB</td><td>samsung.com/us/business/support/owners/product/galaxy-j3-achieve-Sprint</td></tr>
+      <tr><td>تعارض بيانات الجهاز (الذاكرة/النوى)</td><td>GSMArena vs PhoneDB — يُحسم بقراءة <code>getprop</code> من الجهاز (وسم UNKNOWN/INFERRED في هذا التقرير)</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl" id="s32">
+    <h2>32) التوصية النهائية + GO / NO-GO DECISION</h2>
+    <h3>هل يمكن بدء Pilot على SM-J337P؟</h3>
+    <div class="callout okbox" style="font-size:15px">
+      <b>التوصية: GO (مشروط وجدول زمني متدرج) — نظريًا ومصدرنا قوي:</b>
+      يوفر Android 9 DO + Knox 3.3 طبقة مزدوجة كافية لتنفيذ PHONE_ONLY على هذا الجهاز،
+      مع اشتراط إتمام Level 1–4 وفحص القدرة على الجهاز نفسه قبل أي إغلاق (لأن طبقات Samsung بهذا الجيل قد تختلف).
+      هذا «GO مشروط» يبدأ الاختبار فورًا ولا «GO بدون تحقق».
+    </div>
+    <table>
+      <tr><th>المتطلبات</th><th>التفصيل</th></tr>
+      <tr><td>العتاد المطلوب</td><td>Windows 10/11 x64 + كابل USB خام + SM-J337P معمل واحد (USB debugging مفعّل) + احتياط بيانات Device prep</td></tr>
+      <tr><td>البرمجيات المطلوبة</td><td>JDK 11، SDK Build-Tools 28/34، platform-tools ADB، Samsung USB Driver 1.5.65.0، Python 3.11 + PyInstaller، نسخة مستودع ALP</td></tr>
+      <tr><td>الاختبارات المطلوبة أولًا</td><td>L1 (الكشف) ← L2 (الهوية) ← L3 (capability) ← T001–T016 على مراحل (§18) — قبل أي إغلاق كامل</td></tr>
+      <tr><td>ما يجب تطويره أولًا</td><td>Windows Manager Foundation (§25 Phase1) + Android Agent محدث (verification/boot) — ثم Samsung Adapter</td></tr>
+      <tr><td>ما لا ينبغي تنفيذه</td><td>Root، فتح bootloader، تفليش، حذف تطبيقات النظام، إغلاق full-lockdown في اليوم الأول، وضع أي secret داخل كود</td></tr>
+    </table>
+    <h3>Open Questions (يتحول كل سطر إلى إجراء في L1–L3)</h3>
+    <ul>
+      <li>هل وُجد NFC فعليًا على J337P؟ (<code>pm list features</code>)</li>
+      <li>هل يعمل <code>allowWiFi</code>/<code>setCellularData</code> بالشكل المطلوب على هذا الـ firmware؟</li>
+      <li>هل يكتمل <code>dpm set-device-owner</code> على حالة «بلا حسابات» الحالية، أم يتطلب إعادة ضبط؟</li>
+      <li>هل يُمنع QS wifi toggle عبر DPM+Knox على One UI 1.1؟</li>
+      <li>الدخل الفعلي للميكروفون على المكالمات عند <code>setMicrophoneState(false)</code>؟</li>
+    </ul>
+  </div>
+
+  <div class="pnl" style="background:#0b3a6e;color:#fff;border-color:#08284d">
+    <h2 style="color:#ffe19a">✅ SUMMARY — للعرض بعد الموافقة</h2>
+    <table style="background:transparent;color:#fff">
+      <tr><th style="background:rgba(255,255,255,.1);color:#fff">النقطة</th><th style="background:rgba(255,255,255,.1);color:#fff">الملخص</th></tr>
+      <tr><td>الهدف</td><td>تحويل J337P (Android 9 + Knox 3.3) إلى جهاز مؤسسي «phone-only» عبر Windows EXE + Agent DO، كـ Pilot قبل التعميم.</td></tr>
+      <tr><td>القنوات</td><td>نفس منصّة ALP القائمة: Director/Policy/Verification مبنية ومُختبرة 61/61؛ تُضاف طبقة Windows EXE + Samsung Knox Adapter.</td></tr>
+      <tr><td>الأهم</td><td>إغلاق Wi‑Fi و Data حقيقي يحتاج Knox؛ الكاميرا/المواقع/التثبيت/USB متاحة عبر DPM؛ منع Factory Reset برمجيًا عبر Recovery غير مضمون.</td></tr>
+      <tr><td>حدود أخلاقية</td><td>بلا root/تفليش/بيانات سرية؛ كل نتيجة بوسمها من السبعة؛ لا PASS بدون evidence من الجهاز.</td></tr>
+    </table>
+  </div>
+
+  <div class="pnl printonly" style="border-top:3px solid var(--accent)">
+    <p><b>Report Path:</b> reports\SM-J337P_ANDROID9_LOCKDOWN_EXECUTION_REPORT.html</p>
+    <p><b>Status:</b> REPORT READY — AWAITING APPROVAL</p>
+    <p>الحالة النهائية المطلوبة: <b>REPORT READY — AWAITING APPROVAL</b> — لم يجرِ أي تعديل على الجهاز.</p>
+  </div>
+
+</div>
+
+<footer style="background:#08284d;color:#cfe3ff;text-align:center;padding:18px;font-size:12px">
+  ANDROID LOCKDOWN PILOT — SM-J337P (Android 9 · API 28 · Knox 3.3) · الحالة: REPORT READY — AWAITING APPROVAL · لا أسرار في الكود
+</footer>
+
+</body>
+</html>
