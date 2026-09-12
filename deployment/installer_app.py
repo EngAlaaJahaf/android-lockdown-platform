@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 
 APP_NAME = "AndroidLockdownManager"
@@ -30,6 +31,21 @@ def _bundle_exe() -> str:
     meipass = getattr(sys, "_MEIPASS", os.getcwd())
     cand = os.path.join(meipass, "ALPManager.exe")
     return cand if os.path.exists(cand) else ""
+
+
+def _remove_retry(path: str, *, tries: int = 6, delay: float = 0.4) -> bool:
+    """Remove a file (or tree) with retries; a freshly-copied 55 MB exe can be
+    transiently locked by real-time AV scanning for a moment."""
+    for attempt in range(tries):
+        try:
+            if os.path.isdir(path) and not os.path.islink(path):
+                shutil.rmtree(path)
+            elif os.path.exists(path):
+                os.remove(path)
+            return True
+        except OSError:
+            time.sleep(delay)
+    return False
 
 
 def _install_dir() -> str:
@@ -109,7 +125,17 @@ def install() -> int:
     dest = _install_dir()
     os.makedirs(dest, exist_ok=True)
     target = os.path.join(dest, "ALPManager.exe")
-    shutil.copy2(src, target)
+    _remove_retry(target)  # stale install may be locked
+    for attempt in range(6):
+        try:
+            shutil.copy2(src, target)
+            break
+        except OSError:
+            if attempt == 5:
+                _msg("تعذّر نسخ ALPManager.exe (الملف مقفول مؤقتًا؟).",
+                     "خطأ في التثبيت")
+                return 1
+            time.sleep(0.4)
 
     ok_sc = _make_shortcut(_shortcut_path(), target, dest)
     _make_shortcut(_desktop_shortcut_path(), target, dest)
@@ -134,19 +160,10 @@ def install() -> int:
 def uninstall() -> int:
     dest = _install_dir()
     target = os.path.join(dest, "ALPManager.exe")
-    removed = 0
-    for p in (_shortcut_path(), _desktop_shortcut_path(), target):
-        try:
-            if os.path.exists(p):
-                os.remove(p)
-                removed += 1
-        except OSError:
-            pass
-    try:
-        if os.path.isdir(dest):
-            shutil.rmtree(dest, ignore_errors=True)
-    except OSError:
-        pass
+    for p in (_shortcut_path(), _desktop_shortcut_path()):
+        _remove_retry(p)
+    _remove_retry(target)
+    _remove_retry(dest)
     _clear_uninstall_entry()
     _msg("تمت إزالة ALP Manager. (بيانات التطبيق في %LOCALAPPDATA%\\ALPManager "
          "بقيت محفوظة للمراجعة.)", "ALP Manager — الإزالة")

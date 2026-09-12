@@ -149,3 +149,10 @@ verify action failed at runtime.
   `policy_engine(.snapshot)`, `verification_engine(.probe/.compliance)`,
   `vendor_adapters(.registry)`, `compatibility` — and `warn-*.txt` has 0
   "not found" entries. Root cause: packaging, not application logic.
+- Installer hardening (rebuild of `dist/AndroidLockdownManager_Setup.exe` only —
+  ALPManager.exe unchanged): first-attempt remove/overwrite of the 55 MB exe
+  could fail on a transient real-time AV lock; `uninstall()` / `install()` now
+  retry with backoff and report a clear error instead of failing silently.
+  **Verified live: install → immediate uninstall cleans dir/exe/shortcuts/
+  uninstall-entry on the first attempt; user data in `%LOCALAPPDATA%\ALPManager`
+  is preserved.** Setup SHA256→`82AC…61948`; portable unchanged `5533A…D9DD`.

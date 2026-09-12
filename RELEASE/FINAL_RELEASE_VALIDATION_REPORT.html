@@ -43,7 +43,7 @@
 <tr><td>المنصة المفتوحة (لا تسجيل دخول)</td><td class="ok">معتمدة</td><td>لا شاشة دخول/TOTP عند البدء؛ العمليات الحساسة تتحكم بها «حيازة» بيان استرداد مشفّر لكل جهاز (DPAPI) + تأكيدات مُسمّاة</td></tr>
 <tr><td>الاكتشاف التلقائي عند التوصيل</td><td class="ok">يعمل</td><td><code>Controller.detected()</code> = <code>adb devices -l</code> + حالة الجهاز (جاهز/غير مصرّح به/مسجَّل)؛ الواجهة تُظهر المكتشف وتعبّئ الرقم التسلسلي تلقائيًا (مؤقّت 4 ثوانٍ)</td></tr>
 <tr><td>تشغيل التطبيق المجمّد (onefile)</td><td class="ok">تعمل</td><td><code>dist/ALPManager.exe</code> يُطلق ويبقى متجاوبًا على الجهاز</td></tr>
-<tr><td>المثبّت: تثبيت → تشغيل → إزالة</td><td class="ok">دورة كاملة</td><td>نسخ إلى <code>%LOCALAPPDATA%\Programs\…</code>، اختصارات، سجل الإزالة، حذف كل القطع</td></tr>
+<tr><td>المثبّت: تثبيت → إزالة</td><td class="ok">دورة كاملة</td><td>تثبيت ثم إزالة فورية تنظّف المجلد/الملف/الاختصارات/سجل الإزالة من المحاولة الأولى (مقاومة قفل AV المؤقت بالـ retry)، مع حفظ بيانات المستخدم</td></tr>
 <tr><td>معاينة السياسة على جهاز حي</td><td class="ok">REAL_DEVICE</td><td>مصدر المعاينة من ADB الحقيقي لمحاكي emulator-5554</td></tr>
 <tr><td>تطبيق سياسة على جهاز حي</td><td class="warn">COMPLETE + تحقق UNKNOWN</td><td><code>stage=COMPLETE</code>، دليل <code>EV-20260912-AB301CE8</code>، لكن التحقق <b>UNKNOWN</b> لعدم قابلية أجنحة اللوحة (كلمة صريحة وليست "نجاح")</td></tr>
 <tr><td>سلسلة التدقيق (Audit Chain)</td><td class="ok">سليمة</td><td><code>tamper_check().broken == 0</code> + تسجيل AD4_APPLY / RECOVER_R4</td></tr>
