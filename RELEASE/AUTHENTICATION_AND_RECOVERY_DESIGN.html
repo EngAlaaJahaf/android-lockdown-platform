@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تصميم المصادقة والاسترداد — فتح لوحة الإدارة</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --card:#ffffff; --ink:#1c2733; --muted:#5b6b7b;
+    --line:#dde4ee; --accent:#0b6bcb; --accent2:#07529b; --ok:#1e8e3e;
+    --warn:#b26a00; --bad:#c5221f; --code:#eff3f8; --chip:#e7eef6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:'Segoe UI',Tahoma,'Noto Kufi Arabic','Noto Sans Arabic',Arial,sans-serif;
+       line-height:1.9;font-size:15px}
+  header.hero{background:linear-gradient(135deg,#0b3358 0%,#0b6bcb 60%,#1687d8 100%);
+       color:#fff;padding:44px 24px 36px;border-bottom:4px solid #ffd54a}
+  .hero-wrap{max-width:1080px;margin:0 auto}
+  .kicker{letter-spacing:.5px;font-size:12px;color:#bfe0ff;margin:0 0 8px}
+  h1{margin:0 0 6px;font-size:30px;line-height:1.4}
+  .sub{color:#dcecff;font-size:14px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .pill{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
+        border-radius:999px;padding:4px 14px;font-size:12.5px}
+  .pill.warn{background:#ffd54a;color:#4a3a00;border:none;font-weight:600}
+  main{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:12px;
+       padding:16px 20px;margin-bottom:26px}
+  .toc h2{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+  .toc ol{margin:0;padding-right:20px;columns:2;column-gap:36px}
+  .toc li{font-size:13px;margin:2px 0}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;
+          padding:22px 26px;margin:0 0 22px;page-break-inside:avoid}
+  .sec-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;border-bottom:2px solid var(--line);padding-bottom:10px}
+  .num{background:var(--accent);color:#fff;min-width:38px;height:38px;border-radius:10px;
+       display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+  h3{margin:0;font-size:19px;color:var(--accent2)}
+  .sec-head small{color:var(--muted);font-weight:400;font-size:12.5px}
+  h4{color:var(--accent2);margin:18px 0 6px;font-size:15px}
+  p{margin:6px 0}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;
+       padding:1px 6px;font-family:Consolas,monospace;font-size:12.5px;direction:ltr;unicode-bidi:embed}
+  pre{background:#0f1722;color:#d8e6f5;border-radius:10px;padding:14px 16px;overflow:auto;
+      direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:12.5px;line-height:1.6}
+  ul,ol{margin:6px 0;padding-right:24px}
+  li{margin:3px 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:right;vertical-align:top}
+  th{background:var(--chip);color:var(--accent2)}
+  tr:nth-child(even) td{background:#fafcff}
+  .tag{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:700}
+  .t-ok{background:#e2f6e7;color:var(--ok)}
+  .t-warn{background:#fff3dd;color:var(--warn)}
+  .t-bad{background:#ffe9e8;color:var(--bad)}
+  .t-info{background:#e7f1fb;color:var(--accent2)}
+  .quote{border-right:4px solid var(--accent);background:var(--chip);border-radius:8px;
+         padding:10px 14px;margin:10px 0;font-size:14px}
+  .note{border:1px dashed var(--warn);background:#fffbf0;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .warnbox{border:1px solid #efb3b1;background:#fff6f5;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .okbox{border:1px solid #b8e0c3;background:#f2fbf4;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
+  .flow span{background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:4px 12px;font-size:13px}
+  .flow span.step{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .flow i{color:var(--accent);font-style:normal;font-weight:700}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.toc ol{columns:1}.grid2{grid-template-columns:1fr}}
+  footer{color:var(--muted);text-align:center;font-size:12.5px;padding:16px}
+  details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;background:#fbfdff}
+  summary{cursor:pointer;font-weight:700;color:var(--accent2)}
+  .small{font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-wrap">
+    <p class="kicker">DOCUMENTO منفصل — منصة تأمين أندرويد (ALP) · مرحلة التصميم</p>
+    <h1>تصميم المصادقة والاسترداد — فتح لوحة الإدارة (Open Admin Console)</h1>
+    <p class="sub">إعادة تصميم بدء التشغيل والوصول والاسترداد: لا تسجيل دخول تفاعلي عند بدء التشغيل، وعمليات الإدارة الحساسة محكومة ببيانات استرداد لكل جهاز + صلاحيات الأدوار</p>
+    <div class="meta">
+      <span class="pill">الإصدار: 1.0 — ديزاين (تصميم)</span>
+      <span class="pill">التاريخ: 2026-09-12</span>
+      <span class="pill">الحالة: <!--وزارة-->قيد المراجعة (لا تغييرات على الكود قبل الاعتماد)</span>
+      <span class="pill warn">قرار: فتح لوحة الإدارة</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<div class="toc">
+  <h2>محتويات الوثيقة (24 قسمًا)</h2>
+  <ol>
+    <li><a href="#s1">القرار: فتح لوحة الإدارة</a></li>
+    <li><a href="#s2">المشكلة مع التصميم القديم</a></li>
+    <li><a href="#s3">التصميم الجديد — نظرة عامة</a></li>
+    <li><a href="#s4">الوصول إلى التطبيق (Application Access)</a></li>
+    <li><a href="#s5">تدفق بدء التشغيل (Startup Flow)</a></li>
+    <li><a href="#s6">إدارة الأجهزة (Device Administration)</a></li>
+    <li><a href="#s7">بنية الاسترداد (Recovery Architecture)</a></li>
+    <li><a href="#s8">دورة حياة بيان الاسترداد (Lifecycle)</a></li>
+    <li><a href="#s9">الصلاحيات والأدوار (Permissions)</a></li>
+    <li><a href="#s10">سير عمل الاسترداد (Recovery Workflow)</a></li>
+    <li><a href="#s11">سلوك إعادة ضبط المصنع والبرامج الثابتة (Factory Reset / Firmware)</a></li>
+    <li><a href="#s12">توافق أندرويد (Android Compatibility)</a></li>
+    <li><a href="#s13">تعدد البائعين (Multi-Vendor)</a></li>
+    <li><a href="#s14">قابلية التوسع: 1000+ جهاز</a></li>
+    <li><a href="#s15">الأمان: الاسترداد ليس بابًا خلفيًا (Security)</a></li>
+    <li><a href="#s16">تخزين الأسرار (Secret Storage)</a></li>
+    <li><a href="#s17">التدقيق (Audit)</a></li>
+    <li><a href="#s18">سيناريوهات الفشل (Failure Scenarios)</a></li>
+    <li><a href="#s19">شاشات الواجهة (UI Screens)</a></li>
+    <li><a href="#s20">تقييم الوضع الحالي للتنفيذ (Implementation Status)</a></li>
+    <li><a href="#s21">التغييرات المطلوبة (Required Changes)</a></li>
+    <li><a href="#s22">البيانات والتقارير (Reports: PDF / HTML / CSV / Logs)</a></li>
+    <li><a href="#s23">خطة تنفيذ بيان الاسترداد (Implementation Plan)</a></li>
+    <li><a href="#s24">معايير القبول (Acceptance Criteria)</a></li>
+  </ol>
+</div>
+
+<div class="okbox">
+  <b>الصياغة المعتمدة (تُستخدم في كل الوثائق والواجهات والتقارير القادمة):</b><br>
+  «المنصة لا تستخدم تسجيل دخول تفاعلي عند بدء التشغيل، بينما العمليات الإدارية الحسّاسة محكومة بآليات صلاحيات واسترداد مناسبة.»
+  <span class="small">— ولا تُستخدم نهائيًا صيغة «المنصة بلا حماية».</span>
+</div>
+
+<!-- ================================ 1 ================================ -->
+<section id="s1">
+  <div class="sec-head"><div class="num">1</div><h3>القرار: فتح لوحة الإدارة <small>Open Admin Console — القرار الحاسم</small></h3></div>
+  <p>يُعتمد رسميًا المبدأ التالي لتطبيق سطح المكتب (Windows) لمنصة إدارة أسطول أندرويد:</p>
+  <div class="quote">
+    تُفتح لوحة الإدارة مباشرة عند بدء التشغيل من شاشة التحميل ومن ثم لوحة المعلومات (Dashboard) —
+    <b>بدون تسجيل دخول تفاعلي (Username / Password / TOTP) في كل إقلاع</b>.
+    حماية العمليات الحسّاسة لا تأتي من «شاشة دخول»، بل من:
+    <b>(1) صلاحيات الأدوار (RBAC)</b> + <b>(2) بيان استرداد خاص بكل جهاز صادر من النظام (Recovery Credential)</b>
+    + <b>(3) حوار تأكيد إداري</b> + <b>(4) سجل تدقيق</b>.
+  </div>
+  <p><b>منطق القرار:</b></p>
+  <ul>
+    <li>منصة إدارة أجهزة محلية (Windows) تُدار من قبل مشغّلين معتمدين على الجهاز نفسه؛ فرض دخول تفاعلي في كل تشغيل يضيف احتكاكًا دون حماية جوهرية لأن الجهاز/الجلسة محلي ومملوك للمشغّل.</li>
+    <li>الخطر الحقيقي ليس «من يُفتح التطبيق»، بل «من يستطيع تنفيذ عمليات حسّاسة» (إزالة الإدارة، تفريغ الجهاز، تصدير أسرار). هذه العمليات هي موضع الحماية الفعلية.</li>
+    <li>بيان الاسترداد (Recovery Credential) لكل جهاز على حدة يعمل كعامل حيازة (possession factor) صادر من النظام — أقوى وأوضح من كلمة مرور مشتركة أو رمز TOTP يكتبه المشغّل.</li>
+    <li>القرار قابل للتراجع: إذا وثّق المستفيد لاحقًا حاجة تنظيمية حقيقية (مثال: مركز قيادة متعدد المستخدمين)، يمكن إضافة بوابة مصادقة اختيارية عند العمليات الحسّاسة فقط — لا كشاشة دخول إلزامية عند بدء التشغيل.</li>
+  </ul>
+  <p><span class="tag t-ok">قرار منظور</span> والقرار داخل هذه الوثيقة: <b>لا شاشة تسجيل دخول تفاعلية عند بدء التشغيل</b>، مع الاحتفاظ وتقوية حماية العمليات الحسّاسة.</p>
+</section>
+
+<!-- ================================ 2 ================================ -->
+<section id="s2">
+  <div class="sec-head"><div class="num">2</div><h3>المشكلة مع التصميم القديم <small>لماذا نُغيّر</small></h3></div>
+  <p>فحص الكود المصدري الحالي أظهر أن التصميم القديم يفرض مصادقة كاملة عند بدء التشغيل في كل واجهة:</p>
+  <table>
+    <tr><th>الطبقة</th><th>الآلية القديمة (كما تنفَّذ الآن)</th><th>المشكلة</th></tr>
+    <tr>
+      <td>سطح المكتب <code>desktop/alp_manager/controller.py</code></td>
+      <td><code>_require_session()</code> يرفع <code>PermissionError</code> («no session — run: login») قبل أي عملية؛ واجهة <code>LoginWidget</code> تُعرض عند بدء التشغيل؛ <code>bootstrap()</code> يُنشئ أول مسؤول + سرّ TOTP؛ <code>login()</code> يتحقق من كلمة المرور + رمز TOTP + يُنشئ جلسة برمز مؤقت</td>
+      <td>احتكاك عند كل تشغيل (حتى للعرض/الاستعلام)؛ إجبار كل المشغّلين على رمز TOTP خارجي؛ لا يميّز بين «فتح التطبيق» و«تنفيذ عملية حسّاسة»</td>
+    </tr>
+    <tr>
+      <td>سطر الأوامر <code>scripts/alp.py</code></td>
+      <td>أمر <code>bootstrap</code> (كلمة مرور + TOTP) ثم <code>login</code> فإلزام رمز TOTP مع <code>--mfa</code> عند كل APPLY وأوامر الموافقة</td>
+      <td>نفس مشكلة الاحتكاك؛ اعتماد رمز مؤقت يكتبه المشغّل قدماً في كل أمر حسّاس</td>
+    </tr>
+    <tr>
+      <td>الواجهة الخلفية <code>backend/auth.py</code>، <code>backend/approval.py</code></td>
+      <td>scrypt لكلمة المرور، TOTP RFC 6238، جلسات بصلاحية 30 دقيقة؛ <code>approve()</code> يرفض بدون <code>mfa_ok=True</code></td>
+      <td>البنية سليمة تقنيًا لكنها مربوطة بمفهوم «دخول المشغّل» بدل «تفويض العملية على الجهاز»</td>
+    </tr>
+    <tr>
+      <td>الاسترداد <code>backend/recovery.py</code></td>
+      <td>أوضاع R1–R4 ما زالت تقودها الإذونات + MFA للمشغّل (<code>require_mfa=True</code> لـ RECOVER/FIRMWARE)؛ لا وجود لبيان استرداد خاص بكل جهاز</td>
+      <td>لا يوجد فصل بين «من نفّذ» و«أي جهاز»؛ تبعية على توفر رمز TOTP لدى المشغّل وقت الطوارئ</td>
+    </tr>
+  </table>
+  <div class="warnbox"><b>الخلاصة:</b> التصميم القديم يجعل «فتح المنصة» و«تنفيذ عملية حسّاسة» نفس الاشتراط (دخول + رمز)، بينما الحاجة الصحيحة هي فصل الاثنين: <b>فتح سهل وسريع، والعمليات الحسّاسة وحدها محكومة بالصلاحيات + بيانات الاسترداد + التأكيد الإداري + التدقيق</b>.</div>
+</section>
+
+<!-- ================================ 3 ================================ -->
+<section id="s3">
+  <div class="sec-head"><div class="num">3</div><h3>التصميم الجديد — نظرة عامة <small>مبدأان لا ينتهكان</small></h3></div>
+  <div class="grid2">
+    <div>
+      <h4>مبدأ 1: الوصول إلى التطبيق ≠ استرداد الجهاز</h4>
+      <ul>
+        <li><b>الوصول إلى التطبيق:</b> فتح لوحة التحكم/عرض الأجهزة/التشخيص للقراءة فقط (R4) — بدون أي تسجيل دخول تفاعلي عند الإقلاع.</li>
+        <li><b>الاسترداد والعمليات الحسّاسة:</b> بصلاحيات الدور + بيان الاسترداد الخاص بالجهاز المستهدف + حوار تأكيد إداري + تدقيق.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>مبدأ 2: استرداد لكل جهاز، من النظام، وبلا باب خلفي</h4>
+      <ul>
+        <li>بيان الاسترداد: يُولَّد آليًا، قوي وعشوائي (256-bit)، <b>خاص بكل جهاز</b>، لا يُشارك بين الأجهزة.</li>
+        <li>لا يُعرض أبدًا للمستخدم النهائي، ويُخزَّن مشفّرًا حصريًا (DPAPI / Windows Credential Manager).</li>
+        <li>الاسترداد يعمل فقط عبر آليات الإدارة المشروعة (Device Owner/DPC/التسجيل) ولا يتجاوز حماية Google/OEM.</li>
+      </ul>
+    </div>
+  </div>
+  <p><b>التدفق العام:</b></p>
+  <div class="flow">
+    <span class="step">إقلاع النظام</span><i>→</i>
+    <span class="step">شاشة تحميل (Splash)</span><i>→</i>
+    <span class="step">لوحة المعلومات (Dashboard)</span><i>→</i>
+    <span class="step">الأجهزة (اكتشاف تلقائي)</span><i>→</i>
+    <span>…</span>
+    <span class="step">عند عملية حسّاسة</span><i>→</i>
+    <span>صلاحية الدور</span><i>→</i>
+    <span>بيان استرداد الجهاز</span><i>→</i>
+    <span>تأكيد إداري</span><i>→</i>
+    <span>تنفيذ + تدقيق</span>
+  </div>
+  <p class="small">لا توجد في هذا التصميم أي شاشة «تسجيل دخول» إلزامية عند بدء التشغيل؛ النظام كالمتاجر المفتوحة للعرض مع خزائن مغلقة للعمليات الحسّاسة (استعارة اللوحة المفتوحة ≠ القدرة على إزالة الإدارة/التفريغ).</p>
+</section>
+
+<!-- ================================ 4 ================================ -->
+<section id="s4">
+  <div class="sec-head"><div class="num">4</div><h3>الوصول إلى التطبيق <small>Application Access</small></h3></div>
+  <p><b>السلوك الجديد:</b> فتح لوحة الإدارة مجاني وسريع — المنصة تُشغَّل وتُعرض مباشرة.</p>
+  <h4>عمليات متاحة بدون أي مصادقة (عرض/قراءة)</h4>
+  <ul>
+    <li>عرض لوحة المعلومات والإحصائيات (عدد الأجهزة، حالة التسجيل، ملخص السياسات).</li>
+    <li>قائمة الأجهزة والبحث والفلترة والانتقال إلى تفاصيل أي جهاز.</li>
+    <li>التشخيص للقراءة فقط: <code>R4_DIAGNOSTIC</code> (معلومة حالة الجهاز <code>dumpsys</code>/<code>getprop</code>) — لا يغيّر أي شيء.</li>
+    <li>عرض التقارير والسجلات وفتح/تصدير PDF/HTML/CSV وفق حدود الدور (القراءة).</li>
+  </ul>
+  <h4>عمليات مقفلة بصلاحية + بيان استرداد الجهاز</h4>
+  <ul>
+    <li>تطبيق السياسات وتعديل الحالة (<code>APPLY</code>/<code>BULK_APPLY</code>).</li>
+    <li>العمليات على الجهاز: <code>UNLOCK</code>، <code>PARTIAL_UNLOCK</code>، <code>UNENROLL</code>، <code>RETIRE</code>، <code>FACTORY_RESET</code>، <code>FIRMWARE</code>، <code>KEY_MANAGEMENT</code>.</li>
+    <li>الاسترداد: <code>R1_RESTORE_POINT</code>، <code>R2_REPROVISION</code> (وغيرها من أوضاع الاسترداد).</li>
+    <li>إدارة أسرار المفاتيح وتصدير بيانات حساسة و<code>RECOVER</code>.</li>
+    <li>الموافقات على العمليات التدميرية (قاعدة الشخصين).</li>
+  </ul>
+  <div class="note"><b>تذكير التنفيذ الحالي:</b> كود اليوم لا يزال يفرض <code>_require_session</code>/<code>login</code>؛ هذا القسم يصف السلوك المستهدف الذي سيُنفَّذ بعد اعتماد التقرير (§21 التغييرات المطلوبة).</div>
+</section>
+
+<!-- ================================ 5 ================================ -->
+<section id="s5">
+  <div class="sec-head"><div class="num">5</div><h3>تدفق بدء التشغيل <small>Startup Flow</small></h3></div>
+  <div class="flow">
+    <span class="step">1. الإقلاع (لا يُطلب أي شيء)</span><i>→</i>
+    <span class="step">2. Splash (تحميل قاعدة بيانات/تكوين/كشف سلالات)</span><i>→</i>
+    <span class="step">3. Dashboard مباشرة</span><i>→</i>
+    <span class="step">4. فحص بيئات الاسترداد تلقائيًا (خلفيًا)</span>
+  </div>
+  <h4>ماذا يُحذف من مسار الإقلاع</h4>
+  <ul>
+    <li>شاشة <code>LoginWidget</code> من التدفق الابتدائي (لا تُعرض عند الإقلاع).</li>
+    <li>شرط <code>_require_session()</code> من الطرق القرائية (عرض/تشخيص/تقارير).</li>
+    <li>إلزام تمرير رمز TOTP عند فتح التطبيق أو في كل عملية.</li>
+  </ul>
+  <h4>ماذا يبقى ويعمل في الخلفية</h4>
+  <ul>
+    <li>محرك استرداد يُفحص عند الإقلاع: مطابقة <code>Recovery ID</code> لكل جهاز مسجّل مع المخزن (مشفر) — حالة «Recovery: Configured / Not Configured / Mismatch» تُعرض في لوحة الجهاز.</li>
+    <li>إن اختلف التوقيع بين المخزن وجدول الجهاز → يُنشأ <code>Recovery Event</code> في سجل التدقيق وتظهر حالة تحذيرية داخل التطبيق (لا تُمنع القراءة).</li>
+  </ul>
+  <div class="okbox"><b>نتيجة الإقلاع المتوقعة:</b> من ثوانٍ من تشغيل Windows حتى لوحة تحكم تعمل، بدون أي كتابة كلمة مرور أو رمز — <b>مع بقاء كل عملية حسّاسة مقفلة بالصلاحيات + بيان استرداد الجهاز</b>.</div>
+</section>
+
+<!-- ================================ 6 ================================ -->
+<section id="s6">
+  <div class="sec-head"><div class="num">6</div><h3>إدارة الأجهزة <small>Device Administration — الاكتشاف والتفويض</small></h3></div>
+  <h4>الاكتشاف المحلي (Local Discovery)</h4>
+  <ul>
+    <li>كشف أجهزة USB/ADB المحلي المتاحة (<code>adb devices</code>) فور فتح لوحة الأجهزة.</li>
+    <li>محاولة اتصال بكل جهاز في القائمة المعروفة للاستعلام عن حالته الحية (متصل/متقطع).</li>
+    <li>إلحاف جهاز جديد → نافذة «إعداد الجهاز»: تعرّف، أول تسليم سياسة، وعند أول ربط يتم <b>توليد بيان استرداد خاص بهذا الجهاز</b> (§7).</li>
+  </ul>
+  <h4>التفويض على مستوى الجهاز (Device Scope)</h4>
+  <p>كل عملية حسّاسة تنفّذ ضمن «سياق جهاز» محدد. يفشل النظام («أغلق إحكامًا») إذا لم تتحقق ثلاثة شروط معًا:</p>
+  <ol>
+    <li><b>الصلاحية:</b> دور المشغّل الفعّال يملك الإذن المطلوب (مثل <code>RECOVER</code> لأدوار الاسترداد/الإدارة).</li>
+    <li><b>بيان الاسترداد:</b> بيان استرداد الجهاز الحالي متاح في المخزن المشفّر ويطابق سجل الجهاز.</li>
+    <li><b>التأكيد الإداري:</b> حوار <b>Administrative Confirmation</b> (§10) يؤكده مستخدم الجلسة الحالية.</li>
+  </ol>
+  <p class="small">النقطة 2 تعني: لو سُرقت نسخة من قاعدة بيانات الأجهزة (بدون مفتاح Windows المشفر) لا يمكن إعادة توليد بيان استرداد صالح لأي عملية على أجهزة حقيقية.</p>
+</section>
+
+<!-- ================================ 7 ================================ -->
+<section id="s7">
+  <div class="sec-head"><div class="num">7</div><h3>بنية الاسترداد <small>Recovery Architecture — بيان استرداد لكل جهاز</small></h3></div>
+  <h4>مكونات البنية</h4>
+  <table>
+    <tr><th>الكيان</th><th>الوظيفة</th><th>مثال</th></tr>
+    <tr><td><b>بيان الاسترداد (Recovery Credential)</b></td><td>سر 256-bit عشوائي يولّده النظام، فريد لكل جهاز، يُستخدم كعامل حيازة عند العمليات الحسّاسة واسترداد الجهاز</td><td>قيمة غير قابلة للتخمين (مشفرة بمعيار AES-GCM ثم تُغلَّف عبر DPAPI لنظام Windows المحلي)</td></tr>
+    <tr><td><b>معرّف الاسترداد (Recovery ID)</b></td><td>معرّف بصري منفصل عن السر — ما يُعرض في التقارير واللوحات</td><td><code>Recovery ID: 7F3A-9C21</code></td></tr>
+    <tr><td><b>مخزن الاسترداد (Recovery Vault)</b></td><td>جدول مشفر في قاعدة البيانات المحلية؛ كل صف مربوط بـ <code>device_id</code> بإصدار منفصل من <code>credentials[device_id]</code></td><td>عمود <code>recovery_credentials</code> مشفر مع تشفير لكل صف بمفتاح الجهاز الفرعي</td></tr>
+    <tr><td><b>الدالة (KDF/التوقيع)</b></td><td>تُشتق مفاتيح جهاز فرعية (per-device wrapping key) من مفتاح الجذر المحلي المغلَّف بـ DPAPI</td><td><code>HKDF(DPAPI_root, device_id)</code></td></tr>
+  </table>
+  <h4>ثوابت تصميم لا تُثنى</h4>
+  <ul>
+    <li><b>لا مشاركة بين الأجهزة:</b> <code>Device A → Recovery A</code> فقط؛ لا يوجد «كلمة مرور استرداد عامة» ولا «استرداد شائع للأسطول».</li>
+    <li><b>صادر من النظام:</b> لا يُدخله مستخدم ولا يُعرض على شاشة؛ المشغّل لا يرى إلا «Recovery: Configured» و«Recovery ID».</li>
+    <li><b>مخزن مشفر فقط:</b> لا نص صريح (plaintext) في SQLite/JSON/TXT/XML/.env/السجل/الكود المصدر.</li>
+    <li><b>ليس أبديًا بلا سبب:</b> دورة حياة كاملة ($8) مع تدوير وإبطال.</li>
+    <li><b>لا إمكان لتعديل التصميم:</b> أي اقتراح «جعل بيان الاسترداد ثابتًا لكل مجموعة» يُرفض لأنه ينتهك مبدأ عدم المشاركة ويُضعف صرامة التصميم.</li>
+  </ul>
+</section>
+
+<!-- ================================ 8 ================================ -->
+<section id="s8">
+  <div class="sec-head"><div class="num">8</div><h3>دورة حياة بيان الاسترداد <small>Recovery Credential Lifecycle</small></h3></div>
+  <div class="flow">
+    <span class="step">Generate</span><i>→</i>
+    <span class="step">Store Securely</span><i>→</i>
+    <span class="step">Associate</span><i>→</i>
+    <span class="step">Use</span><i>→</i>
+    <span class="step">Audit</span><i>→</i>
+    <span class="step">Rotate / Revoke</span>
+  </div>
+  <table>
+    <tr><th>الطور</th><th>السلوك المطلوب</th><th>التنفيذ المحتمل</th></tr>
+    <tr>
+      <td><b>1. Generate</b></td>
+      <td>توليد عشوائي 256-bit أثناء إنشاء سجل الجهاز (أو عند أول ربط)</td>
+      <td>دالة <code>generate_recovery_credential()</code> في <code>backend/recovery_credentials.py</code> (جديد)</td>
+    </tr>
+    <tr>
+      <td><b>2. Store Securely</b></td>
+      <td>تشفير بالكامل قبل التخزين؛ تحميل/كتابة CRP للجهاز فقط</td>
+      <td>AES-256-GCM بـ <code>HKDF(DPAPI_root, device_id)</code> ثم <code>DPAPI</code> للمفتاح الجذري</td>
+    </tr>
+    <tr>
+      <td><b>3. Associate</b></td>
+      <td>ربط بـ <code>device_id</code> فريد؛ تعارض يؤدي لفشل العملية</td>
+      <td>جدول <code>recovery_credentials</code> بشرط <code>UNIQUE(device_id)</code></td>
+    </tr>
+    <tr>
+      <td><b>4. Use</b></td>
+      <td>تفويت العملية الحسّاسة على جهاز معين</td>
+      <td><code>recover(op_role, device_id, R1..R4، …)</code> لا ينفذ بدون CRP مطابق (§10)</td>
+    </tr>
+    <tr>
+      <td><b>5. Audit</b></td>
+      <td>تسجيل كل استخدام (متى/ماذا/النتيجة) — بدون تسجيل السر</td>
+      <td>إدخالات <code>audit_logs</code> مميَّزة بـ <code>recovery</code> (حاليًا موجودة)</td>
+    </tr>
+    <tr>
+      <td><b>6. Rotate / Revoke</b></td>
+      <td>تدوير عند الشك بالاختراق/تقديم الأمر، وإبطال عند إزالة الجهاز من الأسطول</td>
+      <td>أمر <code>rotate_recovery(device_id)</code> يتطلب صلاحية عليا + تأكيد إداري + تدقيق</td>
+    </tr>
+  </table>
+  <p><span class="tag t-info">حالة التنفيذ</span> الدورة أعلاه <b>غير مكتملة في الكود الحالي</b> — النظام اليوم لا يملك عمود <code>recovery_credentials</code> ولا مخزن DPAPI (§20).</p>
+</section>
+
+<!-- ================================ 9 ================================ -->
+<section id="s9">
+  <div class="sec-head"><div class="num">9</div><h3>الصلاحيات والأدوار <small>Permissions — RBAC</small></h3></div>
+  <p>تظل مصفوفة الأدوار الثمانية المهيأة مسبقًا (<code>database/schema.sql</code>) أساس الحماية. تغيير جوهر هذه المرحلة: <b>الصلاحية وحدها لا تكفي</b> — تُعالج مع بيان استرداد الجهاز للتدميرية على مستوى جهاز محدد.</p>
+  <table>
+    <tr><th>الدور</th><th>الاسم</th><th>أمثلة عمليات حسّاسة (تتطلب بيان استرداد الجهاز أيضًا)</th></tr>
+    <tr><td><code>SUPER_ADMIN</code></td><td>مدير النظام الأعلى</td><td>كل شيء بما فيه المفاتيح/الحوكمة/تدوير بيانات الاسترداد</td></tr>
+    <tr><td><code>FLEET_ADMIN</code></td><td>مدير الأسطول</td><td>العمليات الجماعية ضمن السياسة (يخضع كل جهاز لبيان استرداده)</td></tr>
+    <tr><td><code>POLICY_ADMIN</code></td><td>مدير السياسات</td><td>صياغة/مراجعة السياسات (لا استرداد) — لا بيان استرداد جهاز</td></tr>
+    <tr><td><code>PROVISIONING_ADMIN</code></td><td>مدير التسجيل</td><td>تسجيل/إعادة تسجيل</td></tr>
+    <tr><td><code>RECOVERY_ADMIN</code></td><td>مسترد النظام</td><td>عمليات Break-glass الاسترداد (R1..R3) — ربما الأعلى استحقاقًا لبيان الاسترداد</td></tr>
+    <tr><td><code>AUDITOR</code></td><td>مدقق</td><td>قراءة السجل فقط؛ لا يملك بيان استرداد أي جهاز</td></tr>
+    <tr><td><code>OPERATOR</code></td><td>مشغل</td><td>نطاق مسند/أجهزة معينة</td></tr>
+    <tr><td><code>READ_ONLY</code></td><td>واطئ فقط</td><td>قراءة فقط — لا عمليات حسّاسة</td></tr>
+  </table>
+  <p>قاعدة الشخصين (<code>approval.py</code>) للعمليات التدميرية تبقى: الموافقة تطلب وجود الموافِق الأول والثاني (شخصين مختلفين) — ويضاف لتلك الموافقات التحقق من بيان استرداد الجهاز المستهدف.</p>
+</section>
+
+<!-- ================================ 10 ================================ -->
+<section id="s10">
+  <div class="sec-head"><div class="num">10</div><h3>سير عمل الاسترداد <small>Recovery Workflow + Administrative Confirmation</small></h3></div>
+  <p><b>التدفق المعتمد عند تنفيذ عملية استرداد (قبل/بعد أي تغيير):</b></p>
+  <div class="flow">
+    <span class="step">1. فتح المنصة ← اختيار الجهاز</span><i>→</i>
+    <span class="step">2. فتح الاسترداد (Recovery)</span><i>→</i>
+    <span class="step">3. تحقق صلاحية الدور</span><i>→</i>
+    <span class="step">4. شاشة تحذير (Warning)</span><i>→</i>
+    <span class="step">5. عرض ما سيتم تغييره</span><i>→</i>
+    <span class="step">6. تأكيد إداري</span><i>→</i>
+    <span class="step">7. تنفيذ</span><i>→</i>
+    <span class="step">8. تحقق (Verification)</span><i>→</i>
+    <span class="step">9. نتيجة + تدقيق</span>
+  </div>
+  <h4>حوار التأكيد الإداري (Administrative Confirmation)</h4>
+  <p>بدلاً من شاشة الدخول الكاملة، تُعرض نافذة حوار عند العمليات الحسّاسة (إزالة الإدارة، تغيير بيان الاسترداد، تصدير الأسرار، حذف سجل الجهاز، أي إجراء يسبب فقدان البيانات). مثال:</p>
+  <pre>&lt;حوار "تأكيد إداري"&gt;
+هل تريد تنفيذ عملية إزالة الإدارة؟ (إزالة الإدارة من الجهاز: SM-J337P)
+- سيُزيل Device Owner ويُعيد ضبط إعدادات الجهاز.
+- بيان الاسترداد للجهاز متاح ✅ (Recovery ID: 7F3A-9C21)
+[إلغاء]  [متابعة]</pre>
+  <p>النقر على «متابعة» يتحقق فورًا من صلاحية الدور + توفر/مطابقة بيان استرداد الجهاز ثم ينفذ ويسجل. لا يُطلب من المستخدم إدخال أي سر — كل شيء يتحقق من المخزن المشفر.</p>
+  <h4>حالة انتهاء الاسترداد</h4>
+  <table>
+    <tr><th>الحالة</th><th>المعنى</th><th>مثال واقعي</th></tr>
+    <tr><td><code>COMPLETE</code></td><td>نجحت العملية وتحققت من الجهاز</td><td>R1 أُرسل <code>CLEAR_POLICY</code> واستُجيب له من جهاز حقيقي</td></tr>
+    <tr><td><code>PARTIAL</code></td><td>جزئية مع بقاء قيود</td><td>بقي جهاز مقيد (<code>RESTRICT*</code>) بعد R1</td></tr>
+    <tr><td><code>FAILED</code></td><td>فشل التنفيذ/التحقق</td><td>قناة فشلت أو جهاز غير متصل</td></tr>
+    <tr><td><code>REFUSED</code></td><td>رفض حوكمائي موثق</td><td>R3 (Lab-Only Firmware) مرفوض دائمًا من التطبيق</td></tr>
+    <tr><td><code>PLAN_ONLY</code></td><td>خطة دون تنفيذ (بلا دليل حقيقي)</td><td>لا يوجد سيريال لاختبار — «لا تنفيذ دون مراقبة فعلية» (صدق)</td></tr>
+  </table>
+</section>
+
+<!-- ================================ 11 ================================ -->
+<section id="s11">
+  <div class="sec-head"><div class="num">11</div><h3>سلوك إعادة ضبط المصنع والبرامج الثابتة <small>Factory Reset / Firmware / Device Owner</small></h3></div>
+  <p>توضح هذه الوثيقة بوضوح ما يحدث قبل/بعد كل حالة حرجة، لأن «الاسترداد» لا يعني كسر حماية المنصة:</p>
+  <table>
+    <tr><th>السيناريو</th><th>السلوك قبل</th><th>السلوك بعد</th></tr>
+    <tr>
+      <td>إعادة ضبط المصنع (بجهاز مسجّل ومقيد)</td>
+      <td>تُسجَّل حالة الجهاز وحالة بيان الاسترداد في سجل التدقيق؛ بيان الاسترداد يبقى في المخزن المحلي للكمبيوتر المستقل عن الجهاز</td>
+      <td>الجهاز يعود إلى حالة <code>ENROLLMENT_PENDING</code>؛ الاسترداد = <b>R2_REPROVISION</b> (إعادة تسجيل) بعد تحقق المسؤول + بيان استرداد الجهاز (لا يزال موجودًا بالكمبيوتر)</td>
+    </tr>
+    <tr>
+      <td>إعادة تثبيت البرنامج الثابت (Firmware Reinstall)</td>
+      <td>R3 محكوم ببوابة Lab-Only (رفض من التطبيق دائمًا + حوكمة معمل بمعرّفين بشريين وملفات ثابتة)</td>
+      <td>بعد إعادة التثبيت، يُعاد التسجيل عبر R2؛ لا يُتجاوز قفل المصنع/OEM؛ لو غادر الجهاز القائمة يُبطَل بيان استرداده</td>
+    </tr>
+    <tr>
+      <td>إزالة Device Owner يدويًا (DO Removal)</td>
+      <td>يُسجَّل حدث باستخدام/شبه تعارض في سجل التدقيق</td>
+      <td>الجهاز يُكتشف كـ«غير مُدار»؛ الاسترداد = التسجيل من جديد بموافقة؛ لا تحويل «غير مُدار» إلى «مُدار» تلقائيًا</td>
+    </tr>
+    <tr>
+      <td>إعادة التسجيل (Re-Enrollment)</td>
+      <td>بيان استرداد قديم إما يُعاد استخدامه مع تدوير اختياري أو يُدور إجبارًا</td>
+      <td>قاعدة افتراضية آمنة: بعد إعادة التسجيل الكامل يُدور بيان الاسترداد وتُسلَّم جلسة جديدة</td>
+    </tr>
+  </table>
+  <div class="note"><b>مهم:</b> الاسترداد الحقيقي لكل هذه الحالات يعمل محليًا/لوضع غير متصل بالإنترنت (اكتشاف، سياسات، استرداد، سجل) على جهاز Windows — وليس معتمدًا على خادم/إنترنت في التصميم المحلي.</div>
+</section>
+
+<!-- ================================ 12 ================================ -->
+<section id="s12">
+  <div class="sec-head"><div class="num">12</div><h3>توافق أندرويد <small>Android Compatibility — حدود صريحة</small></h3></div>
+  <table>
+    <tr><th>الإصدار</th><th>آلية الإدارة المتاحة</th><th>ملاحظات/حدود</th></tr>
+    <tr><td>Android 5.0+ (Lollipop+)</td><td>Device Owner (DO) عبر <code>dpm set-device-owner</code></td><td>يتطلب <code>user_setup_complete=0</code> في الأجهزة المقيدة بالحسابات (أسلوب R2) — سلوك معروف منذ 5.x وقد يتغير السلوك بين OEMs</td></tr>
+    <tr><td>Android 9 (المستهدف الحالي: SM-J337P)</td><td>DO + <code>ACTION_ADMIN_POLICY_COMPLIANCE</code></td><td>المنصة تختبر بيانات <code>dumpsys device_policy</code> كدليل حقيقي على حالة الجهاز</td></tr>
+    <tr><td>Android 10–13</td><td>DO + إدارة حسّاسة متحسّنة</td><td>بعض القيود تتطلب <code>LOCK_TASK</code> أو صناديق أمان — تُقيَّد ضمن نطاق المنصة وفق الوثائق</td></tr>
+    <tr><td>Android 14/15+</td><td>DO/DPC — تنبهات إهلاك تظهر تدريجيًا</td><td>بعض واجهات DO القديمة تُهجر؛ تُبنى المنصة بطريقة مجردة تذوّق الفجوات ولا تعتمد على واجهة واحدة</td></tr>
+  </table>
+  <p><b>مبدأ شفافية التوافق:</b> المنصة لا تدّعي دعم «الإصدارات/الأجهزة الخارجية» بلا دليل. تقرير التوافق يذكر صراحة:
+  <br>«التوافق المؤكد: Android 9 على SM-J337P (محاكى حاليًا في بيئة التطوير emulator-5554). التوافق بعدّادات (عدة بائعين/إصدارات) يخضع لمصفوفة اختبار منفصلة تُعرَض في تقرير التوافق.»</p>
+</section>
+
+<!-- ================================ 13 ================================ -->
+<section id="s13">
+  <div class="sec-head"><div class="num">13</div><h3>تعدد البائعين <small>Multi-Vendor</small></h3></div>
+  <ul>
+    <li><b>أساس مشترك:</b> آلية Device Owner عبر <code>dpm set-device-owner</code> تعمل عبر OEMs المعتمدة على AOSP.</li>
+    <li><b>Samsung (J337P):</b> الاستفادة من منصة Knox (إن وُجدت KernelKnox) مع <code>Knox offline</code> — لكن المنصة <b>لا تدّعي أبدًا كسر Knox/الحماية المعلّمة</b> وتستخدم فقط واجهات الإدارة المشروعة.</li>
+    <li><b>أدوات باعة أخرى:</b> تكامل اختياري عبر واجهات إدارة البائع عند توفرها لتحسين قوائم التقارير.</li>
+    <li><b>التقييم الصريح:</b> كل جهاز يُسجَّل فيه «الوضع الحقيقي» (DO/لا، قفل OEM، سيد غريب). الإحصاء «مُدار/مقيّد» لا يعتمد على التخمين — يتم التحقق بواسطة <code>dumpsys device_policy</code> كدليل.</li>
+    <li><b>استراتيجية بيان الاسترداد غير معتمدة على البائع:</b> كل جهاز له بيان ظاهر في مخزن الجهاز المحلي؛ لا شيء يُخزَّن على الجهاز نفسه.</li>
+  </ul>
+</section>
+
+<!-- ================================ 14 ================================ -->
+<section id="s14">
+  <div class="sec-head"><div class="num">14</div><h3>قابلية التوسع: 1000+ جهاز <small>1000+ Devices</small></h3></div>
+  <p><b>المتطلبات على مستوى الأسطول:</b></p>
+  <ul>
+    <li>فهرس <code>device_id</code> مفهرس في كل الجداول المرتبطة (موجود) — قائمة/بحث فوريّ في 1000 جهاز.</li>
+    <li>بيانات استرداد لكل جهاز مبنية للمقياس: مخزن مشفر مقسّم لكل صف، يُقرأ فقط عند الحاجة (قراءة لحظية عند العملية الحسّاسة وليس أثناء القوائم).</li>
+    <li>العمليات الجماعية (BULK) تُنفذ جهازًا-جهازًا ويُكشف فشل فردي دون تعطيل البقية — نتيجة قبال كل جهاز وسبب مصيري موثق.</li>
+    <li>اللوحات/التقارير ترقّم صفحاتها/تفرزها؛ لا تُحمَّل 1000 صف في الذاكرة بدون داعٍ.</li>
+    <li>معالجة حجم سجل التدقيق: أرشفة/تدوير حسب السياسة مع الحفاظ على سلسلة تجزئة (hash-chain) — لا حذف تعسفي.</li>
+  </ul>
+  <p><span class="tag t-info">حالة</span> اختبار <code>fleet.py</code> <code>Fleet(n=1000)</code> موجود بالفعل في منظومة الاختبار؛ التقرير يطلب استمرار مقياسه بعد إدخال مخزن بيانات الاسترداد.</p>
+</section>
+
+<!-- ================================ 15 ================================ -->
+<section id="s15">
+  <div class="sec-head"><div class="num">15</div><h3>الأمان: الاسترداد ليس بابًا خلفيًا <small>Security — No Backdoor</small></h3></div>
+  <div class="warnbox"><b>حظر صريح:</b> الاسترداد في هذا التصميم <b>ليس بابًا خلفيًا بأي حال</b>. لا يدّعي تجاوز:
+  <code>FRP</code> ، <code>Secure Boot</code> ، <code>Bootloader</code> ، <code>Knox</code> ، <code>OEM Lock</code> ، حماية Google <code>Play Protect</code>.
+  يعمل الاسترداد حصريًا عبر آليات الإدارة المشروعة: <code>Device Owner</code>/<code>DPC</code>/التسجيل/واجهات OEM لموفّري خدمة الإدارة.</div>
+  <ul>
+    <li>إذا لم توجد آلية شرعية (جهاز مقفل OEM بقفل غير مسموح به) → يعترف الاسترداد بالعجز ويوثّق <code>FAILED/REFUSED</code> + السبب؛ لا خداع.</li>
+    <li>كل محاولة «تجاوز» محظورة في الكود (منطق صلاحية/بيانات استرداد) — لا مسار تنفيذ بدون البوابات الثلاثة.</li>
+    <li>بيانات «السر» لا تخرج أبدًا من الجهاز للمراجعة؛ التسجيل رفع فقط ماذا/متى/النتيجة/السبب.</li>
+    <li>التصميم يمنع «استرداد جماعي» بشعار واحد: كل جهاز بيان منفصل لا يُشارك.</li>
+  </ul>
+</section>
+
+<!-- ================================ 16 ================================ -->
+<section id="s16">
+  <div class="sec-head"><div class="num">16</div><h3>تخزين الأسرار <small>Secret Storage — Windows DPAPI / Credential Manager</small></h3></div>
+  <table>
+    <tr><th>المكوّن</th><th>كيف يُخزَّن</th><th>ممنوع (بدائل مرفوضة)</th></tr>
+    <tr><td>مفتاح الجذر المحلي (Root DP)</td><td>DPAPI <code>CryptProtectData</code> بتعريف المستخدم (CurrentUser) — يُفكّ تلقائيًا لنفس حساب Windows فقط</td><td>نص صريح، متغير بيئة، ملف تكوين</td></tr>
+    <tr><td>بيان استرداد الجهاز</td><td>AES-256-GCM تشفير لكل صف؛ مفتاح الفرع <code>HKDF(root, device_id)</code></td><td>عمود نصي واضح، مسار FILE/TXT</td></tr>
+    <tr><td>بديل اختياري متقدم</td><td>Windows Credential Manager (واجهة <code>wincred</code>) لأغراض «الشهادة» مع فشل في وضع الفشل</td><td>SQLite غير مشفر</td></tr>
+  </table>
+  <ul>
+    <li>قاعدة صارمة: «لا يوجد سرّ في <code>.env</code>، <code>.txt</code>، <code>.json</code>، <code>.xml</code>، كود المصدر، سجلات». <code>audit.py</code> لديه <code>FORBIDDEN_FIELDS</code> (يشمل <code>recovery_key</code>، <code>credential</code>) يمنع وصول الأسرَار إلى السجل — يُوسَّع ليغطي أي حقول جديدة لبيانات الاسترداد.</li>
+    <li>فشل DPAPI (على سبيل المثال نسخ قاعدة البيانات لجهاز Windows آخر): التشغيل آمن — يُفتح التطبيق للقراءة، لكن كل العملية الحسّاسة تتوقف إلى حين إعادة ربط المخزن («Recovery Vault Unavailable») — لا هناك فشل كاتم.</li>
+  </ul>
+</section>
+
+<!-- ================================ 17 ================================ -->
+<section id="s17">
+  <div class="sec-head"><div class="num">17</div><h3>التدقيق <small>Audit — مفيد بدون تسريب الأسرار</small></h3></div>
+  <ul>
+    <li>كل استخدام استرداد يسجَّل: التاريخ/الوقت، الجهاز، نوع العملية، النتيجة، السبب — خلاصة لعمليات داخل المنصة.</li>
+    <li><b>السر لا يُسجَّل أبدًا:</b> لا بيان استرداد، لا مفتاح، لا تجزئة كاملة له. في التقارير تُعرض فقط: <code>Recovery: Configured</code> أو <code>Recovery ID: XXXX-XXXX</code>.</li>
+    <li>سلسلة التجزئة (<code>prev_hash</code>) في <code>audit_logs</code> تبقى قائمة — يكشف العبث بالترتيب أثناء السجلات.</li>
+    <li>أحداث «إدارة المخزن» (إنشاء/تدوير/إبطال) تصبح إدخالات تدقيق خاصة <code>RECOVERY_CREDENTIAL_*</code> — توثيق حتى لو رفض/فشل.</li>
+    <li><code>AUDITOR</code> يقرأ فقط؛ لا يملك الوصول إلى بيانات استرداد أي جهاز.</li>
+  </ul>
+</section>
+
+<!-- ================================ 18 ================================ -->
+<section id="s18">
+  <div class="sec-head"><div class="num">18</div><h3>سيناريوهات الفشل <small>Failure Scenarios</small></h3></div>
+  <table>
+    <tr><th>السيناريو</th><th>الاستجابة</th></tr>
+    <tr><td>بيان استرداد مفقود/فاسد (DPAPI غير متاح / جدول تالف)</td><td>يُفتح التطبيق للقراءة دون عمليات حسّاسة؛ تظهر حالة «Recovery Vault Unavailable»؛ تُكوَّن إعادة ربط مع تدقيق</td></tr>
+    <tr><td>تعارض <code>Recovery ID</code> بعد فحص الإقلاع</td><td>حالة تحذيرية + حدث تدقيق + منع العمليات الحسّاسة حتى تأكيد</td></tr>
+    <tr><td>جهاز لا يعود أبدًا بعد Factory Reset</td><td>الاسترداد يعيد <code>R2_REPROVISION</code> فقط إذا ظهر الجهاز في ADB مرة أخرى؛ إلا فتُوثَّق «الجهاز غير مرئي» ويبقى السجل</td></tr>
+    <tr><td>قناة فشلت (CLEAR_POLICY لم يُنفَّذ على الجهاز)</td><td>الحالة <code>FAILED</code>، لا نُقلّد نجاحًا (<code>PLAN_ONLY</code> بلا دليل)، وتُبقى الرسالة الحقيقية للسبب</td></tr>
+    <tr><td>USB غير مصرح به (ADB متوقف عن العمل)</td><td>فشل مكتشف بحدود زمنية؛ لا تكهنات؛ يمكن التسجيل لاحقًا عند الاتصال</td></tr>
+    <tr><td>تنازع بيانات الاسترداد أثناء عملية جماعية</td><td>الجهاز الواحد الذي يعوز بيانًا يتوقف فقط؛ البقية تنفّذ؛ إظهار تفاصيل لكل جهاز</td></tr>
+    <tr><td>محاولة «تجاوز» FRP/OEM عند الفعل</td><td>رفض حوكمائي موثق (مثل REFUSED في R3) — لا تنفيذ أبدًا</td></tr>
+  </table>
+</section>
+
+<!-- ================================ 19 ================================ -->
+<section id="s19">
+  <div class="sec-head"><div class="num">19</div><h3>شاشات الواجهة <small>UI Screens — تعديلات Qt</small></h3></div>
+  <p>التطبيق الحالي بواجهة Qt عربية (15 صفحة) راجعتُه في ما يخص صفحات الدخول والاسترداد:</p>
+  <table>
+    <tr><th>الشاشة</th><th>التغيير المطلوب</th></tr>
+    <tr><td>شاشة الدخول <code>LoginWidget</code></td><td>تُحذف من مسار الإقلاع؛ لا تُعرض. (تبقى قطعة تعليمات قابلة للاستدعاء اليدوي كخيار «دخول إجباري» غير مضبط افتراضيًا، إن أُريد)</td></tr>
+    <tr><td>شاشة التمهيد/التحميل (Splash)</td><td>تظل وتتحقق من المخزون المحلي (دون إدخال)</td></tr>
+    <tr><td>لوحة المعلومات (Dashboard)</td><td>تفتح مباشرة مع إحصاء الأجهزة وحالة بيان الاسترداد (Configured/Not/Mismatch)</td></tr>
+    <tr><td>صفحة الأجهزة/تفاصيل الجهاز</td><td>تعرض <code>Recovery ID</code> وليس السر؛ زر «استرداد» يفتح سير العمل §10</td></tr>
+    <tr><td>صفحة الاسترداد (Recovery)</td><td>اختيار الوضع + عرض الخطة/التأثير + حوار تأكيد إداري + زر تنفيذ</td></tr>
+    <tr><td>نوافذ العمليات الحسّاسة</td><td>تُستبدل «مطالبة رمز TOTP» بـ «حوار التأكيد الإداري» (إزالة الإدارة، تصدير، حذف سجل)</td></tr>
+    <tr><td>التقارير</td><td>عروض: <code>Recovery: Configured</code> فقط — لا أسرار</td></tr>
+  </table>
+</section>
+
+<!-- ================================ 20 ================================ -->
+<section id="s20">
+  <div class="sec-head"><div class="num">20</div><h3>تقييم الوضع الحالي للتنفيذ <small>Implementation Status — صراحة تامة</small></h3></div>
+  <table>
+    <tr><th>المكوّن</th><th>الحالة الحالية (فحص الكود)</th><th>المطلوب</th><th>العلامة</th></tr>
+    <tr><td>واجهة Qt عرض الشرائح 15 (عربي RTL)</td><td>موجود ومشغِّل</td><td>تعديل مسار الإقلاع (§5/§19)</td><td><span class="tag t-warn">يُعدَّل</span></td></tr>
+    <tr><td>صلاحيات/أدوار RBAC (مصفوفة)</td><td>موجود 8 أدوار + قوائم العمليات</td><td>تمييز «قراءة» مقابل «حسّاسة» بوضوح</td><td><span class="tag t-ok">يبقى</span></td></tr>
+    <tr><td>جلسات الهوية/كلمة المرور/TOTP</td><td>موجود ويستخدم في الإقلاع</td><td>مسودة من الإقلاع (تبقى للاختيار اليدوي)</td><td><span class="tag t-warn">يُسحب</span></td></tr>
+    <tr><td>قاعدة الموافقات (شخصين)</td><td>موجود</td><td>مقترنة ببيان استرداد الجهاز</td><td><span class="tag t-warn">يُعزَّز</span></td></tr>
+    <tr><td>محرك الاسترداد R1..R4</td><td>موجود ويستدعي <code>require_mfa=True</code></td><td>قفل على بيانات استرداد الجهاز</td><td><span class="tag t-warn">يُعدَّل</span></td></tr>
+    <tr><td><b>بيان الاسترداد (Recovery Credential) لكل جهاز</b></td><td><b>غير موجود</b> (لا عمود، لا مخزن، لا توليد)</td><td>بنية كاملة §7–§8 + §16</td><td><span class="tag t-bad">NOT IMPLEMENTED</span></td></tr>
+    <tr><td>مخزن أسرار مشفر (DPAPI)</td><td>غير موجود (كلمة المرور scrypt-TOTP فقط)</td><td>مخزن مشفر لكل سطر + مفتاح جذر DPAPI</td><td><span class="tag t-bad">NOT IMPLEMENTED</span></td></tr>
+    <tr><td>حوار التأكيد الإداري</td><td>غير موجود</td><td>نافذة Qt §10</td><td><span class="tag t-bad">NOT IMPLEMENTED</span></td></tr>
+    <tr><td>سجلات التدقيق بسلسلة تجزئة</td><td>موجود ويمنع الأسرار (FORBIDDEN_FIELDS)</td><td>توسعة لقائمة الحقول المحظورة + أحداث بيانات الاسترداد</td><td><span class="tag t-warn">يُوسَّع</span></td></tr>
+  </table>
+  <div class="warnbox"><b>الصراحة المطلوبة:</b> بيان الاسترداد لكل جهاز كمنظومة (<b>Recovery Status: NOT IMPLEMENTED</b>) وفقًا للكود الحالي. هذه الوثيقة هي التصميم المعتمد الذي يُبنى عليه (انظر خطة التنفيذ §23).</div>
+</section>
+
+<!-- ================================ 21 ================================ -->
+<section id="s21">
+  <div class="sec-head"><div class="num">21</div><h3>التغييرات المطلوبة <small>Required Changes — قائمة تدقيق التنفيذ</small></h3></div>
+  <h4>أ. إزالة تسجيل الدخول التفاعلي من بدء التشغيل</h4>
+  <ul>
+    <li><code>desktop/alp_manager/controller.py</code>: تحويل <code>_require_session()</code> بحيث تُستخدم فقط للعمليات الحسّاسة؛ عدم إجبار الجلسة للقراءة/عرض/تشخيص.</li>
+    <li>مسار التطبيق: إزالة <code>LoginWidget</code> من تسلسل الإقلاع (فتح Dashboard مباشرة).</li>
+    <li><code>scripts/alp.py</code>: جعل <code>--mfa</code> اختياري (أو إزالته) لكل عمليات القراءة؛ تبقى بيانات استرداد الجهاز للعمليات الحسّاسة.</li>
+    <li>الترحيل: <code>migrations/</code> جديدة توقف ما قد يكون مطلوبًا من جداول <code>sessions</code> للقراءة (أو تُشترط فقط عند ميزة «دخول إجباري» الاختيارية).</li>
+  </ul>
+  <h4>ب. بنية بيان الاسترداد</h4>
+  <ul>
+    <li>وحدة جديدة <code>backend/recovery_credentials.py</code>: توليد 256-bit، تشفير AES-256-GCM، توزيع بمفتاح فرعي لكل جهاز، فك، تدوير، إبطال.</li>
+    <li>نواة DPAPI عبر ctypes/مكتبة معتمدة في المنصة: <code>CryptProtectData</code>/<code>CryptUnprotectData</code> لمفتاح الجذر.</li>
+    <li>مخطط: عمود/جدول <code>recovery_credentials(device_id UNIQUE, credential_ciphertext, nonce, recovery_id, created_at, rotated_at, revoked_at)</code>.</li>
+    <li>ربط محرك الاسترداد R1..R4: استبدال <code>require_mfa=True</code> بشرط تحقق بيان الاسترداد للجهاز المستهدف + صلاحية الدور.</li>
+    <li>ربط الموافقات: <code>approve()</code> يُغيّر معياره من <code>mfa_ok</code> للمشغّل إلى <code>device_recovery_ok</code> لبيان استرداد الجهاز عند العمليات التدميرية.</li>
+  </ul>
+  <h4>ج. الواجهة والتقارير والتحقق</h4>
+  <ul>
+    <li>حوار <code>AdministrativeConfirmationDialog</code> في Qt (مع نص عربي لعمليات مختلفة).</li>
+    <li>شاشة «بيئة الاسترداد»: حالة Configured/Not/Mismatch وتدوير يدوي.</li>
+    <li>أنماط التقارير (§22) تُظهر <code>Recovery: Configured</code> / <code>Recovery ID</code> فقط.</li>
+    <li>تحديث <code>SYSTEM_OPERATION_AND_USER_SCENARIOS.html</code> ليعكس التصميم الجديد (كان يصف التدفق القديم بتسجيل الدخول).</li>
+    <li>اختبارات: <code>pytest</code> للبنية الجديدة (توليد، فك، رفض بدون بيان، تدوير، سلوك 1000 جهاز).</li>
+  </ul>
+</section>
+
+<!-- ================================ 22 ================================ -->
+<section id="s22">
+  <div class="sec-head"><div class="num">22</div><h3>البيانات والتقارير <small>Reports: PDF / HTML / CSV / Logs</small></h3></div>
+  <ul>
+    <li>لا يوجد أي تقرير (PDF/HTML/CSV/سجل) يحتوي سر استرداد — فقط <code>Recovery: Configured</code> أو <code>Recovery ID: XXXX-XXXX</code>.</li>
+    <li>تقرير الجهاز يضم: حالة <code>Recovery</code>، <code>Recovery ID</code>، آخر تدوير، آخر استخدام (بدون السر).</li>
+    <li>تقارير التدقيق ⛔ تعرض أبدًا عمود السر؛ حقول محظورة في <code>audit.py</code> تتوسع لتغطي حقول بيانات الاسترداد الجديدة.</li>
+    <li>عند تصدير CSV للأسطول: عمود <code>recovery_id</code> فقط + عمود <code>recovery_status</code>.</li>
+  </ul>
+</section>
+
+<!-- ================================ 23 ================================ -->
+<section id="s23">
+  <div class="sec-head"><div class="num">23</div><h3>خطة تنفيذ بيان الاسترداد <small>Implementation Plan</small></h3></div>
+  <table>
+    <tr><th>المرحلة</th><th>النطاق</th><th>التسليم</th><th>التحقق</th></tr>
+    <tr><td><b>P0</b></td><td>إزالة الإجباري: مسار الإقلاع المفتوح + تمييز صلاحيات القراءة/الحسّاسة</td><td>Dashboard تفتح مباشرة؛ طرق القراءة بلا جلسة</td><td>تشغيل يدوي + الوحدات القديمة تبقى خضراء</td></tr>
+    <tr><td><b>P1</b></td><td>وحدة بيانات الاسترداد: توليد/تشفير/تخزين بمفتاح جذر DPAPI</td><td><code>recovery_credentials.py</code> + هجرة المخطط</td><td><code>pytest</code> للتشفير/الفك/التعذر على جهاز آخر</td></tr>
+    <tr><td><b>P2</b></td><td>استبدال الوكيل: ربط R1..R4 والموافقات ببيان استرداد الجهاز</td><td>كل عملية حسّاسة تفحص: صلاحية + بيان جهاز + تأكيد + تدقيق</td><td>اختبار رفض: تشغيل عملية حسّاسة بدون بيان استرداد مُطابق → معرقل قبل أي تنفيذ</td></tr>
+    <tr><td><b>P3</b></td><td>الواجهة والتقارير: حوار التأكيد الإداري، شاشة بيئة الاسترداد، تحديث أنماط التقارير و <code>SYSTEM_OPERATION_AND_USER_SCENARIOS.html</code></td><td>Qt عربي + تقارير بسلامة سرية (Configured/ID فقط)</td><td>فحص يدوي + مراجعة أنماط التقارير للأسرار</td></tr>
+    <tr><td><b>P4</b></td><td>التقوية: تدوير/إبطال بيانات الاسترداد، أحداث تدقيق <code>RECOVERY_CREDENTIAL_*</code>، اختبار مقياس 1000 جهاز</td><td>دورة حياة كاملة §8 تعمل عبر أسطول 1000+</td><td><code>pytest</code> أسطول <code>Fleet(n=1000)</code> + اختبارات التدوير/الإبطال</td></tr>
+  </table>
+  <p class="small">الأولويات: P0 قبل أي شيء (فتح الإقلاع) → ثم P1 (مخزن الأسرار) قبل P2 (الربط) — لا يوجد ربط لبيانات استرداد غير مخزّنة.</p>
+</section>
+
+<!-- ================================ 24 ================================ -->
+<section id="s24">
+  <div class="sec-head"><div class="num">24</div><h3>معايير القبول <small>Acceptance Criteria</small></h3></div>
+  <p>لا يُعتبر التصميم منجَزًا إلا إذا تحققت جميع المعايير التالية:</p>
+  <ol>
+    <li><b>لا شاشة تسجيل دخول عند بدء التشغيل:</b> إقلاع المنصة → Splash → Dashboard مباشرة بلا Username/Password/TOTP.</li>
+    <li><b>اللوحة تعمل فورًا:</b> عرض الأجهزة والبحث والتشخيص للقراءة متاحة بلا مصادقة تفاعلية.</li>
+    <li><b>وثيقة الاسترداد وظيفية:</b> مسار مفعّل بالكامل لكل وضع R1..R4 مع تمييز واضح COMPLETE/PARTIAL/FAILED/REFUSED/PLAN_ONLY.</li>
+    <li><b>بيان استرداد لكل جهاز:</b> مولَّد من النظام، عشوائي 256-bit، فريد لكل جهاز، لا يُشارك — والرفض إذا وُجد تطبيق مشاركة.</li>
+    <li><b>حماية بيان الاسترداد:</b> مخزن مشفر حصريًا (DPAPI/Credential Manager) — لا نص صريح في أي ملف/سجل/كود.</li>
+    <li><b>الاسترداد ليس بابًا خلفيًا:</b> لا توجد ادعاءات أو مسارات لتجاوز FRP/Secure Boot/Bootloader/Knox/OEM Lock/حماية Google — ويعمل فقط عبر وسائل الإدارة المشروعة.</li>
+    <li><b>الأعمال الحسّاسة قابلة للتدقيق:</b> كل استخدام مسجّل (متى/ماذا/النتيجة/السبب) بلا تسجيل السر.</li>
+    <li><b>المستخدم النهائي لا يحصل أبدًا على بيان استرداد:</b> لا يُعرض على الجهاز ولا في التقارير/التصدير.</li>
+    <li><b>سلوك الحالات الحرجة مُحدَّد:</b> قبل/بعد Factory Reset، إعادة تثبيت البرنامج الثابت، إزالة Device Owner، إعادة التسجيل — كما في §11.</li>
+    <li><b>قابلية التوسع مثبتة:</b> عمليات أسطول 1000+ تنجح مع إكمال نتائج لكل جهاز.</li>
+    <li><b>شفافية التوافق:</b> الوثائق تصرح بالتوافق المؤكد (Android 9 / SM-J337P محاكى) ومصفوفة البائعين المستقلة للتصديق.</li>
+    <li><b>تحديث الوثائق السابقة:</b> <code>SYSTEM_OPERATION_AND_USER_SCENARIOS.html</code> يعكس التصميم الجديد (بدلاً من تدفق الدخول القديم).</li>
+  </ol>
+</section>
+
+<!-- ================================ خَلَاصَة ================================ -->
+<section>
+  <div class="sec-head"><div class="num" style="background:var(--ok)">✓</div><h3>الخُلاصَة والخطوات التالية</h3></div>
+  <ul>
+    <li>القرار: <b>فتح لوحة الإدارة</b> — المنصة <b>لا تستخدم تسجيل دخول تفاعلي عند بدء التشغيل</b>، بينما العمليات الإدارية الحسّاسة محكومة بآليات صلاحيات واسترداد مناسبة (الصيغة المعتمدة أعلاه).</li>
+    <li>الوضع الصادق: بيان الاسترداد لكل جهاز <b>NOT IMPLEMENTED</b> — هذه الوثيقة هي التصميم المعتمد وخطة التنفيذ P0–P4.</li>
+    <li>الخطوات التالية (تتطلب موافقتك قبل أي تغيير على الكود):
+      <ol>
+        <li>مراجعة هذه الوثيقة والاعتماد/التحرير.</li>
+        <li>تنفيذ P0 (فتح الإقلاع وإزالة <code>LoginWidget</code> من المسار) مع تشغيل الاختبارات الـ 108 الحالية.</li>
+        <li>تنفيذ P1→P4 كما في §23، ثم تحديث <code>SYSTEM_OPERATION_AND_USER_SCENARIOS.html</code> وإصدار تقرير تحقق جديد.</li>
+      </ol>
+    </li>
+  </ul>
+  <div class="quote">
+    الخلاصة بنص واحد: «المنصة لا تستخدم تسجيل دخول تفاعلي عند بدء التشغيل، بينما العمليات الإدارية الحسّاسة محكومة بآليات صلاحيات واسترداد مناسبة.»
+  </div>
+</section>
+
+<footer>
+  وثيقة تصميم المصادقة والاسترداد — ALP · الإصدار 1.0 (2026-09-12) · حالة: قيد المراجعة — لا تنفيذ كود قبل الاعتماد
+</footer>
+
+</main>
+</body>
+</html>

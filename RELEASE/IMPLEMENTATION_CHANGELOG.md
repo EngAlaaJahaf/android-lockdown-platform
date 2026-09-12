@@ -91,3 +91,23 @@ release packaging, final report).
 - `deployment/ALPManager.spec`, `deployment/installer_app.py`,
   `deployment/AndroidLockdownManager_Setup.spec` — build + installer.
 - `RELEASE/*` — packaged artifacts. `FINAL_RELEASE_VALIDATION_REPORT.html` — full report.
+
+## 7) Open-console redesign (P0–P4) — v1.0.0 rebuild
+> Same version, **rebuilt artifacts** (grower sizes: portable 55,927,374 B, setup
+> 63,444,130 B). New SHA256 in `SHA256SUMS.txt`. Full suite now **110 tests OK**.
+
+Authentication model switch — **no interactive Login/TOTP at startup**:
+- The dashboard opens directly in a *local-operator* mode (`Controller._require_session(session_required=False)`). Every sensitive operation is gated by a **per-device recovery credential** (possession factor) — `RecoveryVault.verify_for()` must return `ok` before APPLY / RECOVER / FIRMWARE can run (`Controller._can_use_recovery`).
+- Recovery credentials are **encrypted-only** via Windows DPAPI (`backend/recovery_credentials.py`), stored per-device, never shared, never displayed. UIs show only a display-only `Recovery ID: XXXX-XXXX`. Recovery is a legitimate mechanism only — the docs never present it as a bypass/«بلا حماية».
+- Approval factor replaced: legacy `approval.approve(approval_id, approver_id, mfa_ok=True)` kept for old callers (suffixes username as `admin:<username>`); new `approval.confirm(approval_id, approver_name, reason=...)` records **named human confirmations**; the dual rule requires **two distinct names** (rejects same name twice).
+- Legacy session roles (RBAC) still exist internally; `auth.authorize()` also accepts `credential_ok`. `backend/recovery.py` keeps its legacy `mfa_ok=` positional-first signature so old callers stay valid.
+
+Controller / UI / CLI changes (`controller.py`, `app_qt.py`, `app.py`, `scripts/alp.py`):
+- `apply()` drops the MFA param and requires the possession gate; passes `mfa_ok=True` into `run_director_apply` only after `_can_use_recovery` succeeded.
+- `recover()` = possession gate first; R1/R2 dual approval via `confirm()` unless `skip_approval`; R3 auto-approves at controller level so the engine emits an honest REFUSED; results carry `d["ok"]`/`d["error"]`.
+- New controller API: `recovery_status()`, `recovery_vault_summary()`, `rotate_recovery()`, `revoke_recovery()`.
+- Qt + Tk UIs: header login widgets replaced by a single local-operator status label; apply/recovery tabs show possession status with refresh; recovery approver fields are named confirmation fields.
+- `backdoor` terminology removed from docs; `SYSTEM_OPERATION_AND_USER_SCENARIOS.html` migrated to the open-console flow (no TOTP/MFA user-facing mentions remain); new `AUTHENTICATION_AND_RECOVERY_DESIGN.html`.
+
+Database: `recovery_credentials` and `approval_confirmations` tables added
+(migrations `007`, `008`).
