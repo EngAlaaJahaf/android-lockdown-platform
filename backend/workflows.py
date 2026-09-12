@@ -32,6 +32,34 @@ def attached_serials() -> list[str]:
     return out
 
 
+def attached_detailed() -> list[dict]:
+    """`adb devices -l` parsed into {serial, state, model, ready, raw}.
+
+    ``ready`` means the device is in the ``device`` (authorized+online) state,
+    i.e. shell commands will actually run. ``unauthorized`` / ``offline``
+    devices are reported but not usable — the UI uses this to tell the user
+    to authorize USB debugging instead of silently pretending the phone
+    is connected.
+    """
+    r = subprocess.run([adb(), "devices", "-l"], capture_output=True,
+                       text=True, timeout=20)
+    out = []
+    for ln in r.stdout.splitlines()[1:]:
+        if not ln.strip():
+            continue
+        parts = ln.split()
+        if len(parts) < 2:
+            continue
+        entry = {"serial": parts[0], "state": parts[1],
+                 "model": "", "ready": parts[1] == "device"}
+        for tok in parts[2:]:
+            k, _, v = tok.partition(":")
+            if k == "model":
+                entry["model"] = v
+        out.append(entry)
+    return out
+
+
 def adb_observe(serial: str) -> dict:
     """Read only what ADB can honestly report; missing lanes stay unobserved."""
     def g(*args: str) -> str:

@@ -42,9 +42,9 @@ from backend.db import connect, run_migrations     # noqa: E402
 from backend import auth, audit as audit_mod       # noqa: E402
 from backend import approval as approval_mod       # noqa: E402
 from backend.recovery_credentials import RecoveryVault          # noqa: E402
-from backend.workflows import (attached_serials, enroll_device,                # noqa: E402
-                               persist_reference_policies, run_director_apply,
-                               resolve_policy, live_probe,
+from backend.workflows import (attached_serials, attached_detailed,           # noqa: E402
+                               enroll_device, persist_reference_policies,
+                               run_director_apply, resolve_policy, live_probe,
                                vendor_adapter_for_device, classify_device)
 from backend.channel import adb_channel            # noqa: E402
 from backend.recovery import RecoveryEngine, RECOVERY_MODES  # noqa: E402
@@ -187,6 +187,25 @@ class Controller:
     # ------------------------------------------------------------------
     def adb_status(self) -> dict:
         return {"devices": attached_serials(), "configured": True}
+
+    def detected(self) -> list:
+        """Live auto-detection: every ADB-attached device, enriched with its
+        readiness state and whether it is already registered in the DB.
+
+        Plug a phone in and the UI polls this (4 s timer) and shows it
+        immediately — "يتعرّف عليه مباشرة" — ready to register in one click.
+        """
+        reg = {d["serial"] for d in self.devices()}
+        out = []
+        for d in attached_detailed():
+            out.append({
+                "serial": d["serial"],
+                "state": d["state"],
+                "model": d["model"] or "",
+                "ready": bool(d["ready"]),
+                "registered": d["serial"] in reg,
+            })
+        return out
 
     def devices(self) -> list:
         with connect(self.db_path) as c:

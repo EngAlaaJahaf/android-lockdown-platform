@@ -111,3 +111,23 @@ Controller / UI / CLI changes (`controller.py`, `app_qt.py`, `app.py`, `scripts/
 
 Database: `recovery_credentials` and `approval_confirmations` tables added
 (migrations `007`, `008`).
+
+## 8) Plug-in auto-detection — v1.0.0 rebuild #2
+> Rebuilt artifacts again: portable 55,931,659 B, setup 63,449,968 B.
+> New SHA256 in `SHA256SUMS.txt`. Full suite now **111 tests OK**.
+
+"يتعرّف عليه مباشرة": connect a phone and the app shows it immediately —
+no manual serial typing needed.
+- `backend/workflows.attached_detailed()` — parses `adb devices -l` into
+  `{serial, state, model, ready}`; `ready` = authorized+online (`device`),
+  `unauthorized`/`offline` are reported honestly (UI tells the user to enable
+  USB debugging instead of pretending the phone is usable).
+- `Controller.detected()` — merges the live ADB list with the DB registration
+  set, flagging `registered` and readiness.
+- Qt UI (`app_qt.py`): the Devices page shows a live banner of detected phones
+  (ready / needs USB-debugging / already registered) and auto-fills the serial
+  field with the first ready unregistered device — one click on
+  «تسجيل الجهاز» finishes enrollment. Polled every 4 s by the existing timer.
+- Tk fallback (`app.py`) gets the same detection line + auto-fill.
+- Test: `test_detected_lists_attached_state_and_registration` (mocked ADB,
+  hermetic).

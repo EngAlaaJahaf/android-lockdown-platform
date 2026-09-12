@@ -203,6 +203,34 @@ class ControllerFlows(unittest.TestCase):
         self.assertEqual(set(lst[0].keys()), {"path", "size", "mtime"})
         self.assertTrue(os.path.exists(lst[0]["path"]))
 
+    def test_detected_lists_attached_state_and_registration(self):
+        # Plug-in auto-detection: attached devices get state + model, and
+        # registered ones are flagged so the UI can offer one-click enroll.
+        from unittest import mock
+        self._seed_device(self.ctl, "D-DET-1", "SERDET1")
+        with mock.patch("alp_manager.controller.attached_detailed",
+                        return_value=[
+                            {"serial": "SERDET1", "state": "device",
+                             "model": "SM-A145P", "ready": True},
+                            {"serial": "SERNEW1", "state": "device",
+                             "model": "SM-J337P", "ready": True},
+                            {"serial": "XOFF1", "state": "offline",
+                             "model": "", "ready": False},
+                            {"serial": "XUNA-1", "state": "unauthorized",
+                             "model": "", "ready": False},
+                        ]) as m:
+            det = self.ctl.detected()
+        m.assert_called_once()
+        self.assertEqual(len(det), 4)
+        by = {d["serial"]: d for d in det}
+        self.assertTrue(by["SERDET1"]["registered"])
+        self.assertTrue(by["SERDET1"]["ready"])
+        self.assertFalse(by["SERNEW1"]["registered"])
+        self.assertTrue(by["SERNEW1"]["ready"])
+        self.assertFalse(by["XOFF1"]["ready"])
+        self.assertFalse(by["XUNA-1"]["ready"])
+        self.assertEqual(by["SERNEW1"]["model"], "SM-J337P")
+
     def test_diagnostics_flat_shape(self):
         d = self.ctl.diagnostics()
         self.assertFalse(d["frozen_mode"])

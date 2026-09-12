@@ -374,6 +374,11 @@ class App(QMainWindow):
         row.addWidget(b)
         v.addLayout(row)
 
+        self._detect_lbl = QLabel("")
+        self._detect_lbl.setWordWrap(True)
+        self._detect_lbl.hide()
+        v.addWidget(self._detect_lbl)
+
         row2 = QHBoxLayout()
         b_probe = QPushButton("فحص الجهاز (قراءة فعلية)")
         b_probe.clicked.connect(lambda: self._probe_action())
@@ -1140,8 +1145,38 @@ class App(QMainWindow):
         attached = adb.get("devices", [])
         self._banner(attached)
         self._render_devices(devices)
+        self._render_detected(res.get("detected") or [])
         self._render_dashboard_cards(devices, attached)
         self._render_compliance(devices)
+
+    def _render_detected(self, detected):
+        if getattr(self, "_detect_lbl", None) is None:
+            return
+        fresh = [d for d in detected if not d["registered"]]
+        if not fresh:
+            self._detect_lbl.hide()
+            return
+        self._detect_lbl.show()
+        any_ready = any(d["ready"] and not d["registered"] for d in detected)
+        self._detect_lbl.setStyleSheet(
+            "color:#1d8a4c; font-weight:600;" if any_ready
+            else "color:#c07a00; font-weight:600;")
+        parts = []
+        field = None
+        for d in detected:
+            if d["ready"] and not d["registered"] and field is None:
+                field = d["serial"]
+            label = d["model"] or d["serial"]
+            if d["registered"]:
+                parts.append(f"{label} (مسجَّل)")
+            elif d["ready"]:
+                parts.append(f"{label} — جاهز للتسجيل")
+            else:
+                parts.append(f"{label} — فعِّل تصحيح الأخطاء (USB debugging)")
+        self._detect_lbl.setText("تم اكتشاف جهاز/أجهزة متصلة: " + " · ".join(parts) +
+                                 ". اكتب الرقم التسلسلي أو اضغط «تسجيل الجهاز».")
+        if field and self._dev_serial.text().strip() == "":
+            self._dev_serial.setText(field)
         self._populate_combos(devices)
 
     def _h_enroll(self, res, err):
@@ -1243,7 +1278,12 @@ class App(QMainWindow):
     # أدوات مساعدة
     # ------------------------------------------------------------------
     def _snapshot(self):
-        return {"devices": self.ctl.devices(), "adb": self.ctl.adb_status()}
+        try:
+            detected = self.ctl.detected()
+        except Exception:
+            detected = []
+        return {"devices": self.ctl.devices(), "adb": self.ctl.adb_status(),
+                "detected": detected}
 
     def _auto_refresh(self):
         if self._busy or not self.isVisible():

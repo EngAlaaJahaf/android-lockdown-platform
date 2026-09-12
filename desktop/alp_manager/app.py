@@ -177,6 +177,9 @@ class App(tk.Tk):
         ttk.Button(top, text="Refresh ADB/devices", command=lambda: self._async(self._refresh_devices, self._devices_loaded)).pack(side="left", padx=8)
         ttk.Button(top, text="Generate device report", command=self._report).pack(side="left", padx=8)
 
+        self._detect_label = ttk.Label(frame, text="")
+        self._detect_label.pack(fill="x", padx=8, pady=(2, 0))
+
         cols = ("id", "serial", "model", "android", "state", "owner", "compliance")
         self._tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
         for c, w, title in (("id", 130, "device_id"), ("serial", 140, "serial"),
@@ -205,7 +208,12 @@ class App(tk.Tk):
         self._dev_log.pack(fill="both", expand=True, padx=8, pady=4)
 
     def _refresh_devices(self):
-        return {"devices": self.ctl.devices(), "adb": self.ctl.adb_status()}
+        try:
+            detected = self.ctl.detected()
+        except Exception:
+            detected = []
+        return {"devices": self.ctl.devices(), "adb": self.ctl.adb_status(),
+                "detected": detected}
 
     def _devices_loaded(self, res):
         if not isinstance(res, dict) or "devices" not in res:
@@ -219,6 +227,26 @@ class App(tk.Tk):
                 d.get("device_id", ""), d.get("serial", ""), d.get("model", ""),
                 d.get("android_version", ""), d.get("enrollment_state", ""),
                 d.get("device_owner_state", ""), d.get("compliance_state", "")))
+        det = res.get("detected") or []
+        fresh = [d for d in det if not d["registered"]]
+        if fresh:
+            ready = [d for d in fresh if d["ready"]]
+            parts = []
+            for d in det:
+                label = d["model"] or d["serial"]
+                if d["registered"]:
+                    parts.append(f"{label} (registered)")
+                elif d["ready"]:
+                    parts.append(f"{label} — ready to enroll")
+                else:
+                    parts.append(f"{label} — enable USB debugging")
+            self._detect_label.configure(
+                text="Detected: " + " · ".join(parts) + " (press Enroll)")
+            self._detect_label.configure(foreground="green" if ready else "#c07a00")
+            if ready and not self._enroll_serial.get().strip():
+                self._enroll_serial.insert(0, ready[0]["serial"])
+        else:
+            self._detect_label.configure(text="")
         self._populate_combos()
 
     def _selected_device(self) -> dict:
