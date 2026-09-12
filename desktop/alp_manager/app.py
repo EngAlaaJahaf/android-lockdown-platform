@@ -283,9 +283,9 @@ class App(tk.Tk):
         ttk.Label(box, text="Policy").grid(row=0, column=2, sticky="e")
         self._apply_pol = ttk.Combobox(box, state="readonly", width=22)
         self._apply_pol.grid(row=0, column=3, sticky="w")
-        ttk.Label(box, text="MFA code (operator)").grid(row=1, column=0, sticky="e")
-        self._apply_mfa = ttk.Entry(box, width=30)
-        self._apply_mfa.grid(row=1, column=1, sticky="w")
+        ttk.Label(box, text="Recovery credential").grid(row=1, column=0, sticky="e")
+        self._apply_rec = ttk.Label(box, text="verified from this console before execution", foreground="#3a6ea5")
+        self._apply_rec.grid(row=1, column=1, sticky="w")
         ttk.Label(box, text="Lane subset (optional, comma)").grid(row=1, column=2, sticky="e")
         self._apply_sub = ttk.Entry(box, width=22)
         self._apply_sub.grid(row=1, column=3, sticky="w")
@@ -301,16 +301,30 @@ class App(tk.Tk):
     def _apply(self):
         did = self._apply_dev.get()
         pol = self._apply_pol.get()
-        mfa = self._apply_mfa.get().strip()
         subset = self._apply_sub.get().strip()
         if not did or not pol:
             messagebox.showerror("Apply", "device and policy required")
             return
-        if not mfa:
-            messagebox.showerror("Apply", "an MFA-verified actor is mandatory for APPLY")
-            return
-        self._async(lambda: self.ctl.apply(did, pol.split()[0], mfa, real=True, lane_subset=subset),
+        self._apply_rec_refresh(did)
+        self._async(lambda: self.ctl.apply(did, pol.split()[0], real=True,
+                                           lane_subset=subset),
                     lambda r: self._set_text(self._apply_log, self._fmt(r)))
+
+    def _apply_rec_refresh(self, did):
+        try:
+            st = self.ctl.recovery_status(did)
+        except Exception as ex:
+            self._apply_rec.configure(text=f"check failed: {ex}")
+            return
+        if not st.get("ok"):
+            self._apply_rec.configure(text=f"unavailable: {st.get('error', '')}")
+            return
+        if st.get("recovery") == "Configured":
+            self._apply_rec.configure(
+                text=f"ready (Recovery ID: {st.get('recovery_id', '')})")
+        else:
+            self._apply_rec.configure(
+                text=f"{st.get('recovery', '')} — credential must be issued first")
 
     # ------------------------------------------------------------------
     # Recovery tab
@@ -327,19 +341,19 @@ class App(tk.Tk):
         self._rec_mode.grid(row=0, column=3, sticky="w")
         self._rec_mode.set("R1_RESTORE_POINT")
         self._rec_mode.bind("<<ComboboxSelected>>", lambda _e: self._mode_hint())
-        ttk.Label(box, text="MFA code (operator)").grid(row=1, column=0, sticky="e")
-        self._rec_mfa = ttk.Entry(box, width=26)
-        self._rec_mfa.grid(row=1, column=1, sticky="w")
+        ttk.Label(box, text="Recovery credential").grid(row=1, column=0, sticky="e")
+        self._rec_rec = ttk.Label(box, text="possession factor", foreground="#3a6ea5")
+        self._rec_rec.grid(row=1, column=1, sticky="w")
         ttk.Label(box, text="Reason").grid(row=1, column=2, sticky="e")
         self._rec_reason = ttk.Entry(box, width=22)
         self._rec_reason.grid(row=1, column=3, sticky="w")
 
-        ttk.Label(box, text="Approver user (2nd approver for R1/R2)").grid(row=2, column=0, sticky="e")
-        self._rec_aprv = ttk.Entry(box, width=26)
-        self._rec_aprv.grid(row=2, column=1, sticky="w")
-        ttk.Label(box, text="Approver MFA").grid(row=2, column=2, sticky="e")
-        self._rec_aprv_mfa = ttk.Entry(box, width=22)
-        self._rec_aprv_mfa.grid(row=2, column=3, sticky="w")
+        ttk.Label(box, text="Approver 1 name (R1/R2)").grid(row=2, column=0, sticky="e")
+        self._rec_aprv1 = ttk.Entry(box, width=26)
+        self._rec_aprv1.grid(row=2, column=1, sticky="w")
+        ttk.Label(box, text="Approver 2 name (distinct)").grid(row=2, column=2, sticky="e")
+        self._rec_aprv2 = ttk.Entry(box, width=22)
+        self._rec_aprv2.grid(row=2, column=3, sticky="w")
 
         self._rec_skip = tk.BooleanVar(value=False)
         ttk.Checkbutton(box, text="skip approval", variable=self._rec_skip).grid(row=3, column=1, sticky="w")
@@ -357,21 +371,34 @@ class App(tk.Tk):
     def _recover(self):
         did = self._rec_dev.get()
         mode = self._rec_mode.get()
-        mfa = self._rec_mfa.get().strip()
         if not did or not mode:
             messagebox.showerror("Recovery", "device and mode required")
             return
-        if not mfa:
-            messagebox.showerror("Recovery", "MFA code required for recovery")
-            return
+        self._rec_rec_refresh(did)
         self._async(lambda: self.ctl.recover(
-            did, mode, mfa,
-            approver_user=self._rec_aprv.get().strip(),
-            approver_mfa=self._rec_aprv_mfa.get().strip(),
+            did, mode,
+            approver1=self._rec_aprv1.get().strip(),
+            approver2=self._rec_aprv2.get().strip(),
             reason=self._rec_reason.get().strip(),
             skip_approval=self._rec_skip.get(),
             exec_=True),
             lambda r: self._set_text(self._rec_log, self._fmt(r)))
+
+    def _rec_rec_refresh(self, did):
+        try:
+            st = self.ctl.recovery_status(did)
+        except Exception as ex:
+            self._rec_rec.configure(text=f"check failed: {ex}")
+            return
+        if not st.get("ok"):
+            self._rec_rec.configure(text=f"unavailable: {st.get('error', '')}")
+            return
+        if st.get("recovery") == "Configured":
+            self._rec_rec.configure(
+                text=f"possession ready (Recovery ID: {st.get('recovery_id', '')})")
+        else:
+            self._rec_rec.configure(
+                text=f"{st.get('recovery', '')} — no possession; op blocked")
 
     # ------------------------------------------------------------------
     # Audit tab

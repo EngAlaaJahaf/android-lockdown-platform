@@ -247,37 +247,8 @@ class App(QMainWindow):
         lay.addWidget(self._quick_status)
 
         lay.addSpacing(14)
-        u = QLabel("المستخدم")
-        lay.addWidget(u)
-        self._ui_user = QLineEdit()
-        self._ui_user.setPlaceholderText("اسم المدير")
-        self._ui_user.setMaximumWidth(130)
-        lay.addWidget(self._ui_user)
-        self._ui_pass = QLineEdit()
-        self._ui_pass.setPlaceholderText("كلمة المرور")
-        self._ui_pass.setEchoMode(QLineEdit.Password)
-        self._ui_pass.setMaximumWidth(130)
-        lay.addWidget(self._ui_pass)
-        self._ui_totp = QLineEdit()
-        self._ui_totp.setPlaceholderText("رمز المصادقة (TOTP)")
-        self._ui_totp.setMaximumWidth(110)
-        lay.addWidget(self._ui_totp)
-        b_login = QPushButton("دخول")
-        b_login.setObjectName("btn_acc")
-        b_login.clicked.connect(self._login)
-        lay.addWidget(b_login)
-        b_boot = QPushButton("إنشاء المدير الأول")
-        b_boot.setObjectName("btn_acc")
-        b_boot.clicked.connect(self._bootstrap)
-        lay.addWidget(b_boot)
-        b_out = QPushButton("خروج")
-        b_out.setObjectName("btn_ghost")
-        b_out.clicked.connect(self._logout)
-        lay.addWidget(b_out)
-        self._b_login = b_login
-        self._b_boot = b_boot
-        self._session_label = QLabel("غير مسجّل الدخول")
-        self._session_label.setObjectName("session")
+        self._session_label = QLabel("وضع المشغّل المحلي — لا تسجيل دخول تفاعلي")
+        self._session_label.setObjectName("session_mode")
         lay.addWidget(self._session_label)
         outer.addWidget(top)
 
@@ -618,15 +589,16 @@ class App(QMainWindow):
         self._apply_pol.setMinimumWidth(240)
         self._apply_pol.activated.connect(self._render_apply_preview)
         fl.addWidget(self._apply_pol)
-        fl.addWidget(QLabel("رمز TOTP:"))
-        self._apply_mfa = QLineEdit()
-        self._apply_mfa.setMaximumWidth(120)
-        fl.addWidget(self._apply_mfa)
+        fl.addWidget(QLabel("بيان الاسترداد:"))
+        self._apply_rec = QLabel("يُفحص من هذه الوحدة قبل التنفيذ")
+        self._apply_rec.setObjectName("note")
+        fl.addWidget(self._apply_rec)
         fl.addWidget(QLabel("الميزات (اختياري، مفصولة بفاصلة):"))
         self._apply_sub = QLineEdit()
         self._apply_sub.setMaximumWidth(160)
         fl.addWidget(self._apply_sub)
         v.addWidget(form)
+        self._apply_dev.activated.connect(self._apply_rec_refresh)
 
         t = QLabel("معاينة تغييرات السياسة قبل التنفيذ")
         t.setObjectName("section_title")
@@ -700,18 +672,32 @@ class App(QMainWindow):
     def _apply_action(self):
         did = self._apply_dev.currentData()
         pol = self._apply_pol.currentText()
-        mfa = self._apply_mfa.text().strip()
         sub = self._apply_sub.text().strip()
         if not did or not pol:
             self._err("تطبيق السياسة", "اختر الجهاز والسياسة.")
             return
-        if not mfa:
-            self._err("تطبيق السياسة",
-                      "رمز المصادقة TOTP مطلوب — التطبيق لا يتم دون مدقق حي.")
-            return
+        self._apply_rec_refresh()
         pol_id = pol.split()[0]
         self._busy_start("جاري تنفيذ التطبيق والتحقق…")
-        self._task("apply", self.ctl.apply, did, pol_id, mfa, True, sub)
+        self._task("apply", self.ctl.apply, did, pol_id, True, sub)
+
+    def _apply_rec_refresh(self, *_):
+        """عرض حالة بيان الاسترداد (عامل الحيازة) للجهاز المحدد — لا يكشف السر."""
+        did = self._apply_dev.currentData()
+        if not did:
+            return
+        try:
+            st = self.ctl.recovery_status(did)
+        except Exception as ex:  # noqa: BLE001
+            self._apply_rec.setText(f"تعذّر الفحص: {ex}")
+            return
+        if not st.get("ok"):
+            self._apply_rec.setText(f"غير متاح: {st.get('error', '')}")
+            return
+        rid = st.get("recovery_id", "")
+        txt = (f"جاهز (Recovery ID: {rid})" if st.get("recovery") == "Configured"
+               else f"{st.get('recovery', '')} — يلزم إصدار البيان أولًا")
+        self._apply_rec.setText(txt)
 
     # ------------------------------------------------------------------
     # الصفحة: التحقق
@@ -782,23 +768,22 @@ class App(QMainWindow):
         for mode in RECOVERY_MODES:
             self._rec_mode.addItem(f"{mode}", mode)
         fl.addWidget(self._rec_mode)
-        fl.addWidget(QLabel("رمز TOTP:"))
-        self._rec_mfa = QLineEdit()
-        self._rec_mfa.setMaximumWidth(120)
-        fl.addWidget(self._rec_mfa)
+        self._rec_rec = QLabel("")
+        self._rec_rec.setObjectName("note")
+        fl.addWidget(self._rec_rec)
         v.addWidget(form)
 
         form2 = QFrame()
         form2.setObjectName("box")
         fl2 = QHBoxLayout(form2)
-        fl2.addWidget(QLabel("الموافقة الثانية (المستخدم):"))
-        self._rec_aprv_u = QLineEdit()
-        self._rec_aprv_u.setMaximumWidth(130)
-        fl2.addWidget(self._rec_aprv_u)
-        fl2.addWidget(QLabel("رمز الموافق:"))
-        self._rec_aprv_t = QLineEdit()
-        self._rec_aprv_t.setMaximumWidth(120)
-        fl2.addWidget(self._rec_aprv_t)
+        fl2.addWidget(QLabel("الموافِق الأول (الاسم):"))
+        self._rec_aprv1 = QLineEdit()
+        self._rec_aprv1.setMaximumWidth(130)
+        fl2.addWidget(self._rec_aprv1)
+        fl2.addWidget(QLabel("الموافِق الثاني (الاسم، R1/R2):"))
+        self._rec_aprv2 = QLineEdit()
+        self._rec_aprv2.setMaximumWidth(130)
+        fl2.addWidget(self._rec_aprv2)
         fl2.addWidget(QLabel("السبب:"))
         self._rec_reason = QLineEdit()
         self._rec_reason.setMaximumWidth(180)
@@ -831,19 +816,35 @@ class App(QMainWindow):
     def _recover_action(self):
         did = self._rec_dev.currentData()
         mode = self._rec_mode.currentData()
-        mfa = self._rec_mfa.text().strip()
         if not did or not mode:
             self._err("الاسترداد", "اختر الجهاز والوضع.")
             return
-        if not mfa:
-            self._err("الاسترداد", "رمز TOTP مطلوب للاسترداد.")
-            return
+        self._rec_rec_refresh()
         self._busy_start("جاري تنفيذ الاسترداد…")
-        self._task("recover", self.ctl.recover, did, mode, mfa,
-                   approver_user=self._rec_aprv_u.text().strip(),
-                   approver_mfa=self._rec_aprv_t.text().strip(),
+        self._task("recover", self.ctl.recover, did, mode,
+                   approver1=self._rec_aprv1.text().strip(),
+                   approver2=self._rec_aprv2.text().strip(),
                    reason=self._rec_reason.text().strip(),
                    exec_=True)
+
+    def _rec_rec_refresh(self, *_):
+        """عرض حالة بيان الاسترداد (عامل الحيازة) — لا يكشف السر."""
+        did = self._rec_dev.currentData()
+        if not did:
+            return
+        try:
+            st = self.ctl.recovery_status(did)
+        except Exception as ex:  # noqa: BLE001
+            self._rec_rec.setText(f"تعذّر الفحص: {ex}")
+            return
+        if not st.get("ok"):
+            self._rec_rec.setText(f"غير متاح: {st.get('error', '')}")
+            return
+        rid = st.get("recovery_id", "")
+        txt = (f"بيان الاسترداد: جاهز (Recovery ID: {rid})"
+               if st.get("recovery") == "Configured"
+               else f"بيان الاسترداد: {st.get('recovery', '')} — سيُعترض بدون حيازة")
+        self._rec_rec.setText(txt)
 
     # ------------------------------------------------------------------
     # الصفحة: السجلات
@@ -1019,7 +1020,7 @@ class App(QMainWindow):
             self.ctl.logout()
         except Exception:
             pass
-        self._session_label.setText("غير مسجّل الدخول")
+        self._session_label.setText("وضع المشغّل المحلي — لا تسجيل دخول تفاعلي")
         self._task("devices", self._snapshot)
 
     def _render_settings(self):
@@ -1054,20 +1055,24 @@ class App(QMainWindow):
             "   - فعّل تصحيح الأخطاء (USB Debugging) في الجهاز وأذِن لهذا الكمبيوتر.\n"
             "   - من صفحة الأجهزة: أدخل الرقم التسلسلي (adb devices) ثم “تسجيل الجهاز”.\n"
             "   - اختر الجهاز ثم “فحص الجهاز (قراءة فعلية)” لعرض الهوية والقيود.\n\n"
-            "2) إنشاء المدير الأول وتسجيل الدخول\n"
-            "   - في الشريط العلوي اضغط “إنشاء المدير الأول” (اسم + كلمة مرور).\n"
-            "   - سجّل رمز TOTP في تطبيق المصادقة ثم “دخول”.\n"
-            "   - العمليات الحساسة (تطبيق/استرداد) تتطلب رمز TOTP حيًا.\n\n"
+            "2) وضع المشغّل المحلي وبيان الاسترداد\n"
+            "   - المنصة لا تستخدم تسجيل دخول تفاعلي عند بدء التشغيل — تفتح "
+            "اللوحة مباشرة.\n"
+            "   - العمليات الحساسة (تطبيق/استرداد) محكومة ببيان استرداد "
+            "للجهاز مولّد تلقائيًا\n"
+            "   - ومخزّن مشفّرًا في هذه الوحدة، مع آلية صلاحيات وموافقات "
+            "إدارية (قاعدتا موافقة).\n\n"
             "3) تطبيق السياسة\n"
             "   - من صفحة “تطبيق السياسة”: اختر الجهاز والسياسة وراجع المعاينة.\n"
             "   - المعاينة تعرض: الهدف، الحالة الحالية الفعلية، الإجراء، والمخاطرة.\n"
-            "   - اضغط “تطبيق السياسة الآن” بعد إدخال رمز TOTP.\n"
+            "   - اضغط “تطبيق السياسة الآن” — يتطلب حيازة بيان الاسترداد للجهاز.\n"
             "   - النتيجة تعرض دائمًا نتيجة تحقق REAL_DEVICE مع evidence_id.\n\n"
             "4) التحقق والالتزام\n"
             "   - تحقق من صفحة “التحقق” (نتيجة آخر تطبيق) وصفحة “حالة الالتزام”.\n"
             "   - المحاكاة لا تمنح PASS — إن لم تتوفر قراءة فعلية تظهر “غير معروف”.\n\n"
             "5) الاسترداد\n"
-            "   - R1 (نقطة الحفظ) يزيل التقييدات المطبّقة ويتطلب موافقة ثانية.\n"
+            "   - R1 (نقطة الحفظ) يزيل التقييدات المطبّقة ويتطلب موافقتين "
+            "باسمين مختلفين.\n"
             "   - R3 (فلاش المختبر) مرفوض دائمًا بقرار الحوكمة.\n\n"
             "6) متطلبات المصادر الحقيقية\n"
             "   - كل نجاح مبني على قراءة فعلية من الجهاز عبر ADB.\n"
@@ -1093,7 +1098,7 @@ class App(QMainWindow):
             "- اكتشاف القدرات أولًا ثم تطبيق المدعوم فقط.\n"
             "- متعددة الشركات والإصدارات (عبر سجل المصنّعين).\n"
             "- سجل تدقيق بسلسلة مقاومة للتلاعب (HMAC chaining).\n"
-            "- صلاحيات إدارية: مشاهد/مشغّل/مدير/مدير أعلى مع مصادقة ثنائية (TOTP).\n")
+            "- صلاحيات إدارية بآليات استرداد وموافقة (بدون تسجيل دخول تفاعلي).\n")
         v.addWidget(about, 1)
         self._stack.addWidget(page)
 
@@ -1123,8 +1128,7 @@ class App(QMainWindow):
         if err:
             self._session_label.setText("فشل فحص الإعداد")
             return
-        self._b_boot.setEnabled(bool(res))
-        self._b_login.setEnabled(not res)
+        self._session_label.setText("وضع المشغّل المحلي — لا تسجيل دخول تفاعلي")
         self._busy_start("")
 
     def _h_devices(self, res, err):
@@ -1322,43 +1326,8 @@ class App(QMainWindow):
             self._apply_pol.setCurrentText(pol_ids[0])
         self._render_policies(pols)
         self._render_apply_preview()
-
-    # ------------------------------------------------------------------
-    # مصادقة المدير
-    # ------------------------------------------------------------------
-    def _login(self):
-        user = self._ui_user.text().strip()
-        pw = self._ui_pass.text()
-        totp = self._ui_totp.text().strip()
-        if not user or not pw or not totp:
-            self._err("دخول", "أدخل اسم المستخدم وكلمة المرور ورمز TOTP.")
-            return
-        self._task("session_in", self.ctl.login, user, pw, totp)
-
-    def _bootstrap(self):
-        user = self._ui_user.text().strip()
-        pw = self._ui_pass.text()
-        if not user or not pw:
-            self._err("إنشاء المدير الأول", "أدخل اسم المستخدم وكلمة المرور أولًا.")
-            return
-        self._task("boot_do", self.ctl.bootstrap, user, pw)
-
-    def _h_boot_do(self, res, err):
-        if res.get("ok"):
-            uri = res.get("totp_uri", "")
-            QMessageBox.information(
-                self, "اكتمل الإنشاء",
-                "امسح/أدخل رمز TOTP في تطبيق المصادقة ثم سجّل الدخول.\n\n"
-                + uri + "\n\nنسخة احتياطية للسرّ: " + res.get("secret", ""))
-            self._task("bootstrap", self.ctl.needs_bootstrap)
-        else:
-            self._err("إنشاء المدير الأول", res.get("error", "فشل"))
-
-    def _logout(self):
-        self._task("logout_do", self.ctl.logout)
-
-    def _h_logout_do(self, res, err):
-        self._session_label.setText("غير مسجّل الدخول")
+        self._apply_rec_refresh()
+        self._rec_rec_refresh()
 
     # ------------------------------------------------------------------
     # عرض وإخفاء الأخطاء

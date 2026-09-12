@@ -1,9 +1,11 @@
 """RecoveryEngine — R1..R4 (approved §7 recovery matrix / EXECUTE §20).
 
   R1_RESTORE_POINT  rollback the applied policy on the device (CLEAR_POLICY).
-                    Reversible, MEDIUM impact -> RECOVER approval + MFA.
-  R2_REPROVISION    re-enroll steps (QR / dpm path). RECOVER approval + MFA;
-                    shell execution only with exec=True (still approval-gated).
+                    Reversible, MEDIUM impact -> RECOVER approval + the
+                    per-device recovery credential (possession factor).
+  R2_REPROVISION    re-enroll steps (QR / dpm path). RECOVER approval +
+                    recovery credential; shell execution only with exec=True
+                    (still approval-gated).
   R3_LAB_FLASH      governance gate — NEVER executes. Records an explicit
                     REFUSED_GOVERNANCE_LAB_ONLY evidential audit. R3 is a
                     Lab-Only procedure (two-person + firmware files) and is
@@ -14,6 +16,10 @@ Honesty invariants (same law as the Director):
   - PASS is impossible without an evidence id AND a real device observation
     (source=REAL_DEVICE). SIMULATED sources structurally cannot PASS.
   - Every outcome is chained into the tamper-evident audit log even on refusal.
+
+The admin factor ("mfa_ok" in the legacy callers, "credential_ok" in the new
+console) is satisfied by the per-device recovery credential (RecoveryVault)
+verify_for() — see AUTHENTICATION_AND_RECOVERY_DESIGN.html §9/§10/§16.
 """
 from __future__ import annotations
 
@@ -85,25 +91,36 @@ class RecoveryEngine:
 
     # ------------------------------------------------------------------
     def recover(self, device_id: str, mode: str, op_role: str, admin_id: int,
-                mfa_ok: bool = False, approval=None, serial: str = "",
-                exec_: bool = False, restore_reason: str = "") -> RecoveryResult:
+                mfa_ok: bool = False, credential_ok=None, approval=None,
+                serial: str = "", exec_: bool = False,
+                restore_reason: str = "") -> RecoveryResult:
+        """Run a recovery mode.
+
+        mfa_ok: legacy alias — retained so existing callers/tests keep working.
+        credential_ok: the per-device recovery credential possession factor
+        (RecoveryVault). When None (legacy callers), credential_ok derives
+        from mfa_ok so old flows keep their previous authorization behavior.
+        """
         if mode not in RECOVERY_MODES:
             raise RecoveryBlocked(f"unknown recovery mode {mode!r}")
+        if credential_ok is None:
+            credential_ok = bool(mfa_ok)
         handler = {
             "R1_RESTORE_POINT": self._r1,
             "R2_REPROVISION": self._r2,
             "R3_LAB_FLASH": self._r3,
             "R4_DIAGNOSTIC": self._r4,
         }[mode]
-        return handler(device_id, op_role, admin_id, mfa_ok, approval or {},
+        return handler(device_id, op_role, admin_id, credential_ok, approval or {},
                        serial, exec_, restore_reason)
 
     # ------------------------------------------------------------------
-    def _authorize(self, op_role: str, operation: str, mfa_ok: bool,
+    def _authorize(self, op_role: str, operation: str, credential_ok: bool,
                    approval: dict, mode: str) -> None:
         try:
-            rbac.authorize(op_role, operation, require_mfa=True,
-                           mfa_ok=mfa_ok, approval=approval)
+            rbac.authorize(op_role, operation, require_mfa=False, mfa_ok=False,
+                           approval=approval, require_credential=True,
+                           credential_ok=credential_ok)
         except PermissionError as ex:
             raise RecoveryBlocked(f"{mode} authorization failed: {ex}")
 
@@ -120,10 +137,10 @@ class RecoveryEngine:
         return "REC-" + time.strftime("%Y%m%d") + "-" + uuid.uuid4().hex[:8].upper()
 
     # ------------------------------------------------------------------
-    def _r1(self, device_id, op_role, admin_id, mfa_ok, approval, serial,
+    def _r1(self, device_id, op_role, admin_id, credential_ok, approval, serial,
             exec_, reason) -> RecoveryResult:
         res = RecoveryResult("R1_RESTORE_POINT", device_id)
-        self._authorize(op_role, "RECOVER", mfa_ok, approval, "R1")
+        self._authorize(op_role, "RECOVER", credential_ok, approval, "R1")
         self._update_state(device_id, "RECOVERY")
 
         env = new_command(0, device_id, "CLEAR_POLICY",
@@ -170,10 +187,10 @@ class RecoveryEngine:
         return res
 
     # ------------------------------------------------------------------
-    def _r2(self, device_id, op_role, admin_id, mfa_ok, approval, serial,
+    def _r2(self, device_id, op_role, admin_id, credential_ok, approval, serial,
             exec_, reason) -> RecoveryResult:
         res = RecoveryResult("R2_REPROVISION", device_id)
-        self._authorize(op_role, "RECOVER", mfa_ok, approval, "R2")
+        self._authorize(op_role, "RECOVER", credential_ok, approval, "R2")
         plan = [
             {"step": 1, "cmd": "adb shell settings put secure user_setup_complete 0",
              "why": "unlock device-owner provisioning (AOSP blocks DO with accounts)"},
@@ -188,8 +205,10 @@ class RecoveryEngine:
         executed = []
         if exec_ and serial:
             try:
-                rbac.authorize(op_role, "RECOVER", require_mfa=True,
-                               mfa_ok=mfa_ok, approval=approval)
+                rbac.authorize(op_role, "RECOVER", require_mfa=False,
+                               mfa_ok=False, approval=approval,
+                               require_credential=True,
+                               credential_ok=credential_ok)
                 ok_all = True
                 for step in plan:
                     raw = step["cmd"].replace("adb shell ", "")
@@ -213,12 +232,12 @@ class RecoveryEngine:
         return res
 
     # ------------------------------------------------------------------
-    def _r3(self, device_id, op_role, admin_id, mfa_ok, approval, serial,
+    def _r3(self, device_id, op_role, admin_id, credential_ok, approval, serial,
             exec_, reason) -> RecoveryResult:
         """Governance gate — ALWAYS refuses. Lab-Only R3 is not app-executable."""
         res = RecoveryResult("R3_LAB_FLASH", device_id, status="REFUSED")
         # Authorization is enforced (fails closed even for the refusal event).
-        self._authorize(op_role, "FIRMWARE", mfa_ok, approval, "R3")
+        self._authorize(op_role, "FIRMWARE", credential_ok, approval, "R3")
         res.reason = ("REFUSED_GOVERNANCE_LAB_ONLY — firmware flashing is a "
                       "Lab-Only procedure (two-person review + firmware files). "
                       "It is never executable from the management application.")

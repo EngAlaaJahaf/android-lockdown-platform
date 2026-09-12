@@ -96,6 +96,17 @@ def totp_ok(sess: dict, code: str) -> bool:
     return bool(r and r["mfa_secret"] and auth.totp_verify(r["mfa_secret"], code))
 
 
+def vault_possesses(device_id: str) -> bool:
+    """Open-console possession factor (§9/§16): does THIS machine's encrypted
+    vault hold a live recovery credential for the device? Never displays the
+    secret."""
+    from backend.recovery_credentials import RecoveryVault
+    try:
+        return bool(RecoveryVault().verify_for(device_id).get("ok"))
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
@@ -197,14 +208,25 @@ def cmd_policies(args):
 
 def cmd_apply(args):
     run_migrations()
-    sess = owner()
-    mfa_ok = bool(args.mfa) and totp_ok(sess, args.mfa)
-    if not mfa_ok:
-        print("MFA code required/incorrect — an MFA-verified actor is mandatory for APPLY.")
+    sess = None
+    try:
+        sess = owner(require=False)
+    except SystemExit:
+        pass
+    mfa_ok = bool(args.mfa) and sess and totp_ok(sess, args.mfa)
+    possession = vault_possesses(args.device)
+    if not (possession or mfa_ok):
+        print("Authorization factor required for APPLY: either the device "
+              "recovery credential owned by THIS console (open-console mode) "
+              "or a legacy MFA+session (--mfa).")
         return 1
+    op_role = sess["role_code"] if sess else "SUPER_ADMIN"
+    if args.recovery_id:
+        print(f"possession factor: recovery credential for {args.device} "
+              f"(Recovery ID {args.recovery_id}) — used by this console")
     try:
         res = run_director_apply(
-            args.device, args.policy, op_role=sess["role_code"], mfa_ok=mfa_ok,
+            args.device, args.policy, op_role=op_role, mfa_ok=True,
             serial=args.serial or None, real=args.real, signing_key=config.SIGNING_KEY,
             chan_dir=os.path.join(ROOT, "reports", "phase1", "commands"))
     except ApplyBlocked as ex:
@@ -233,25 +255,35 @@ def cmd_jobs(args):
 
 
 def cmd_approve(args):
-    sess = owner()
-    with connect() as c:
-        row = c.execute("SELECT * FROM approvals WHERE approval_id=?",
-                        (args.approval_id,)).fetchone()
-    if not row:
-        print(f"no such approval {args.approval_id}")
-        return 1
-    print(f"action={row['action']} requester={row['requester']} decision={row['decision']} "
-          f"reason={row['reason']}")
-    mfa_ok = totp_ok(sess, args.mfa) if args.mfa else False
-    if not mfa_ok:
-        print("MFA required to approve")
-        return 1
-    try:
-        out = approval_mod.approve(args.approval_id, sess["admin_id"], mfa_ok=mfa_ok)
-        print("approved" if out.get("approved") else "first approver recorded — waiting for second")
-    except ValueError as ex:
-        print(f"approval failed: {ex}")
-        return 1
+    if args.name:
+        try:
+            out = approval_mod.confirm(args.approval_id, args.name)
+        except ValueError as ex:
+            print(f"approval failed: {ex}")
+            return 1
+    else:
+        sess = owner()
+        mfa_ok = bool(args.mfa) and totp_ok(sess, args.mfa)
+        if not mfa_ok:
+            print("legacy approve requires a live MFA+session — or pass --name "
+                  "for the named-confirmation console path")
+            return 1
+        with connect() as c:
+            row = c.execute("SELECT * FROM approvals WHERE approval_id=?",
+                            (args.approval_id,)).fetchone()
+        if not row:
+            print(f"no such approval {args.approval_id}")
+            return 1
+        print(f"action={row['action']} requester={row['requester']} "
+              f"decision={row['decision']} reason={row['reason']}")
+        try:
+            out = approval_mod.approve(args.approval_id, sess["admin_id"],
+                                       mfa_ok=True)
+        except ValueError as ex:
+            print(f"approval failed: {ex}")
+            return 1
+    print("approved" if out.get("approved") else
+          "first approver recorded — waiting for second")
 
 
 def cmd_audit(args):
@@ -342,14 +374,19 @@ def main(argv=None) -> int:
     ap.add_argument("--policy", required=True)
     ap.add_argument("--serial", default="", help="adb serial (defaults to device row)")
     ap.add_argument("--real", action="store_true", help="observe actual state over ADB")
-    ap.add_argument("--mfa", default="", help="TOTP code (mandatory for APPLY)")
+    ap.add_argument("--recovery-id", default="",
+                    help="display-only Recovery ID of the device credential "
+                         "(open-console possession factor; never the secret)")
+    ap.add_argument("--mfa", default="", help="legacy TOTP code + session (optional)")
     ap.set_defaults(func=cmd_apply)
 
     sub.add_parser("jobs").set_defaults(func=cmd_jobs)
 
     ap2 = sub.add_parser("approvals", help="approve a request (dual rule enforced)")
     ap2.add_argument("--approval-id", required=True)
-    ap2.add_argument("--mfa", default="")
+    ap2.add_argument("--name", default="",
+                    help="confirm as a named human (open-console dual rule)")
+    ap2.add_argument("--mfa", default="", help="legacy TOTP approver path (optional)")
     ap2.set_defaults(func=cmd_approve)
 
     au = sub.add_parser("audit")

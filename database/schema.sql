@@ -300,6 +300,41 @@ CREATE TABLE IF NOT EXISTS recovery_actions (
     created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- -----------------------------------------------------------------------------
+-- 8.1 RECOVERY CREDENTIALS — one system-generated, per-device credential.
+--     AUTHENTICATION_AND_RECOVERY_DESIGN.html §7/§8/§16:
+--       - never shared between devices, never shown to end users;
+--       - stored encrypted ONLY (AES-256-GCM); the secret itself is never
+--         written in plaintext, never logged, never exported;
+--       - recovery_id is the display-only handle (XXXX-XXXX).
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS recovery_credentials (
+    device_id             TEXT NOT NULL UNIQUE REFERENCES devices(device_id),
+    recovery_id           TEXT NOT NULL UNIQUE,   -- display-only "XXXX-XXXX" (never the secret)
+    credential_ciphertext BLOB NOT NULL,          -- AES-256-GCM (nonce||ct||tag) of the 32-byte credential
+    nonce                 BLOB NOT NULL,          -- AES-GCM nonce (12 bytes)
+    created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+    rotated_at            TEXT,
+    revoked               INTEGER NOT NULL DEFAULT 0 CHECK (revoked IN (0,1))
+);
+CREATE INDEX IF NOT EXISTS idx_recovery_creds_device ON recovery_credentials(device_id);
+
+-- -----------------------------------------------------------------------------
+-- 8.2 APPROVAL CONFIRMATIONS — named human confirmations for the approval gate.
+--     Replaces the old TOTP/MFA factor: the possession factor for sensitive
+--     device operations is the per-device recovery credential (verified by the
+--     caller); dual rule = two distinct named confirmations for destructive ops.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS approval_confirmations (
+    id            INTEGER PRIMARY KEY,
+    approval_id   TEXT NOT NULL REFERENCES approvals(approval_id),
+    seq           INTEGER NOT NULL,
+    approver_name TEXT NOT NULL,
+    confirmed_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (approval_id, seq)
+);
+CREATE INDEX IF NOT EXISTS idx_approval_confirmations ON approval_confirmations(approval_id);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id           INTEGER PRIMARY KEY,
     entry_id     TEXT NOT NULL UNIQUE,

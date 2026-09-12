@@ -1,6 +1,7 @@
 """Tests for the desktop Controller (headless, no GUI)."""
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
@@ -54,12 +55,18 @@ class ControllerFlows(unittest.TestCase):
         r = self.ctl.login("tester", "pass", "000000")
         self.assertFalse(r["ok"])               # bad TOTP must fail
 
-    def test_apply_requires_session(self):
-        from alp_manager.controller import Controller
-        fresh = Controller(db_path=self.db, session_file=os.path.join(self.tmp, "s2.json"))
-        r = fresh.apply("DEV-1", "PHONE_ONLY", mfa="123456")
+    def test_apply_requires_recovery_credential(self):
+        # Open console: APPLY is gated by the per-device recovery credential
+        # (possession factor), NOT by an interactive login/TOTP session.
+        from backend.recovery_credentials import RecoveryVault
+        self._seed_device(self.ctl, "D-CTRL-1", "SERCTRL1")
+        r = self.ctl.apply("D-CTRL-1", "PHONE_ONLY")
         self.assertFalse(r["ok"])
-        self.assertIn("no session", r["error"])
+        self.assertIn("recovery credential", r["error"])
+        # after issuing the device credential the gate passes
+        RecoveryVault(self.db).generate_for("D-CTRL-1")
+        stale = self.ctl.apply("D-CTRL-1", "PHONE_ONLY")
+        self.assertNotIn("recovery credential", stale.get("error", ""))
 
     def test_policies_synced(self):
         pols = self.ctl.policies()
@@ -68,22 +75,57 @@ class ControllerFlows(unittest.TestCase):
         self.assertIn("POL-FULL_LOCKDOWN", ids)
 
     def test_recover_r3_refused_regardless(self):
-        r = self.ctl.recover("DEV-1", "R3_LAB_FLASH", mfa="123456", skip_approval=True)
+        from backend.recovery_credentials import RecoveryVault
+        self._seed_device(self.ctl, "D-CTRL-5", "SERCTRL5")
+        RecoveryVault(self.db).generate_for("D-CTRL-5")
+        r = self.ctl.recover("D-CTRL-5", "R3_LAB_FLASH", skip_approval=True)
         self.assertFalse(r["ok"])
-        self.assertIn("no session", r["error"])
+        self.assertIn("REFUSED", (r.get("error") or "").upper())
 
-    def test_recover_r1_needs_second_approver(self):
-        self.ctl.bootstrap("tester", "pass")
-        from backend import auth
-        from backend.db import connect
-        with connect(self.db) as c:
-            row = c.execute("SELECT id FROM administrators LIMIT 1").fetchone()
-            token = auth.create_session(row["id"])
-            self.ctl._save_session({"token": token})
-        r = self.ctl.recover("DEV-1", "R1_RESTORE_POINT", mfa="000000",
-                             skip_approval=False, reason="test")
+    def test_recover_r1_requires_credential_then_confirmation(self):
+        from backend.recovery_credentials import RecoveryVault
+        self._seed_device(self.ctl, "D-CTRL-6", "SERCTRL6")
+        # possession factor blocks first
+        r = self.ctl.recover("D-CTRL-6", "R1_RESTORE_POINT", reason="test")
         self.assertFalse(r["ok"])
-        self.assertIn("MFA", r["error"])
+        self.assertIn("recovery credential", r["error"])
+        RecoveryVault(self.db).generate_for("D-CTRL-6")
+        # now the dual-rule confirmation gate requires named approvers
+        r2 = self.ctl.recover("D-CTRL-6", "R1_RESTORE_POINT", reason="test")
+        self.assertFalse(r2["ok"])
+        self.assertIn("approver", r2["error"])
+        self.assertIn("approval_id", r2)
+
+    def test_recovery_status_roundtrip(self):
+        from backend.recovery_credentials import RecoveryVault
+        self._seed_device(self.ctl, "D-CTRL-7", "SERCTRL7")
+        st0 = self.ctl.recovery_status("D-CTRL-7")
+        self.assertTrue(st0["ok"])
+        self.assertEqual(st0["recovery"], "Not Configured")
+        RecoveryVault(self.db).generate_for("D-CTRL-7")
+        st1 = self.ctl.recovery_status("D-CTRL-7")
+        self.assertEqual(st1["recovery"], "Configured")
+        self.assertRegex(st1["recovery_id"], r"^[0-9A-F]{4}-[0-9A-F]{4}$")
+        # display-only: status must never leak the 32-byte credential secret
+        blob = json.dumps(st1)
+        self.assertNotIn('"ok":"', blob.lower())
+
+    def test_rotate_and_revoke_recovery(self):
+        from backend.recovery_credentials import RecoveryVault
+        self._seed_device(self.ctl, "D-CTRL-8", "SERCTRL8")
+        first = RecoveryVault(self.db).generate_for("D-CTRL-8")
+        rid1 = first["recovery_id"]
+        rot = self.ctl.rotate_recovery("D-CTRL-8")
+        self.assertTrue(rot["ok"])
+        self.assertNotEqual(rot["recovery_id"], rid1)
+        rev = self.ctl.revoke_recovery("D-CTRL-8")
+        self.assertTrue(rev["ok"])
+        st = self.ctl.recovery_status("D-CTRL-8")
+        self.assertEqual(st["recovery"], "Revoked")
+        # a revoked credential must no longer satisfy the possession gate
+        r = self.ctl.recover("D-CTRL-8", "R4_DIAGNOSTIC", skip_approval=True)
+        self.assertFalse(r["ok"])
+        self.assertIn("recovery credential", r["error"])
 
     def test_audit_and_tamper(self):
         self.ctl.bootstrap("tester", "pass")

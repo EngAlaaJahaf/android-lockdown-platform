@@ -1,16 +1,29 @@
 """ALP Manager Controller — headless desktop logic (testable without GUI).
 
-Wraps the backends/engines behind one API used by the Tkinter UI and by tests:
+Wraps the backends/engines behind one API used by the GUI and by tests:
 
-    bootstrap / login / logout / whoami
+    bootstrap / login / logout / whoami      (legacy admin/TOTP surface, CLI+API)
     adb_status / devices / enroll / probe
     apply (Director AD-4, real ADB channel) / verify are part of apply
     recover (RecoveryEngine R1..R4, approval-gated)
+    recovery_status / recovery_vault_summary / rotate_recovery / revoke_recovery
     audit tail + tamper check
     generate_device_report (markdown)
 
+OPEN-CONSOLE MODEL (AUTHENTICATION_AND_RECOVERY_DESIGN.html §4/§6/§9):
+the console opens the dashboard directly — there is no interactive
+Login/TOTP at startup. Sensitive device operations (APPLY / RECOVER /
+FIRMWARE) are governed by:
+    - a possession factor: the per-device system-generated recovery credential
+      (RecoveryVault.verify_for), verified against THIS console's encrypted
+      vault — the operator never types a secret and reports never expose one;
+    - the approval gate (§11 dual rule): two distinct named human
+      confirmations for destructive R1/R2 operations;
+    - RBAC rules from the policy engine (roles still apply where sessions
+      exist; local-operator console runs are gated by the credential factor).
+
 Honesty is inherited from the engines: PASS requires a REAL_DEVICE observation
-and an evidence id; SIMULATED never passes; recovery R3 always refusess.
+and an evidence id; SIMULATED never passes; recovery R3 always refuses.
 """
 from __future__ import annotations
 
@@ -28,6 +41,7 @@ import backend.config as config                    # noqa: E402
 from backend.db import connect, run_migrations     # noqa: E402
 from backend import auth, audit as audit_mod       # noqa: E402
 from backend import approval as approval_mod       # noqa: E402
+from backend.recovery_credentials import RecoveryVault          # noqa: E402
 from backend.workflows import (attached_serials, enroll_device,                # noqa: E402
                                persist_reference_policies, run_director_apply,
                                resolve_policy, live_probe,
@@ -71,15 +85,47 @@ class Controller:
         except Exception:
             return None
 
-    def _require_session(self) -> dict:
+    def _require_session(self, session_required: bool = True) -> dict | None:
+        """Return the active legacy session row, or None when relaxed.
+
+        With session_required=True this preserves the historic behavior
+        (raise). With False, a missing session means the console is running
+        as a local operator — the sensitive-op gate is then the per-device
+        recovery credential, not a login session.
+        """
         sess = self._load_session()
         if not sess or not sess.get("token"):
-            raise PermissionError("no session — run: login")
+            if not session_required:
+                return None
+            raise PermissionError(
+                "no session — the console runs in local-operator mode "
+                "(no interactive login at startup); sensitive device "
+                "operations use the per-device recovery credential")
         row = auth.resolve_session(sess["token"])
         if not row:
             self._save_session({})
-            raise PermissionError("session expired — login again")
+            if not session_required:
+                return None
+            raise PermissionError(
+                "session expired — reinstate a session or continue in "
+                "local-operator mode")
         return dict(row)
+
+    def _can_use_recovery(self, device_id: str) -> bool:
+        """Possession factor (§9/§16): does THIS console hold a live,
+        unrevoked, decryptable recovery credential for `device_id`?
+        Never logs or exposes the secret itself."""
+        try:
+            return bool(RecoveryVault(self.db_path)
+                        .verify_for(device_id).get("ok"))
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _operator_role(self) -> str:
+        """Legacy session role when present; otherwise the local-operator
+        console still binds sensitive ops to the device credential."""
+        sess = self._require_session(session_required=False)
+        return (sess or {}).get("role_code") or "SUPER_ADMIN"
 
     def _totp_ok(self, admin_id: int, code: str) -> bool:
         with connect(self.db_path) as c:
@@ -122,8 +168,9 @@ class Controller:
         try:
             s = self._require_session()
             return f"{s['username']}  role={s['role_code']}  token={s['token'][:8]}…"
-        except PermissionError as ex:
-            return str(ex)
+        except PermissionError:
+            return ("local operator (no session) — sensitive device ops use "
+                    "the per-device recovery credential")
 
     def logout(self) -> dict:
         sess = self._load_session()
@@ -180,14 +227,15 @@ class Controller:
     # ------------------------------------------------------------------
     # Apply (Director AD-4) with a REAL adb channel
     # ------------------------------------------------------------------
-    def apply(self, device_id: str, policy: str, mfa: str,
+    def apply(self, device_id: str, policy: str,
               real: bool = True, lane_subset: str = "") -> dict:
-        try:
-            sess = self._require_session()
-        except PermissionError as ex:
-            return {"ok": False, "error": str(ex)}
-        if not self._totp_ok(sess["admin_id"], mfa):
-            return {"ok": False, "error": "MFA code required/incorrect — an MFA-verified actor is mandatory for APPLY"}
+        """Director AD-4 for one device. Gated by the per-device recovery
+        credential (possession factor) — no interactive Login/TOTP needed."""
+        if not self._can_use_recovery(device_id):
+            return {"ok": False, "error":
+                    f"APPLY blocked — no active recovery credential for "
+                    f"{device_id} on this console (possession factor). "
+                    f"Issue the credential for the device first."}
         with connect(self.db_path) as c:
             dev = c.execute("SELECT * FROM devices WHERE device_id=?",
                             (device_id,)).fetchone()
@@ -202,7 +250,7 @@ class Controller:
             config.REPORTS_DIR, "phase1", "commands")) if real else (None, {})
         try:
             res = run_director_apply(
-                device_id, policy, op_role=sess["role_code"],
+                device_id, policy, op_role=self._operator_role(),
                 mfa_ok=True, serial=serial if real else None,
                 real=real, signing_key=config.SIGNING_KEY,
                 channel_send=send)
@@ -214,41 +262,53 @@ class Controller:
     # ------------------------------------------------------------------
     # Recovery (R1..R4)
     # ------------------------------------------------------------------
-    def recover(self, device_id: str, mode: str, mfa: str,
+    def recover(self, device_id: str, mode: str,
                 serial: str = "", exec_: bool = False,
-                approver_user: str = "", approver_mfa: str = "",
+                approver1: str = "", approver2: str = "",
                 reason: str = "", skip_approval: bool = False) -> dict:
-        try:
-            sess = self._require_session()
-            admin_id, role = sess["admin_id"], sess["role_code"]
-            if not self._totp_ok(admin_id, mfa):
-                return {"ok": False, "error": "MFA code required for recovery"}
-        except PermissionError as ex:
-            return {"ok": False, "error": str(ex)}
+        if not self._can_use_recovery(device_id):
+            return {"ok": False, "error":
+                    f"{mode} blocked — no active recovery credential for "
+                    f"{device_id} on this console (possession factor)"}
+        if mode not in RECOVERY_MODES:
+            return {"ok": False, "error": f"unknown recovery mode {mode!r}"}
 
         approval = {"approved": False}
-        if mode in ("R1_RESTORE_POINT", "R2_REPROVISION"):
+        if mode == "R3_LAB_FLASH":
+            # Governance gate: nothing executes. Approval is recorded as
+            # satisfied so the engine emits its explicit REFUSED outcome.
+            approval = {"approved": True,
+                        "reason": "R3 governance refusal — Lab-Only, never "
+                                  "executable from the management app"}
+        elif mode in ("R1_RESTORE_POINT", "R2_REPROVISION"):
             if skip_approval:
-                approval = {"approved": True, "reason": "test-only bypass"}
+                approval = {"approved": True,
+                            "reason": "approval skipped (drill/test path)"}
             else:
-                aid = approval_mod.request_approval(admin_id, "RECOVER", device_id,
+                aid = approval_mod.request_approval(None, "RECOVER", device_id,
                                                     reason=reason or f"recovery {mode}")
-                if not approver_user:
+                try:
+                    if not approver1:
+                        return {"ok": False, "approval_id": aid,
+                                "error": "approval required — first named approver "
+                                         "confirmation missing (dual rule: two "
+                                         "distinct names)"}
+                    first = approval_mod.confirm(aid, approver1)
+                    if not first.get("approved"):
+                        if not approver2:
+                            return {"ok": False, "approval_id": aid,
+                                    "error": "approval pending — second distinct "
+                                             "approver confirmation required"}
+                        second = approval_mod.confirm(aid, approver2)
+                        if not second.get("approved"):
+                            return {"ok": False, "approval_id": aid,
+                                    "error": "approval not completed"}
+                except ValueError as ex:
                     return {"ok": False, "approval_id": aid,
-                            "error": "approval required — a second (distinct) approver with MFA must approve"}
-                with connect(self.db_path) as c:
-                    arr = c.execute(
-                        "SELECT id, mfa_secret FROM administrators WHERE username=? AND active=1",
-                        (approver_user,)).fetchone()
-                if not arr or arr["id"] == admin_id:
-                    return {"ok": False, "approval_id": aid,
-                            "error": "approver must be an active, distinct administrator"}
-                if not (arr["mfa_secret"] and auth.totp_verify(arr["mfa_secret"], approver_mfa)):
-                    return {"ok": False, "approval_id": aid, "error": "bad approver MFA code"}
-                out = approval_mod.approve(aid, arr["id"], mfa_ok=True)
-                if not out.get("approved") or not approval_mod.is_approved(aid):
-                    return {"ok": False, "approval_id": aid, "error": "approval not completed"}
-                approval = {"approved": True, "reason": f"recovery {mode} approved ({approver_user})"}
+                            "error": f"approval failed: {ex}"}
+                approval = {"approved": True,
+                            "reason": f"{mode} approved by {approver1}"
+                                      + (f" + {approver2}" if approver2 else "")}
 
         with connect(self.db_path) as c:
             dev = c.execute("SELECT serial FROM devices WHERE device_id=?",
@@ -266,13 +326,60 @@ class Controller:
             send, _ = adb_channel(dev_serial, out_dir="") if dev_serial else (None, {})
             eng = RecoveryEngine(db_path=self.db_path, channel_send=send,
                                  signing_key=config.SIGNING_KEY, probe=probe)
-            res = eng.recover(device_id, mode, role, admin_id,
+            res = eng.recover(device_id, mode, self._operator_role(), 0,
                               mfa_ok=True, approval=approval,
                               serial=dev_serial if dev_serial in attached_serials() else "",
                               exec_=exec_, restore_reason=reason)
-            res.ok = True
-            return res.to_dict()
+            d = res.to_dict()
+            d["ok"] = res.status in ("COMPLETE", "PARTIAL")
+            if not d["ok"]:
+                d["error"] = res.reason or res.status
+            return d
         except Exception as ex:
+            return {"ok": False, "error": f"{type(ex).__name__}: {ex}"}
+
+    # ------------------------------------------------------------------
+    # Recovery vault — per-device credential status / rotation / revoke
+    # Display-only: never exposes the secret, only `Recovery ID: XXXX-XXXX`.
+    # ------------------------------------------------------------------
+    def recovery_status(self, device_id: str) -> dict:
+        """Display-only per-device status (Configured/Not Configured/Revoked/
+        Mismatch) + the display-only Recovery ID."""
+        try:
+            st = RecoveryVault(self.db_path).status(device_id)
+            st["ok"] = True
+            return st
+        except Exception as ex:  # noqa: BLE001
+            return {"ok": False, "recovery": "Unavailable",
+                    "recovery_id": "", "error": str(ex)}
+
+    def recovery_vault_summary(self) -> dict:
+        try:
+            return {"ok": True,
+                    "devices": RecoveryVault(self.db_path).summary()}
+        except Exception as ex:  # noqa: BLE001
+            return {"ok": False, "error": str(ex)}
+
+    def rotate_recovery(self, device_id: str) -> dict:
+        try:
+            vault = RecoveryVault(self.db_path)
+            st = vault.status(device_id)
+            if st["recovery"] not in ("Configured", "Mismatch"):
+                return {"ok": False,
+                        "error": f"no active recovery credential for "
+                                 f"{device_id} to rotate"}
+            out = vault.rotate_for(device_id)
+            out["ok"] = True
+            return out
+        except Exception as ex:  # noqa: BLE001
+            return {"ok": False, "error": f"{type(ex).__name__}: {ex}"}
+
+    def revoke_recovery(self, device_id: str) -> dict:
+        try:
+            out = RecoveryVault(self.db_path).revoke_for(device_id)
+            out["ok"] = True
+            return out
+        except Exception as ex:  # noqa: BLE001
             return {"ok": False, "error": f"{type(ex).__name__}: {ex}"}
 
     # ------------------------------------------------------------------

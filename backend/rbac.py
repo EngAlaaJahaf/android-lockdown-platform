@@ -27,11 +27,17 @@ def decision_for(role_code: str, operation: str) -> Optional[str]:
 
 
 def authorize(role_code: str, operation: str, require_mfa: bool = True,
-              mfa_ok: bool = False, approval: Optional[dict] = None) -> str:
+              mfa_ok: bool = False, approval: Optional[dict] = None,
+              require_credential: bool = False,
+              credential_ok: bool = False) -> str:
     """Returns 'ALLOW' or 'APPROVED'; raises AuthorizationError otherwise.
 
     approval: {'approved': bool, 'reason': str, 'dual': bool} for REQUIRES_APPROVAL
     or dual-approval sensitive operations.
+
+    credential_ok: device possession factor. Sensitive device operations use
+    the per-device recovery credential (RecoveryVault) instead of an MFA/TOTP
+    code — see AUTHENTICATION_AND_RECOVERY_DESIGN.html §9/§10/§16.
     """
     decision = decision_for(role_code, operation)
     if decision is None:
@@ -41,6 +47,10 @@ def authorize(role_code: str, operation: str, require_mfa: bool = True,
     if decision == "REQUIRES_APPROVAL":
         if not (approval and approval.get("approved")):
             raise AuthorizationError(f"{operation} requires approval gate")
+    if require_credential and not credential_ok:
+        raise AuthorizationError(
+            f"{operation} requires the device recovery credential "
+            f"(possession factor) for role {role_code}")
     if require_mfa and not mfa_ok:
         raise AuthorizationError(f"{operation} requires MFA for role {role_code}")
     return "APPROVED" if decision == "REQUIRES_APPROVAL" else "ALLOW"

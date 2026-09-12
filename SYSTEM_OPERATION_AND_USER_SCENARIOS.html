@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل التشغيل وسناريوهات المستخدم — منصة إدارة وتقييد أجهزة المؤسسة (ALP)</title>
+<style>
+  :root{
+    --ink:#1c2833; --muted:#5a6a7c; --line:#d9e0ea; --bg:#f4f6fa; --card:#ffffff;
+    --brand:#1f4e79; --brand2:#2f6fed; --good:#1d8a4c; --bad:#c0392b; --warn:#b76e00;
+    --prop:#7a4dbd; --soft:#eef2f7; --soft2:#e9eef5;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:var(--bg); color:var(--ink);
+       font-family:"Segoe UI","Noto Naskh Arabic","Tahoma",Arial,sans-serif;
+       font-size:15px; line-height:1.75;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 20px;}
+  a{color:var(--brand2); text-decoration:none;} a:hover{text-decoration:underline;}
+  header.cover{background:linear-gradient(135deg,#132a45 0%,#1f4e79 60%,#2f6fed 100%); color:#fff; padding:42px 0 34px;}
+  .kicker{display:inline-block; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28);
+          padding:4px 14px; border-radius:999px; font-size:13px; letter-spacing:.3px; margin-bottom:14px;}
+  h1.doc-title{font-size:30px; margin:8px 0 6px; line-height:1.35;}
+  .doc-sub{font-size:16px; opacity:.92; margin:0 0 18px;}
+  .meta-grid{display:flex; flex-wrap:wrap; gap:18px; font-size:13px; opacity:.95;}
+  .meta-grid b{display:block; font-size:11px; opacity:.75; margin-bottom:2px;}
+  nav.toc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 24px; margin:26px 0;}
+  nav.toc h2{margin:0 0 12px; font-size:17px; color:var(--brand);}
+  nav.toc ol{columns:2; column-gap:40px; margin:0; padding-right:0; list-style:none; counter-reset:sec;}
+  nav.toc li{margin:4px 0; counter-increment:sec; font-size:14px;}
+  nav.toc li a{color:var(--ink);}
+  nav.toc li.doing a{color:var(--prop); font-weight:600;}
+  nav.toc li::before{content:"§" counter(sec); color:var(--brand2); font-weight:700; margin-left:7px; font-size:12px;}
+  section.block{background:var(--card); border:1px solid var(--line); border-radius:14px;
+                padding:26px 30px; margin:26px 0;}
+  section.block h2{color:var(--brand); font-size:22px; margin:0 0 6px;}
+  section.block h3{color:var(--brand2); font-size:17px; margin:26px 0 8px;}
+  section.block h4{color:var(--ink); font-size:15px; margin:18px 0 6px;}
+  .secno{color:var(--brand2); font-weight:800; font-size:90%; margin-left:8px;}
+  .lead{color:var(--muted); margin:0 0 16px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .grid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; background:#fff; font-size:13.5px;}
+  th,td{border:1px solid var(--line); padding:8px 10px; text-align:right; vertical-align:top;}
+  th{background:var(--soft2); color:var(--brand); font-weight:700;}
+  tbody tr:nth-child(even){background:#fafbfd;}
+  .tag{display:inline-block; border-radius:999px; padding:1px 10px; font-size:11.5px; font-weight:700; white-space:nowrap;}
+  .t-impl{background:#e3f4ea; color:#157a3d;}   /* IMPLEMENTED */
+  .t-part{background:#fff4d6; color:#9a6b00;}   /* PARTIALLY IMPLEMENTED */
+  .t-plan{background:#efe8fb; color:#6a36b8;}   /* PLANNED */
+  .t-unsup{background:#fdeaea; color:#b3362b;}  /* UNSUPPORTED */
+  .t-nv{background:#e8edf5; color:#40546e;}     /* NOT VERIFIED */
+  .boxed{border:1px solid var(--line); border-radius:12px; padding:16px 20px; background:var(--soft); margin:14px 0;}
+  .boxed.prop{border-style:dashed; border-color:var(--prop); background:#faf8ff;}
+  .boxed.good{border-color:#b7e0c6; background:#f2fbf5;}
+  .boxed.bad{border-color:#f0bfba; background:#fdf3f2;}
+  .boxed.warn{border-color:#ecd3a0; background:#fffaf0;}
+  .boxed h4{margin-top:0;}
+  .note{font-size:13px; color:var(--muted);}
+  .small{font-size:12.5px;}
+  .mono{font-family:Consolas,"Courier New",monospace; direction:ltr; unicode-bidi:embed;
+        background:#f3f5f9; border:1px solid var(--line); border-radius:6px; padding:1px 7px; font-size:12.5px;}
+  .pill{display:inline-block; background:#eef2f7; border-radius:999px; padding:1px 10px; font-size:12px; margin:1px 2px; border:1px solid var(--line);}
+  .status{margin:14px 0;}
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:14px 0;}
+  .step{flex:1 1 128px; background:#eef6ff; border:1px solid #c4d8f2; border-radius:10px; padding:10px 12px; font-size:13px; position:relative;}
+  .step b{display:block; color:var(--brand); margin-bottom:2px;}
+  .step small{color:var(--muted);}
+  .step.prop{background:#faf8ff; border-style:dashed; border-color:var(--prop);}
+  .step.warn{background:#fff8ec; border-color:#e9cf9a;}
+  .arrow{align-self:center; color:var(--brand2); font-weight:900; font-size:18px;}
+  .arrowsmall{align-self:center; color:var(--muted);}
+  .kbd{border:1px solid #bcc8d8; border-bottom-width:2px; border-radius:5px; background:#fff; padding:0 6px; font-size:12px; font-family:Consolas,monospace;}
+  .badge{display:inline-block; min-width:16px; text-align:center; background:var(--brand2); color:#fff; border-radius:999px; padding:0 8px; font-size:13px; font-weight:700;}
+  details{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 16px; margin:10px 0;}
+  details summary{cursor:pointer; font-weight:700; color:var(--brand);}
+  pre{background:#13233a; color:#d7e3f4; border-radius:10px; padding:16px 20px; overflow:auto; direction:ltr; text-align:left; font-size:12.5px; line-height:1.6;}
+  pre.ar{background:#10304f;}
+  .foot{color:var(--muted); font-size:12.5px; text-align:center; padding:30px 0 40px;}
+  .hr{margin:30px 0; border:0; border-top:1px solid var(--line);}
+  .svgbox{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin:14px 0; overflow:auto;}
+  .figcap{text-align:center; color:var(--muted); font-size:12.5px; margin-top:8px;}
+  .concept{outline:3px dashed var(--prop); outline-offset:3px; border-radius:14px;}
+  .print-only{display:none;}
+  @media print{
+    body{background:#fff; font-size:11.5px;}
+    .wrap{max-width:none; padding:0;}
+    section.block{border:none; border-radius:0; padding:10px 0; margin:10px 0; page-break-inside:avoid;}
+    nav.toc{page-break-after:always;}
+    a{color:inherit; text-decoration:none;}
+    .arrow{font-size:12px;}
+  }
+  @media (max-width:760px){
+    nav.toc ol{columns:1;}
+    .grid2{grid-template-columns:1fr;}
+    header.cover{padding:28px 0;}
+    h1.doc-title{font-size:23px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="wrap">
+    <span class="kicker">توثيق مرحلي — لا يغيّر أي شيفرة</span>
+    <h1 class="doc-title">نظام التشغيل وسناريوهات المستخدم<br>منصة إدارة وتقييد أجهزة المؤسسة (ALP)</h1>
+    <p class="doc-sub">من الصفر إلى جهاز مؤسسي جاهز — الشرح الكامل، الواجهات، السياسات، الإعداد، النشر، الاسترداد، وتقييم الواقع التنفيذي</p>
+    <div class="meta-grid">
+      <div><b>الإصدار الموثق</b> v1.0.0-rc1</div>
+      <div><b>التاريخ</b> 2026-09-12</div>
+      <div><b>القاعدة</b> الشيفرة الفعلية (<span class="mono">git 3e7cd8e</span>)</div>
+      <div><b>الاختبارات</b> 108 نجحت</div>
+      <div><b>الجمهور</b> مسؤول غير تقني · ضابط تقنية معلومات · مطوّر</div>
+      <div><b>اللغة</b> عربية RTL قابلة للطباعة</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <h2>فهرس المستند (38 قسمًا)</h2>
+  <ol>
+    <li><a href="#s1">ما هي المنصة</a></li>
+    <li><a href="#s2">الجمهور وكيفية القراءة</a></li>
+    <li><a href="#s3">البدء من الصفر (التشغيل)</a></li>
+    <li><a href="#s4">المعمارية الفعلية</a></li>
+    <li><a href="#s5">جدول المكونات (الشفرة الحقيقية)</a></li>
+    <li><a href="#s6">نموذج حالات الجهاز</a></li>
+    <li><a href="#s7">السيناريو الرئيسي: من جهاز جديد إلى جهاز مؤسسي</a></li>
+    <li><a href="#s8">سيناريو حقيقي: إعداد أول جهاز لموظف</a></li>
+    <li><a href="#s9">دليل سريع من 10 خطوات</a></li>
+    <li><a href="#s10">شرح الواجهة شاشة بشاشة</a></li>
+    <li><a href="#s11">سير العمل ورسومه البيانية</a></li>
+    <li><a href="#s12">الفحص التحضيري (Preflight)</a></li>
+    <li><a href="#s13">نظام السياسات</a></li>
+    <li><a href="#s14">سياسة «هاتف فقط» بالتفصيل</a></li>
+    <li><a href="#s15">الفرق بين: إخفاء / تعطيل / حظر / تقييد / منع إعادة التفعيل</a></li>
+    <li><a href="#s16">مصفوفة توافق أندرويد 7 → 15</a></li>
+    <li><a href="#s17">الإدارة متعددة الشركات المبنية على القدرات</a></li>
+    <li><a href="#s18">سيناريو اختبار Samsung SM-J337P</a></li>
+    <li><a href="#s19">سيناريوهات الفشل</a></li>
+    <li><a href="#s20">سيناريو الاسترداد</a></li>
+    <li><a href="#s21">إعادة الضبط المصنعية وأنواعها</a></li>
+    <li><a href="#s22">دليل المستخدم النهائي</a></li>
+    <li><a href="#s23">دليل المسؤول (مشغّل / مدير)</a></li>
+    <li><a href="#s24">أكثر من 1000 جهاز</a></li>
+    <li><a href="#s25">نشر جماعي لـ 100 جهاز</a></li>
+    <li><a href="#s26">التحقق والالتزام</a></li>
+    <li><a href="#s27">الأمان والصلاحيات</a></li>
+    <li><a href="#s28">إعادة تقييم الواجهة الحالية</a></li>
+    <li><a href="#s29">التنقل المقترح</a></li>
+    <li><a href="#s30">واجهة ذاتية الشرح (تلميحات / ملخص الحالة)</a></li>
+    <li><a href="#s31">المعالج (Wizard) المقترح للإعداد</a></li>
+    <li><a href="#s32">نموذج الحالات المقترح</a></li>
+    <li><a href="#s33">أسماء أزرار عربية واضحة</a></li>
+    <li><a href="#s34">ممازج الواجهة المفاهيمية</a></li>
+    <li><a href="#s35">فحص الواقع التنفيذي (الوثيقة مقابل الشفرة)</a></li>
+    <li><a href="#s36">تصنيف الوظائف</a></li>
+    <li><a href="#s37">الفجوات والطريق المقترح</a></li>
+    <li><a href="#s38">الخلاصة ومعايير القبول</a></li>
+  </ol>
+  <p class="small">مرجع تقني سريع: <a href="#glossary">مسرد المصطلحات</a> في نهاية القسم §38.</p>
+</nav>
+
+<!-- ==================== §1 ==================== -->
+<section class="block" id="s1">
+  <h2><span class="secno">§1</span>ما هي المنصة</h2>
+  <p class="lead">منصة مؤسسية مركزيّة، تعمل على حاسوب ويندوز، تُسجّل أجهزة أندرويد وتقيّدها وفق سياسات (قفل الكاميرا، منع التثبيت العشوائي، منع تصحيح الأخطاء…)، ثم <b>تتحقق فعليًا من الجهاز</b> — لا تكتفي بإرسال الأوامر.</p>
+  <div class="grid2">
+    <div class="boxed good">
+      <h4>ما تفعله المنصة فعلًا (منسوخ من سلوك الشيفرة)</h4>
+      <ul>
+        <li><b>تُشغَّل على ويندوز</b> واجهة عربية (Qt RTL) أو امتداد طرفية CLI.</li>
+        <li><b>تَكشف الجهاز عبر ADB</b> (الرقم التسلسلي، الطراز، إصدار أندرويد، API).</li>
+        <li><b>تقيّد القدرات فقط بما هو مُثبَت</b>: لا تعلن «مدعوم» بدون دليل.</li>
+        <li><b>تطبّق سياسة مدرجة</b> (6 سياسات مرجعية) على أبسط مسار تحويل المطلوب إلى آلية رسمية (UserManager/DPM).</li>
+        <li><b>تتحقق بعد التطبيق</b> وتربط النتيجة بمعرّف دليل (evidence_id).</li>
+        <li><b>تسجّل كل شيء</b> في سجل تدقيق بسلسلة مقاومة للتلاعب، وتحكم العمليات الحساسة بعامل «الحيازة» (بيان استرداد مشفّر لكل جهاز).</li>
+        <li><b>تسترد الأجهزة</b> بمسارات R1..R4 مع موافقة ثانية للعمليات الحساسة.</li>
+      </ul>
+    </div>
+    <div class="boxed prop">
+      <h4>الوصف المقترح (يُقرأ على أنه «يُنفَّذ لاحقًا»)</h4>
+      <ul>
+        <li>وكيل أندرويد <span class="mono">com.alp.agent</span> يُنصب كـ Device Owner على جهاز حقيقي ليقلب التقييدات على مستوى النظام (الوكيل جاهز للبناء لكن غير مركَّب على جهاز حقيقي).</li>
+        <li>واجهة ويب للمدير (توجد واجهة HTTP API فقط بقدر محدود).</li>
+        <li>نشر جماعي بأعداد كبيرة (منطق المجموعات موجود، ولا توجد عينة أجهزة حقيقية لاختباره).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="boxed warn">
+    <h4>قاعدة صراحة صارمة (نقل حرفي من الشيفرة)</h4>
+    <p class="small" style="margin:0">«الحقيقة تُقرأ من الجهاز»:النجاح الحقيقي PASS لا يُسجَّل إلا بمصدر <span class="mono">REAL_DEVICE</span> ومعرّف دليل. أي مصدر محاكاة (<span class="mono">SIMULATED</span>) لا ينتج PASS أبدًا. كل نتيجة غير مؤكدة تظهر «غير معروف» بدلًا من افتراض النجاح.</p>
+  </div>
+</section>
+
+<!-- ==================== §2 ==================== -->
+<section class="block" id="s2">
+  <h2><span class="secno">§2</span>الجمهور وكيفية القراءة</h2>
+  <table>
+    <tr><th>القارئ</th><th>ما يهمّه</th><th>الأقسام</th></tr>
+    <tr><td>مسؤول غير تقني</td><td>خطوات العمل اليومي، والأزرار، والضمانات الأمنية</td><td>§3، §8، §9، §10، §22، §23</td></tr>
+    <tr><td>ضابط تقنية معلومات</td><td>السياسات، التوافق، النشر، التقارير، والاسترداد</td><td>§13–§21، §24–§26، §38</td></tr>
+    <tr><td>مطوّر</td><td>المعمارية، المكونات، الشيفرة، فحص الواقع التنفيذي</td><td>§4، §5، §26، §35، §36، §37</td></tr>
+  </table>
+  <div class="boxed">
+    <h4>اصطلاح تلوين في هذا المستند</h4>
+    <p class="small" style="margin:0">الخلفية <b>الزرقاء/الخضراء</b> = وظيفة موجودة فعليًا في الشيفرة. الخلفية <b>الأرجوانية المنقّطة</b> = تصميم مقترح للمستقبل، أو واجهة مفاهيمية بالأصل. الخلفية <b>الحمراء/البرتقالية</b> = قيود وقيود صريحة (لا يمكن تنفيذها من طبقة التطبيق أصلًا).</p>
+  </div>
+  <p>وضعت كل اقتراح داخل صندوق يحمل وسم «مقترح» كي لا يُختلط الموجود الفعلي بالمصمَّم مستقبلًا.</p>
+</section>
+
+<!-- ==================== §3 ==================== -->
+<section class="block" id="s3">
+  <h2><span class="secno">§3</span>البدء من الصفر (التشغيل)</h2>
+  <h3>3.1 قبل أن تبدأ — الفحص التحضيري</h3>
+  <table>
+    <tr><th>الشرط</th><th>أين يُفقد</th><th>الحالة</th></tr>
+    <tr><td>حاسوب ويندوز يعمل ببايثون 3.11 (إن كان من المصدر)</td><td>«التشخيص»</td><td><span class="tag t-impl">موجود</span></td></tr>
+    <tr><td>منصة الأدوات <span class="mono">platform-tools</span> فيها <span class="mono">adb.exe</span></td><td>«التشخيص»</td><td><span class="tag t-impl">موجود</span></td></tr>
+    <tr><td>جهاز أندرويد موصول بكابل + «تصحيح الأخطاء» مفعّل، والإذن لهذا الحاسوب</td><td>«الأجهزة»</td><td><span class="tag t-nv">يُتحقق لحظيًا</span></td></tr>
+    <tr><td>بيان استرداد مولّد تلقائيًا لكل جهاز تُجرى عليه عملية حساسة (مُخزَّن مشفّرًا في هذه الوحدة — لا يُشارك ولا يُعرض)</td><td>«تطبيق السياسة» / «الاسترداد»</td><td><span class="tag t-impl">مطلوب</span></td></tr>
+  </table>
+
+  <h3>3.2 كيفية التشغيل</h3>
+  <div class="boxed">
+    <p class="mono" style="direction:ltr; text-align:left;"># من المصدر (داخل مجلد المشروع):<br>python desktop/run_app.py<br><br># يمكن استخدام المعبَّأة (RELEASE):<br>AndroidLockdownManager-v1.0.0-windows-x64-portable.exe<br># أو عن طريق المثبِّت:<br>AndroidLockdownManager_Setup-v1.0.0.exe</p>
+    <p class="small">إذا تعذّر Qt (PySide6) على جهاز ما، يتحول المُشغِّل تلقائيًا إلى واجهة احتياطية Tk دون فقدان الوظائف.</p>
+  </div>
+
+  <h3>3.3 أول تشغيل (المنصة المفتوحة — دون تسجيل دخول تفاعلي)</h3>
+  <div class="flow">
+    <div class="step"><b>1. فتح التطبيق</b><small>تفتح «الرئيسية» مباشرةً بوضع «المشغّل المحلي» — لا شاشة دخول، لا اسم/كلمة مرور/رمز.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>2. تسجيل الجهاز</b><small>أدخل الرقم التسلسلي واضغط «تسجيل الجهاز» (قراءة ADB حية).</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>3. تجهيز عامل الاسترداد</b><small>عند أول عملية حساسة يُولَّد بيان استرداد خاص بهذا الجهاز ويُخزَّن مشفّرًا (DPAPI) في هذه الوحدة.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>4. التنفيذ</b><small>تتطلب العمليات الحساسة (تطبيق سياسة / استرداد / تحديث نظام) حيازةَ بيان الاسترداد + تأكيدات بشرية بأسماء محددة عند الحاجة.</small></div>
+  </div>
+  <p class="note">منصة التحكم مستندة إلى عامل «الحيازة» (بيان استرداد لكل جهاز مشفّر على الجهاز الحالي) لا إلى جلسة تفاعلية: لا شيء يعمل على جهاز آخر نقله شخص آخر. يعرض التطبيق معرّف الاسترداد للعرض فقط (مثلًا <span class="mono">XK2P-9T4Q</span>) ولا يعرض السرّ أبدًا.</p>
+
+  <h3>3.4 شاشات المستخدم النهائي الأساسية</h3>
+  <p>أهم 4 صفحات يبدأ بها أي مسؤول: <b>«الأجهزة»</b> (تسجيل/فحص) ← <b>«فحص القدرات»</b> ← <b>«تطبيق السياسة»</b> ← <b>«حالة الالتزام»</b>. والباقي صفحات دعم (السجلات، التقارير، الاسترداد، التشخيص…).</p>
+</section>
+
+<!-- ==================== §4 ==================== -->
+<section class="block" id="s4">
+  <h2><span class="secno">§4</span>المعمارية الفعلية</h2>
+  <p class="lead">الشكل التالي يعكس <b>البنية الموجودة في الشيفرة فعلًا</b> (لا بنية مفترضة). تعتمد المسارات على توجيه Ordinal قوي وإخفاء المسارات غير المطبَّقة.</p>
+  <div class="svgbox">
+    <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Tahoma" font-size="13">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#2f6fed"/>
+        </marker>
+        <style>
+          .box{fill:#eef6ff; stroke:#2f6fed; stroke-width:1.5; rx:10}
+          .box2{fill:#eef4f8; stroke:#8aa6c4; stroke-width:1.3; rx:10}
+          .propb{fill:#faf8ff; stroke:#7a4dbd; stroke-width:1.6; stroke-dasharray:6 4; rx:10}
+          .gov{fill:#fff4e6; stroke:#e09a40; stroke-width:1.3; rx:10}
+          .t{fill:#1c2833}
+          .lbl{fill:#2f6fed; font-weight:700}
+          .slbl{fill:#5a6a7c; font-size:11}
+        </style>
+      </defs>
+      <!-- Desktop -->
+      <rect class="box" x="20" y="20" width="300" height="150" rx="12"/>
+      <text class="t" x="35" y="45" font-weight="bold">حاسوب المسؤول (ويندوز)</text>
+      <text class="slbl" x="35" y="64">desktop/alp_manager/*</text>
+      <text class="t" x="35" y="86">واجهة <tspan font-family="Consolas">app_qt.py</tspan> (عربية)</text>
+      <text class="t" x="35" y="104">وحدة تحكم headless <tspan font-family="Consolas">controller.py</tspan></text>
+      <text class="t" x="35" y="122">طبقة واجهة ALT: CLI <tspan font-family="Consolas">scripts/alp.py</tspan></text>
+      <text class="t" x="35" y="140">واجهة HTTP <tspan font-family="Consolas">backend/api/server.py</tspan></text>
+      <text class="slbl" x="35" y="162">لا تسجيل دخول تفاعلي · حيازة بيان الاسترداد + RBAC + سجل التدقيق</text>
+      <rect class="box" x="360" y="20" width="250" height="150" rx="12"/>
+      <text class="t" x="375" y="45" font-weight="bold">المحرّكات (backend + engines)</text>
+      <text class="slbl" x="375" y="64">policy-engine · capability-engine</text>
+      <text class="t" x="375" y="84">compatibility (7→15)</text>
+      <text class="t" x="375" y="102">vendor-adapters (Samsung/Generic)</text>
+      <text class="t" x="375" y="120">verification-engine · compliance</text>
+      <text class="t" x="375" y="138">director (AD-4) · recovery (R1-R4)</text>
+      <text class="t" x="375" y="156">fleet (bulk/jobs) · rbac · audit · auth</text>
+      <rect class="box2" x="650" y="20" width="230" height="150" rx="12"/>
+      <text class="t" x="665" y="45" font-weight="bold">التخزين</text>
+      <text class="slbl" x="665" y="64">database/alp.db (SQLite)</text>
+      <text class="t" x="665" y="86">devices · device_profiles</text>
+      <text class="t" x="665" y="104">capabilities · policies</text>
+      <text class="t" x="665" y="122">evidence · audit_logs · jobs</text>
+      <text class="t" x="665" y="140">failures · approvals</text>
+      <text class="t" x="665" y="158">signed_envelopes (أوامر موقّعة)</text>
+      <line x1="320" y1="95" x2="358" y2="95" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr)"/>
+      <line x1="610" y1="95" x2="648" y2="95" stroke="#8aa6c4" stroke-width="2" marker-end="url(#arr)"/>
+      <rect class="box" x="20" y="220" width="430" height="120" rx="12"/>
+      <text class="t" x="35" y="245" font-weight="bold">قناة التحكم (ناقل ADB المحلي)</text>
+      <text class="slbl" x="35" y="264">backend/workflows.py · adb_channel · staging</text>
+      <text class="t" x="35" y="284">adb devices → attached_serials → abc -s SERIAL …</text>
+      <text class="t" x="35" y="302">أوامر موقّعة بالتوقيع الرقمي قبل الإرسال</text>
+      <text class="t" x="35" y="320">أوامر التطبيق تُوجَّه بالفعْل إلى ملف staged منفصل</text>
+      <line x1="200" y1="170" x2="200" y2="218" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr)"/>
+      <rect class="box" x="520" y="220" width="360" height="120" rx="12"/>
+      <text class="t" x="535" y="245" font-weight="bold">جهاز أندرويد (مرشح للقيود)</text>
+      <text class="slbl" x="535" y="264">دورة مسار: getprop · dumpsys device_policy · settings get</text>
+      <text class="t" x="535" y="284">قراءة الحالة الفعلية REAL_DEVICE (الوكيل</text>
+      <text class="t" x="535" y="302">com.alp.agent لم يُركَّب بعد على جهاز حقيقي)</text>
+      <line x1="520" y1="280" x2="450" y2="280" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr)"/>
+      <rect class="gov" x="20" y="400" width="430" height="120" rx="12"/>
+      <text class="t" x="35" y="423" font-weight="bold">مضبوطة حوكمة — غير قابلة للتطبيق من التطبيق</text>
+      <text class="slbl" x="35" y="442">backend/recovery.py R3_LAB_FLASH</text>
+      <text class="t" x="35" y="460">إعادة فلاش البرنامج الثابت / التعافي — مختبر فقط +</text>
+      <text class="t" x="35" y="478">موافقة بشرية مزدوجة. REFUSED_GOVERNANCE_LAB_ONLY</text>
+      <line x1="150" y1="340" x2="150" y2="398" stroke="#e09a40" stroke-width="2" stroke-dasharray="5 4"/>
+      <rect class="propb" x="520" y="400" width="360" height="120" rx="12"/>
+      <text class="t" x="535" y="423" font-weight="bold" fill="#6a36b8">مقترح — غير منفَّذ</text>
+      <text class="slbl" x="535" y="442">بوابة ويب للمدير · وكيل DPC على جهاز حقيقي</text>
+      <text class="t" x="535" y="460">مزامنة سحابية · لوحة إشعارات شاملة</text>
+      <text class="t" x="535" y="478">لوحة تحكم متعددة الفروع · QR للتسجيل</text>
+      <text class="t" x="535" y="496">(الوكيل com.alp.agent موجود ككود لكنه قيد المرحلة 3)</text>
+    </svg>
+    <div class="figcap">شكل 1: المعمارية الفعلية (خط متصل = منفَّذ فعليًا، خط متقطع أرجواني = مقترح، برتقالي مخطّط = بوابة حوكمة)</div>
+  </div>
+  <p class="note">هذه البنية تنفّذ القرار المعتمد AD-1..AD-6: مسار التطبيق الرسمي فقط (DPM، قيود المستخدم، Settings، LockTask) — لا ROM ولا Root ولا فلاش في الإنتاج.</p>
+</section>
+
+<!-- ==================== §5 ==================== -->
+<section class="block" id="s5">
+  <h2><span class="secno">§5</span>جدول المكونات (الشيفرة الحقيقية)</h2>
+  <table>
+    <tr><th>المكوّن</th><th>الموقع (مسار الشيفرة)</th><th>الدور</th><th>الحالة</th></tr>
+    <tr><td>الواجهة العربية (Qt)</td><td><span class="mono">desktop/alp_manager/app_qt.py</span></td><td>15 صفحة عربية RTL على PySide6</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>وحدة التحكم headless</td><td><span class="mono">desktop/alp_manager/controller.py</span></td><td>كل عمليات الواجهة: bootstrap/login/enroll/apply/recover/audit/report</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>محرك السياسات</td><td><span class="mono">policy-engine/policy_engine/*</span></td><td>32 ميزة، 6 سياسات مرجعية، حلّ اللقطة مع الاستثناءات</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>محرك القدرات</td><td><span class="mono">capability-engine/*</span></td><td>تصنيف صادق بدون «مدعوم» مخترَع</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>طبقة التوافق</td><td><span class="mono">compatibility/*</span></td><td>آلية لكل أندرويد 7→15 حسب API floor</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>محولات الشركات</td><td><span class="mono">vendor-adapters/*</span></td><td>تصنيف+اختيار محول (Samsung مقفل حتى دليل Knox، وغيرها Generic)</td><td><span class="tag t-part">منفَّذ جزئيًا</span></td></tr>
+    <tr><td>محرك التحقق</td><td><span class="mono">verification-engine/*</span></td><td>PASS تتطلب دليل + REAL_DEVICE</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>محرك الامتثال</td><td><span class="mono">verification-engine/compliance.py</span></td><td>متوافق/غير متوافق/جزئي/غير معروف</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>المخرج (Director)</td><td><span class="mono">backend/director.py</span></td><td>خط AD-4: اكتشف→عرف→قدر→اختر→راجع→طبق→تحقق→دليل→امتثال</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>الاسترداد</td><td><span class="mono">backend/recovery.py</span></td><td>R1-R4 مع حيازة بيان استرداد + تأكيدات بأسماء، وR3 مرفوض دائمًا</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>الأسطول والإجراءات الجماعية</td><td><span class="mono">backend/fleet.py</span></td><td>موجات، حد إيقاف، قوائم فشل، محاكي 1000</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>الصلاحيات والمصادقة</td><td><span class="mono">backend/rbac.py, auth.py, approval.py</span></td><td>أدوار، حيازة بيان الاسترداد (RecoveryVault)، تأكيدات مُسمّاة، أدوار حساسة</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>قاعدة البيانات</td><td><span class="mono">database/schema.sql</span> + <span class="mono">backend/db.py</span></td><td>SQLite مع رحلات/هجرات</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>خط CLI</td><td><span class="mono">scripts/alp.py</span> و <span class="mono">scripts/alp_api.py</span></td><td>تشغيل نصي سطر أوامر</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>واجهة HTTP API</td><td><span class="mono">backend/api/server.py</span></td><td>نقطة نهاية احتياطية للتحكم من بعيد</td><td><span class="tag t-part">أساسي فقط</span></td></tr>
+    <tr><td>وكيل الأندرويد</td><td><span class="mono">android-agent/app/src/com/alp/agent/*</span></td><td>DPC على الجهاز — كود جاهز بدون تركيب حقيقي</td><td><span class="tag t-plan">المرحلة 3</span></td></tr>
+    <tr><td>الحزمة والتوزيع</td><td><span class="mono">deployment/*</span></td><td>EXE محمول + مثبّت + RELEASE مع SHA256</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+  </table>
+</section>
+
+<!-- ==================== §6 ==================== -->
+<section class="block" id="s6">
+  <h2><span class="secno">§6</span>نموذج حالات الجهاز</h2>
+  <p class="lead">هذا هو قاموس الحالة الفعلي مخزَّنًا في جدول <span class="mono">devices.enrollment_state</span> (الواجهة تعرضه بالعربية عبر قاموس الترجمة).</p>
+  <table>
+    <tr><th>القيمة الداخلية</th><th>العرض العربي</th><th>المعنى</th></tr>
+    <tr><td><span class="mono">UNMANAGED</span></td><td>غير مُدار</td><td>جهاز معروف لدى النظام لكن غير مُدار بأي سياسة</td></tr>
+    <tr><td><span class="mono">ENROLLMENT_PENDING</span></td><td>قيد التسجيل</td><td>مُسجَّل في قاعدة البيانات وانتظر الفحص/التطبيق (الحالة الحالية لكل أجهزة المخبر)</td></tr>
+    <tr><td><span class="mono">ENROLLED</span></td><td>مسجّل</td><td>أصبح جاهزًا لاستقبال سياسة</td></tr>
+    <tr><td><span class="mono">CORPORATE_STANDARD</span></td><td>الوضع المؤسسي</td><td>مطبّق عليه السياسة القياسية وتم التحقق</td></tr>
+    <tr><td><span class="mono">PHONE_ONLY</span></td><td>وضع الهاتف فقط</td><td>مطبّق «هاتف فقط» وتم التحقق</td></tr>
+    <tr><td><span class="mono">FULL_LOCKDOWN</span></td><td>القفل الكامل</td><td>مطبّق الإغلاق الكامل وتم التحقق</td></tr>
+    <tr><td><span class="mono">PARTIAL_LOCKDOWN</span></td><td>تقييد جزئي</td><td>الحالة الوسطية</td></tr>
+    <tr><td><span class="mono">MAINTENANCE</span></td><td>وضع الصيانة</td><td>فُتحت المنافذ فقط لأعمال الصيانة</td></tr>
+    <tr><td><span class="mono">QUARANTINE</span></td><td>حجر صحي</td><td>حجر فوري للأجهزة المشبوهة</td></tr>
+    <tr><td><span class="mono">RECOVERY</span></td><td>استرداد</td><td>دخل مسار استرداد</td></tr>
+    <tr><td><span class="mono">RETIREMENT</span></td><td>خارج الخدمة</td><td>خرج الجهاز من الخدمة</td></tr>
+  </table>
+  <div class="boxed"><h4>قاعدة صارمة مخزنة في الشيفرة</h4><p class="small" style="margin:0">حالة الجهاز لا تنتقل إلى «متوافق/…» إلا إذا كان التحقق هو <b>PASS</b> فعلًا. إن كان التحقق <span class="mono">FAIL</span> أو <span class="mono">UNKNOWN</span> تُترك الحالة على قيمتها السابقة (لا تقدّم مصطنعًا في دورة الحياة).</p></div>
+</section>
+
+<!-- ==================== §7 ==================== -->
+<section class="block" id="s7">
+  <h2><span class="secno">§7</span>السيناريو الرئيسي: من جهاز جديد إلى جهاز مؤسسي جاهز</h2>
+  <p class="lead">سنفترض أن لديك جهازًا جديدًا تمامًا (خارج الصندوق) وتريد أن يصبح جهاز عمل مؤسسيًا. إليك المراحل الـ 11 المطبَّقة على الطريق الموجود:</p>
+  <div class="flow">
+    <div class="step"><b>1. تجهيز الحاسوب</b><small>تشغيل التطبيق + إنشاء المدير الأول.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>2. توصيل الجهاز</b><small>كابل USB + تفعيل تصحيح الأخطاء والإذن.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>3. التأكد من الرؤية</b><small>مطابقة <span class="mono">adb devices</span> (يتجاهل الأجهزة غير المتصلة «offline»).</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>4. تسجيل الجهاز</b><small>صفحة «الأجهزة» ← أدخل الرقم التسلسلي ← «تسجيل الجهاز».</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>5. الفحص الحي</b><small>«فحص الجهاز (قراءة فعلية)» — الحالة الفعلية عبر ADB.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>6. فحص القدرات</b><small>ما يمكن فعله على هذا الجهاز (وفق النموذج/الأندرويد).</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>7. اختيار السياسة</b><small>هاتف فقط / قياسية / إغلاق كامل / تقييد جزئي / حجر صحي / صيانة.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>8. معاينة التغييرات</b><small>جدول يقارن الهدف بالحالة الحالية الفعلية قبل التنفيذ.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>9. التطبيق</b><small>يريل لجنة التوجيه AD-4، يتطلب توفر بيان استرداد الجهاز (حيازة) في هذه الوحدة.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>10. التحقق</b><small>قراءة لاحقة للحالة ومطابقتها، مع evidence_id.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>11. تسليم الجهاز</b><small>التأكد من «متوافق» ثم تسليمه للموظف مع الدليل.</small></div>
+  </div>
+  <div class="boxed warn">
+    <h4>ملاحظة شفافية حاسمة</h4>
+    <p class="small" style="margin:0">في النسخة الحالية، التطبيق لا يصبح ساري المفعول على مستوى النظام الفعلي إلا إذا كان الوكيل الحقيقي <span class="mono">com.alp.agent</span> مركَّبًا وأنت مدير الجهاز. في بيئة الاختبار الحالية (محاكي) تكون النتيجة النهائية «غير معروف» بأمانة، لا «نجاح» — وهذا مقصود ومكتوب صراحةً في الشيفرة. عند توصيل جهاز حقيقي وتركيب الوكيل تصبح الخطوة 10 قادرة على إثبات مصداقية التطبيق.</p>
+  </div>
+</section>
+
+<!-- ==================== §8 ==================== -->
+<section class="block" id="s8">
+  <h2><span class="secno">§8</span>سيناريو حقيقي: إعداد أول جهاز لموظف</h2>
+  <p>نفترض موظفًا جديدًا اسمه «أحمد» سيستلم هاتف عمل. يتبع المسؤول (أنت) الخطوات التالية داخل التطبيق:</p>
+  <table>
+    <tr><th>#</th><th>أين في التطبيق</th><th>ماذا تفعل بالضبط</th><th>ما يحدث خلف الكواليس</th></tr>
+    <tr><td>1</td><td>الشريط العلوي</td><td>افتح التطبيق مباشرةً — يعمل في وضع «المشغّل المحلي» دون تسجيل دخول</td><td>لا يوجد مفهوم جلسة تفاعلية؛ الأمان مبني على الحيازة والتأكيدات</td></tr>
+    <tr><td>2</td><td>الأجهزة</td><td>أدخل الرقم التسلسلي للجهاز (مثلًا <span class="mono">R58M1234567</span>) واضغط «تسجيل الجهاز»</td><td>مسح ADB حي وإدخال «قيد التسجيل» في جدول الأجهزة</td></tr>
+    <tr><td>3</td><td>الأجهزة</td><td>اختر الجهاز من الجدول ثم «فحص الجهاز (قراءة فعلية)»</td><td>قراءة getprop + dumpsys؛ يعرض الهوية وحالة القيود</td></tr>
+    <tr><td>4</td><td>فحص القدرات</td><td>راجع الجدول: أي ميزة «مدعوم»/«غير معروف»/«غير ممكن» على هذا الجهاز</td><td>بناء ملف القدرات من السجل (لا يخترع دعمًا)</td></tr>
+    <tr><td>5</td><td>تطبيق السياسة</td><td>اختر الجهاز + سياسة «هاتف فقط»</td><td>تُبنى المعاينة من القراءة الحالية</td></tr>
+    <tr><td>6</td><td>المعاينة</td><td>راجع الجدول: عمود «الحالة الحالية» يعرض ما يقيسه ADB الآن</td><td>لا تغييرات بعد؛ فقط توقع الأثر</td></tr>
+    <tr><td>7</td><td>تطبيق السياسة</td><td>تحقق أن حالة «بيان الاسترداد» لهذا الجهاز «مجهَّز»، ثم اضغط «تطبيق السياسة الآن»</td><td>التحقق من الحيازة (بيان مشفّر) ثم توقيع الأمر رقميًا وإرساله عبر القناة (أو مرحّلًا)</td></tr>
+    <tr><td>8</td><td>التحقق</td><td>افتح «التحقق» راقب النتيجة والأدلة</td><td>مرحلة التحقق بعد التنفيذ، مع evidence_id</td></tr>
+    <tr><td>9</td><td>حالة الالتزام</td><td>تحقق أن حالة الجهاز أصبحت «متوافق» (أو «غير معروف» إذا لم يمكن الإثبات)</td><td>تحديث حالة الجهاز والقاعدة</td></tr>
+    <tr><td>10</td><td>التقارير</td><td>اضغط «توليد تقرير الجهاز»</td><td>ملف Markdown بالهوية + الأدلة + سجل التدقيق</td></tr>
+    <tr><td>11</td><td>—</td><td>سلّم الجهاز لأحمد مع نسخة من التقرير</td><td>التسليم موثَّق بدليل</td></tr>
+  </table>
+  <div class="boxed good"><h4>قاعدة الأمان أثناء التنفيذ</h4><p class="small" style="margin:0">لا تُنفَّذ عملية حساسة دون أن يملك هذا الحاسوب بيان الاسترداد المشفّر للجهاز (عامل الحيازة) — نقل البيان أو حذفه يجعل التطبيق/الاسترداد يرفضان العمل. لا يستطيع الموظف لاحقًا فكّ القيود من تلقاء نفسه (الوكيل هو مالك الجهاز).</p></div>
+</section>
+
+<!-- ==================== §9 ==================== -->
+<section class="block" id="s9">
+  <h2><span class="secno">§9</span>دليل سريع من 10 خطوات</h2>
+  <ol>
+    <li>شغّل <span class="mono">run_app.py</span> أو المشارِفة EXE.</li>
+    <li>تفتح المنصة مباشرةً في وضع «المشغّل المحلي» — لا تسجيل دخول.</li>
+    <li>سجّل الجهاز بالرقم التسلسلي.</li>
+    <li>وصّل الجهاز وفعّل تصحيح الأخطاء ومنح الإذن لهذا الكمبيوتر.</li>
+    <li>افحصه قراءة فعلية وافحص قدراته.</li>
+    <li>اختر السياسة وراجع المعاينة.</li>
+    <li>تحقق أن بيان الاسترداد مجهَّز، واضغط «تطبيق السياسة الآن».</li>
+    <li>تأكد من حالة الالتزام («متوافق» لتنفيذ ناجح أو «غير معروف» لنقص الإثبات).</li>
+    <li>ولّد تقرير الجهاز واحتفظ بالأدلة.</li>
+  </ol>
+</section>
+
+<!-- ==================== §10 ==================== -->
+<section class="block" id="s10">
+  <h2><span class="secno">§10</span>شرح الواجهة شاشة بشاشة</h2>
+  <p class="lead">يضم التطبيق 15 صفحة في شريط جانبي واحد، وجميعها بالعربية. فيما يلي لكل صفحة: الغرض، والمحتوى، والوظائف الحساسة.</p>
+  <table>
+    <tr><th>الصفحة</th><th>الوصف الفعلي</th><th>الأزرار الرئيسية</th><th>حساسية</th></tr>
+    <tr><td>الرئيسية</td><td>4 بطاقات عدّادية (متصلة / مقيّدة / متوافقة / تحتاج إجراءً) + جدول الأجهزة المجمل</td><td>—</td><td>قراءة</td></tr>
+    <tr><td>الأجهزة</td><td>تسجيل جهاز بالرقم التسلسلي + خيار «جهاز مختبر»، فحص حي، توليد تقرير</td><td>تسجيل الجهاز · فحص الجهاز · توليد تقرير الجهاز · تحديث القائمة (ADB)</td><td>تسجيل فقط</td></tr>
+    <tr><td>تفاصيل الجهاز</td><td>عرض تفصيلي للفحص الأخير (هوية/حالة/معرّف الدليل)</td><td>تحديث من الفحص الحالي</td><td>قراءة</td></tr>
+    <tr><td>فحص القدرات</td><td>جدول: الميزة، الحالة المرصودة، التحكم المتاح، المخاطرة — المصدر «قراءة فعلية»</td><td>فحص القدرات للجهاز المحدد</td><td>قراءة</td></tr>
+    <tr><td>السياسات</td><td>جدول السياسات المسجَّلة (المعرّف/الاسم/الفئة/الإصدار/الحالة)</td><td>—</td><td>قراءة</td></tr>
+    <tr><td>تطبيق السياسة</td><td>اختيار جهاز+سياسة+حالة بيان الاسترداد+معاينة قبل التنفيذ ثم التطبيق</td><td>معاينة · تطبيق السياسة الآن</td><td>حساس (حيازة)</td></tr>
+    <tr><td>التحقق</td><td>عرض نتيجة آخر تطبيق/تحقق مع الأدلة</td><td>عرض نتيجة آخر تطبيق / تحقق</td><td>قراءة</td></tr>
+    <tr><td>حالة الالتزام</td><td>جدول الأجهزة بحالة الالتزام وآخر تحقق</td><td>—</td><td>قراءة</td></tr>
+    <tr><td>الاسترداد</td><td>اختيار وضع (R1…R4) + حالة بيان الاسترداد + تأكيدات بشرية بأسماء + سبب + تنفيذ</td><td>تنفيذ الاسترداد</td><td>حساس جدًا (حيازة+تأكيدات)</td></tr>
+    <tr><td>السجلات</td><td>سجل التدقيق + فحص سلامة السلسلة anti-tamper</td><td>تحديث السجلات · فحص سلامة السلسلة</td><td>قراءة</td></tr>
+    <tr><td>التقارير</td><td>توليد تقرير الجهاز + قائمة ملفات التقارير</td><td>توليد التقرير · تحديث قائمة التقارير</td><td>قراءة</td></tr>
+    <tr><td>التشخيص</td><td>جدول بالقاعدة/ADB/الجلسة/سلسلة التدقيق والوضع (مجمّع/مصدر)</td><td>—</td><td>قراءة</td></tr>
+    <tr><td>الإعدادات</td><td>مسار قاعدة البيانات والجلسة والمجلدات + فتح مجلد البيانات + تفريغ الجلسة محليًا</td><td>فتح مجلد البيانات · حذف محلي آمن (تفريغ الجلسة)</td><td>متوسطة</td></tr>
+    <tr><td>المساعدة</td><td>دليل استخدام مختصر يُعرض داخل التطبيق</td><td>—</td><td>قراءة</td></tr>
+    <tr><td>حول البرنامج</td><td>الاسم والإصدار والمبادئ</td><td>—</td><td>قراءة</td></tr>
+  </table>
+  <div class="boxed good"><h4>قوة التصميم الحالي</h4><p class="small" style="margin:0">مسارات قراءة فقط (∩) لا تحتاج عمليات حساسة، لذا لا تشوّش على المبتدئ. كل زر «نسخة» يحفظ النتيجة للعرض، وتحديث القائمة شبه تلقائي (مؤقِّت 4 ثوانٍ).</p></div>
+</section>
+
+<!-- ==================== §11 ==================== -->
+<section class="block" id="s11">
+  <h2><span class="secno">§11</span>سير العمل ورسومه البيانية</h2>
+  <h3>11.1 المسار الرئيسي: اكتشف → عرّف → قيّم → اختر → راجع → طبق → تحقق → دليل → امتثال</h3>
+  <div class="flow">
+    <div class="step"><b>الاكتشاف</b><small>ADB — الجهاز المتصل</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>التعريف</b><small>getprop + تصنيف الشركة/الأندرويد</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>التقييم</b><small>ملف القدرات (بدون ادعاء بدون دليل)</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>الاختيار</b><small>سياسة من الست المرجعية</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>المراجعة</b><small>لقطة الحلّ — استثناءات تُعرَف قبل التطبيق</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>التطبيق</b><small>حيازة بيان الاسترداد + توقيع الأمر + إرسال</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>التحقق</b><small>قراءة لاحقة للحالة الفعلية</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>الدليل</b><small>evidence_id مرتبط بالنتيجة</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>الامتثال</b><small>متوافق/غير متوافق/جزئي/غير معروف</small></div>
+  </div>
+  <h3>11.2 مسار التحقق في عينها (شريحتان حاسمتان)</h3>
+  <div class="svgbox">
+    <svg viewBox="0 0 860 330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Tahoma" font-size="13">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f6fed"/></marker></defs>
+      <style>.v{fill:#eef6ff;stroke:#2f6fed;stroke-width:1.5;rx:9}.t{fill:#1c2833}.vl{fill:#2f6fed;font-weight:700}</style>
+      <rect class="v" x="20" y="30" width="180" height="70"/><text class="t" x="35" y="56" font-weight="bold">معرّف دليل؟</text>
+      <text class="t" x="35" y="76">evidence_id مطلوب</text>
+      <line x1="200" y1="65" x2="250" y2="65" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr2)"/>
+      <rect class="v" x="250" y="30" width="180" height="70"/><text class="t" x="265" y="56" font-weight="bold">المصدر REAL_DEVICE؟</text>
+      <text class="t" x="265" y="76">المحاكاة لا تمنح PASS</text>
+      <line x1="430" y1="65" x2="500" y2="65" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr2)"/>
+      <rect class="v" x="500" y="30" width="160" height="70"/><text class="t" x="515" y="56" font-weight="bold">مطابقة كل ميزة</text>
+      <text class="t" x="515" y="76">RESTRICTED=تقييد فعلي</text>
+      <line x1="660" y1="65" x2="700" y2="65" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr2)"/>
+      <rect style="fill:#e3f4ea;stroke:#1d8a4c;stroke-width:1.5;rx:9" x="700" y="30" width="140" height="70"/>
+      <text class="t" x="715" y="56" font-weight="bold">PASS ✓</text><text class="t" x="715" y="76" fill="#157a3d">إثبات + نجاح</text>
+      <rect class="v" x="720" y="170" width="120" height="60"/><text class="t" x="735" y="192">UNKNOWN</text><text class="t" x="735" y="212" fill="#5a6a7c">لم تُعرف بعض الميزات</text>
+      <rect class="v" x="720" y="250" width="120" height="60"/><text class="t" x="735" y="272">FAIL / PARTIAL</text><text class="t" x="735" y="292" fill="#5a6a7c">خلاف مثبَت</text>
+      <text class="vl" x="20" y="150">بوابات المسار الصحيح</text>
+      <line x1="770" y1="65" x2="770" y2="170" stroke="#5a6a7c" stroke-width="2" marker-end="url(#arr2)"/>
+      <line x1="770" y1="100" x2="770" y2="250" stroke="#8aa6c4" stroke-width="2" marker-end="url(#arr2)"/>
+      <text class="t" x="40" y="280" fill="#5a6a7c" font-size="12">الهامش: أي ميزة «غير معروفة» في القراءة اللاحقة تمنع النجاح،</text>
+      <text class="t" x="40" y="300" fill="#5a6a7c" font-size="12">ولا يُسمح للامتثال بالتقدّم فهي «غير معروف/جزئي» بدلاً من «متوافق».</text>
+    </svg>
+    <div class="figcap">شكل 2: بوابة إثبات النجاح داخل محرك التحقق (اختبار فعلي)</div>
+  </div>
+</section>
+
+<!-- ==================== §12 ==================== -->
+<section class="block" id="s12">
+  <h2><span class="secno">§12</span>الفحص التحضيري (Preflight)</h2>
+  <p class="lead">قبل كل عملية حساسة يتحقق النظام من شروط صرامة لحظيًا — سواء افتراضيًا في الكود أو ستُضاف في واجهة مقترحة:</p>
+  <table>
+    <tr><th>البند</th><th>موجود الآن؟</th><th>التفاصيل</th></tr>
+    <tr><td>بيان استرداد الجهاز موجودًا (حيازة)</td><td><span class="tag t-impl">نعم</span></td><td>تطبيق/استرداد يتطلبان <span class="mono">_can_use_recovery()</span> قبل التنفيذ</td></tr>
+    <tr><td>تأكيدات بشرية بأسماء للعمليات الأشد (R1/R2)</td><td><span class="tag t-impl">نعم</span></td><td>من اسمان مختلفان عبر <span class="mono">approval.confirm()</span></td></tr>
+    <tr><td>الجهاز مسجَّل في قاعدة البيانات</td><td><span class="tag t-impl">نعم</span></td><td>قبل التطبيق يُفحص وجود السجل</td></tr>
+    <tr><td>الجهاز متصل عبر ADB</td><td><span class="tag t-impl">نعم</span></td><td>التطبيق الفعلي يتطلب <span class="mono">serial in attached_serials()</span></td></tr>
+    <tr><td>السياسة في حالة قابلة للتطبيق (ليست DRAFT/REJECTED)</td><td><span class="tag t-impl">نعم</span></td><td>مخرج Director يرفض سياسة غير ناشرة</td></tr>
+    <tr><td>لا استثناءات حالّة في اللقطة</td><td><span class="tag t-impl">نعم</span></td><td>إلا عند التطبيق القسري وبإرادة صريحة</td></tr>
+    <tr><td>إظهار كل بند على شكل قائمة تحقق قبل أمر حساس في الواجهة</td><td><span class="tag t-plan">مقترح</span></td><td>الواجهة الحالية تعرض حيث الحقول على الشاشة مباشرة</td></tr>
+  </table>
+</section>
+
+<!-- ==================== §13 ==================== -->
+<section class="block" id="s13">
+  <h2><span class="secno">§13</span>نظام السياسات</h2>
+  <p class="lead">توجد <b>6 سياسات مرجعية</b> جاهزة في الشيفرة، كل منها قائمة من الميزات مع الهدف (تقييد/إتاحة/تقييد/تحذير). لا تُختلق سياسات على الشاشة؛ تُعرض تلك المعرَّفة فقط.</p>
+  <table>
+    <tr><th>المعرّف</th><th>الاسم العربي</th><th>الفئة</th><th>الفكرة</th></tr>
+    <tr><td><span class="mono">POL-PHONE_ONLY</span></td><td>هاتف فقط</td><td>PHONE_ONLY</td><td>مهمة الاتصال فقط: اتصالات/رسائل/جهات اتصال، وحظر بقية الميزات حظرًا كاملًا</td></tr>
+    <tr><td><span class="mono">POL-CORP_DEFAULT</span></td><td>السياسة القياسية</td><td>CORPORATE_DEFAULT</td><td>أساس متوازن: يقيّد المطور/ADB/التثبيت ويراقب الكاميرا والموقع</td></tr>
+    <tr><td><span class="mono">POL-FULL_LOCKDOWN</span></td><td>إغلاق كامل</td><td>FULL_LOCKDOWN</td><td>أقسى قيود قابلة للتطبيق مع صراحة بالممرات غير القابلة للتطبيق</td></tr>
+    <tr><td><span class="mono">POL-PARTIAL</span></td><td>تقليص جزئي</td><td>PARTIAL_LOCKDOWN</td><td>مزيج مخصص قريب من القياسية</td></tr>
+    <tr><td><span class="mono">POL-MAINTENANCE</span></td><td>صيانة</td><td>MAINTENANCE</td><td>فتح مؤقت لصيانة الجهاز (Wi‑Fi/بلوتوث/ADB عاملة)</td></tr>
+    <tr><td><span class="mono">POL-QUARANTINE</span></td><td>عزل</td><td>QUARANTINE</td><td>حجر فوري لجهاز مشبوه بقيود عالية</td></tr>
+  </table>
+  <h3>13.1 كيف يقرر النظام «ماذا نطبق وكيف»؟</h3>
+  <ol>
+    <li><b>ماذا (WHAT):</b> سياسة تحدد لكل ميزة هدفًا: <span class="mono">BLOCK / ALLOW / RESTRICT / WARN_AUDIT</span>.</li>
+    <li><b>كيف (HOW):</b> طبقة التوافق تختار آلية رسمية فقط وفق مستوى API (مثل <span class="mono">user_restriction_disable_wifi</span> على Android 9+).</li>
+    <li><b>الاستثناءات:</b> إذا لم يكن للجهاز آلية قابلة للتطبيق تُذكر الميزة في «استثناءات اللقطة» ولا يُطبق التقييد بلا هوادة.</li>
+  </ol>
+  <h3>13.2 نموذج درجة المخاطرة المستخدم</h3>
+  <p>لكل ميزة في السياسات درجة مخاطرة: منخفضة / متوسطة / عالية / حرجة. أمثلة من الشيفرة: «شبكة Wi‑Fi» حرجة في سياسة الهاتف فقط، و«الكاميرا» حرجة، و«إعادة الضبط المصنعية» حرجة.</p>
+</section>
+
+<!-- ==================== §14 ==================== -->
+<section class="block" id="s14">
+  <h2><span class="secno">§14</span>سياسة «هاتف فقط» بالتفصيل</h2>
+  <p class="lead">هذه أنسب سياسة لموظف يريد هاتف عمل؛ هنا قائمة كاملة من الشيفرة الفعلية <span class="mono">policy_engine/__init__.py → phone_only()</span>:</p>
+  <table>
+    <tr><th>الميزة</th><th>الهدف</th><th>الآلية (HOW)</th><th>المخاطرة</th><th>طريقة التحقق</th></tr>
+    <tr><td>CALLS · SMS · CONTACTS</td><td>إتاحة</td><td>dpm_policy_allow_implicit</td><td>عالية/منخفضة</td><td>telephony_active</td></tr>
+    <tr><td>WIFI</td><td>تقييد</td><td>user_restriction_disable_wifi</td><td>حرجة</td><td>wifi_state</td></tr>
+    <tr><td>BLUETOOTH</td><td>تقييد</td><td>user_restriction_disable_bluetooth</td><td>عالية</td><td>bluetooth_state</td></tr>
+    <tr><td>HOTSPOT · TETHERING</td><td>تقييد</td><td>user_restriction_disable_tethering</td><td>عالية</td><td>tether_state</td></tr>
+    <tr><td>CAMERA</td><td>تقييد</td><td>dpm_camera_disabled</td><td>حرجة</td><td>camera_intent</td></tr>
+    <tr><td>MICROPHONE</td><td>تقييد</td><td>user_restriction_disable_microphone</td><td>عالية</td><td>mic_permission</td></tr>
+    <tr><td>GPS · LOCATION</td><td>تقييد</td><td>location_off + user_restriction_disable_location_services</td><td>عالية</td><td>provider_state / location_mode</td></tr>
+    <tr><td>BROWSER · PLAY_STORE</td><td>تقييد</td><td>package_hide_browser / package_hide_play_store</td><td>عالية</td><td>browser_absent / store_absent</td></tr>
+    <tr><td>APP_INSTALLATION · UNKNOWN_SOURCES</td><td>تقييد</td><td>block_install_unknown_sources + block_unknown_sources</td><td>حرجة</td><td>install_blocked</td></tr>
+    <tr><td>ADB · DEVELOPER_OPTIONS</td><td>تقييد</td><td>user_restriction_disable_debugging_features</td><td>حرجة</td><td>adb_state</td></tr>
+    <tr><td>USB</td><td>تقييد</td><td>user_restriction_disable_usb_file_transfer</td><td>عالية</td><td>usb_ft_state</td></tr>
+    <tr><td>SCREEN_CAPTURE</td><td>تقييد</td><td>dpm_screen_capture_disabled</td><td>متوسطة</td><td>screencap_blocked</td></tr>
+    <tr><td>ACCOUNTS · USER_MANAGEMENT</td><td>تقييد</td><td>user_restriction_disable_add_user</td><td>متوسطة/عالية</td><td>add_account_blocked</td></tr>
+    <tr><td>SAFE_BOOT</td><td>تقييد</td><td>user_restriction_disable_safe_boot</td><td>عالية</td><td>safe_boot_blocked</td></tr>
+    <tr><td>FACTORY_RESET</td><td>تقييد</td><td>user_restriction_disable_factory_reset</td><td>حرجة</td><td>fr_settings_blocked</td></tr>
+    <tr><td>MOBILE_DATA</td><td>تقييد</td><td>background_data_off</td><td>متوسطة</td><td>bg_data_state</td></tr>
+    <tr><td>APPLICATIONS</td><td>تقييد</td><td>package_allowlist</td><td>عالية</td><td>allowlist_effective</td></tr>
+    <tr><td>LOCK_TASK</td><td>تقييد</td><td>lock_task_kiosk</td><td>متوسطة</td><td>kiosk_active</td></tr>
+    <tr><td>VPN · ETHERNET · BLUETOOTH_PAN · USB_NETWORKING</td><td>تقييد</td><td>user_restriction_disable_*</td><td>متوسطة</td><td>vpn_state / ethernet_state / …</td></tr>
+    <tr><td>FACTORY_RESET_RECOVERY · REFLAH_FIRMWARE</td><td>تحذير/تدقيق</td><td>governance_lab_only</td><td>حرجة</td><td>audit_gate — <b>غير قابل للتطبيق</b> من طبقة التطبيق</td></tr>
+  </table>
+  <div class="boxed warn"><h4>انتبه</h4><p class="small" style="margin:0">أقسام «الاسترداد/إعادة الفلاش» ليست قابلة للتطبيق من تطبيق الإدارة إطلاقًا: تبقى ضمن المختبر بقرارات حوكمة مزدوجة. هذا صريح ومكتوب ومنسوخ في الشيفرة.</p></div>
+</section>
+
+<!-- ==================== §15 ==================== -->
+<section class="block" id="s15">
+  <h2><span class="secno">§15</span>الفرق بين: إخفاء / تعطيل / حظر / تقييد / منع إعادة التفعيل</h2>
+  <p class="lead">هذه مفاهيم قريبة لكنها ليست مترادفة؛ المنصة تستخدم بعضها فقط. إليك التفريق الدقيق مع أمثلة من سياسة «هاتف فقط»:</p>
+  <table>
+    <tr><th>المفهوم</th><th>التعريف</th><th>مثال</th><th>تستخدمه المنصة؟</th></tr>
+    <tr><td><b>إخفاء (Hide)</b></td><td>إخفاء واجهة أو تطبيق دون تغيير سلوكه تحت السطح</td><td>إخفاء تطبيق المتجر أو المتصفح</td><td><span class="tag t-impl">نعم</span> (BROWSER/PLAY_STORE)</td></tr>
+    <tr><td><b>تعطيل (Disable)</b></td><td>إيقاف الخدمة عن العمل مؤقتًا</td><td>تعطيل Wi‑Fi عبر الراديو</td><td><span class="tag t-part">جزئيًا</span> (كمقرر تحقق)</td></tr>
+    <tr><td><b>حظر (Block)</b></td><td>منع استخدام الميزة عند مستوى الاستخدام</td><td>حظر الكاميرا عبر DPM</td><td><span class="tag t-impl">نعم</span></td></tr>
+    <tr><td><b>تقييد (Restrict)</b></td><td>تَشديد بشروط/فحوص (مثل قائمة مسموح للتطبيقات)</td><td>وضع «شريط مهام» أو قائمة تطبيقات مسموح</td><td><span class="tag t-impl">نعم</span></td></tr>
+    <tr><td><b>منع إعادة التفعيل (Prevent Re-enable)</b></td><td>ضمان عدم قدرة المستخدم على إعادة تفعيل ما حُظر</td><td>قيود UserManager تعمل على مستوى تطبيقي؛ المستخدم العادي لا يملك أدوات فكّها (مالك الجهاز)</td><td><span class="tag t-part">جزئيًا</span> وكالة الجهاز تكتفي بالإثبات الفعلي</td></tr>
+    <tr><td><b>إلغاء التثبيت (Uninstall)</b></td><td>حذف التطبيق من الجهاز</td><td>حذف تطبيق المتجر</td><td><span class="tag t-unsup">لا (غير مطبَّق كإجراء)</span></td></tr>
+  </table>
+  <p class="note">المنصة تركز على «حظر/تقييد» عبر القنوات الرسمية، وتراقب «منع إعادة التفعيل» من باب التحقق الفعلي بعد التنفيذ (مصادرة إعادة التمكين لا تُسجَّل إلا بدليل).</p>
+</section>
+
+<!-- ==================== §16 ==================== -->
+<section class="block" id="s16">
+  <h2><span class="secno">§16</span>مصفوفة توافق أندرويد 7 → 15</h2>
+  <p class="lead">المنصة تحدد «القدرة على فرض ميزة» بحسب مستوى API عبر جدول آلي (طبقة <span class="mono">compatibility/*</span>).<br>الصيغة: <b>مفعّل رسميًا</b> (آلية في مستوى API) · <b>مدعوم بمستوى معيّن</b> (يتطلب أدلة إضافية على الجهاز) · <b>قابل بقيد</b> (آلية جزئية) · <b>غير مدعوم</b> (لا يقدمه هذا الإصدار) · <b>غير مدروس</b> (لا يوجد جهاز تحقق منه).</p>
+  <table>
+    <tr><th>الميزة</th><th>Android 7<br><span class="small">API 24</span></th><th>Android 8<br><span class="small">API 26</span></th><th>Android 9<br><span class="small">API 28</span></th><th>Android 10<br><span class="small">API 29</span></th><th>Android 11<br><span class="small">API 30</span></th><th>Android 12+<br><span class="small">API 31–15</span></th></tr>
+    <tr><td>Wi‑Fi</td><td>جزئية (إعدادات فقط)</td><td>جزئية (إعدادات فقط)</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td></tr>
+    <tr><td>البلوتوث</td><td>جزئية</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td><td>مفعّل رسميًا</td></tr>
+    <tr><td>الموقع/الخدمات</td><td>جزئية</td><td>جزئية</td><td>مفعّل رسميًا</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>الكاميرا/الميكروفون</td><td>مفعّل (DPM)</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>ADB/المطور</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>منع إعادة الضبط</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>تثبيت التطبيقات/المصادر</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>توصيل/إيثرنت/تلف</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>VPN</td><td>جزئية</td><td>جزئية</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td><td>مفعّل</td></tr>
+    <tr><td>إعادة الاسترداد/الفلاش</td><td colspan="6"><b>غير مدعوم من طبقة التطبيق</b> — بوابة مختبر فقط (حوكمة)</td></tr>
+  </table>
+  <p class="note">هذه «القدرة المخزنة» في طبقة التوافق تُقال قبل التحقق النهائي؛ والنظام لا يعلن «مُدعَم ومحقَّق» إلا بعد التحقق الفعلي على الجهاز المعني.</p>
+</section>
+
+<!-- ==================== §17 ==================== -->
+<section class="block" id="s17">
+  <h2><span class="secno">§17</span>الإدارة متعددة الشركات المبنية على القدرات</h2>
+  <p class="lead">لا توجد قائمة «أجهزة مدعومة» مسطّحة؛ التنظيم يعتمد على <b>تصنيف الجهاز</b> من خصائصه ثم اختيار المحول الأنسب. سجّل المصنّعين <span class="mono">vendor_adapters/registry.py</span> يعرف:</p>
+  <table>
+    <tr><th>الشركة/النمط</th><th>كيف يُصنَّف</th><th>النطاق المرجعي</th></tr>
+    <tr><td>Samsung (SM-/GT-)</td><td>عائلة (J3 2018، A، M، S، Note، Tab، XCover) — SM-J337P نطاق مخبري للمتابعة</td><td>LAB_REFERENCE / GENERAL</td></tr>
+    <tr><td>Google / AOSP / المحاكيات</td><td>sdk_/google_/… / بصمة</td><td>GENERAL</td></tr>
+    <tr><td>Motorola · Xiaomi · OnePlus · Nokia · Sony · Huawei · OPPO · vivo · Realme · …</td><td>التعرّف بالأسماء</td><td>KNOWN_LIMIT</td></tr>
+    <tr><td>أي جهاز مجهول</td><td>لا تعرّف</td><td>UNKNOWN (محول Generic)</td></tr>
+  </table>
+  <div class="boxed prop">
+    <h4>قاعدة النزاهة العمليّة</h4>
+    <p class="small" style="margin:0">سامسونج تبقى «مقفلة» في الوضع الدفترية GATED حتى يتم إثبات وجود Knox SDK من الأدلة؛ المحول لا يُفعّل قدرات تكيّفية بلا دليل. وباقي الشركات تُمثَّل كمحول Generic معيّن بالاسم ومصنَّف بالنمط، <b>لا بادّعاء أعمى للدعم</b>.</p>
+  </div>
+</section>
+
+<!-- ==================== §18 ==================== -->
+<section class="block" id="s18">
+  <h2><span class="secno">§18</span>سيناريو اختبار Samsung SM-J337P</h2>
+  <p class="lead">هذا الجهاز المرجعي: <b>Samsung Galaxy J3 (2018) SM-J337P · Android 9 · API 28 · One UI 1.1 · Knox 3.3</b>. لا يوجد جهاز مادي متصل حاليًا في المختبر، لذا كل النتائج على هذا الجهاز حتى الآن <b>محاكاة/غير متحقق منها فعليًا</b> — وهذا يُقال بوضوح.</p>
+  <table>
+    <tr><th>العنصر</th><th>الوضع</th><th>التفصيل</th></tr>
+    <tr><td>التصنيف في سجل الشركات</td><td><span class="tag t-impl">موجود</span></td><td><span class="mono">SM-J337P → LAB_REFERENCE</span> مع ملاحظة «Android 9 / Knox 3.3</td></tr>
+    <tr><td>الفلترة: Wi‑Fi / بلوتوث / موقع / كاميرا…</td><td><span class="tag t-impl">موجود</span></td><td>مستوى API 28 يفعّل القنوات الرسمية (WIFI عبر user_restriction)</td></tr>
+    <tr><td>التحقق الفعلي على عينة</td><td><span class="tag t-nv">غير متحقق منه</span></td><td>لا جهاز مادي — المحاكي فقط في البيئة الحالية</td></tr>
+    <tr><td>Knox Enterprise (قدرات إضافية)</td><td><span class="tag t-nv">غير متحقق منه</span></td><td>يتطلب ترخيص SDK؛ المحول يبقى GATED حتى دليل</td></tr>
+    <tr><td>السلوك المتوقع عند التطبيق</td><td><span class="tag t-nv">متوقع فقط</span></td><td>سنة تجريبية: النتيجة ستكون «غير معروف» حتى القراءة الفعلية</td></tr>
+  </table>
+  <div class="boxed"><h4>ما يجب عمله عند توفر الجهاز المادي</h4><p class="small" style="margin:0">(1) فعّل تصحيح الأخطاء واتصل بالكابل المتّصل للحاسوب. (2) سجّل الجهاز. (3) افحصه قراءة فعلية وتحقق من النتيجة وبناءً على ذلك تحدّث مطويه (يُضاف لبند المستقبل).</p></div>
+</section>
+
+<!-- ==================== §19 ==================== -->
+<section class="block" id="s19">
+  <h2><span class="secno">§19</span>سيناريوهات الفشل</h2>
+  <table>
+    <tr><th>السيناريو</th><th>كيف يُعالِج النظام</th><th>ما يظهر للمسؤول</th></tr>
+    <tr><td>الجهاز غير متصل (adb offline/غير موجود)</td><td>لا يُطبَّق التطبيق الفعلي، ولا يُسجَّل PASS</td><td>رسالة «الجهاز غير متصل» وصفحة المعاينة توضح «DEVICE_NOT_ATTACHED»</td></tr>
+    <tr><td>جلسة منتهية / غير مصرّح بها</td><td><span class="mono">_require_session()</span> يرفض ويلغي الجلسة</td><td>«انتهت الجلسة» ويُطلب الدخول</td></tr>
+    <tr><td>غياب بيان الاسترداد أو عدم مطابقته لهذا الجهاز</td><td>التطبيق/الاسترداد لا يبدآن</td><td>رسالة «بيان الاسترداد غير مجهَّز لهذا الجهاز» مع إرشاد لتوليده</td></tr>
+    <tr><td>سياسة غير ناشرة (DRAFT/REJECTED)</td><td>Director يرفض التطبيق</td><td>خطأ «policy … is DRAFT»</td></tr>
+    <tr><td>استثناءات غير متحلّلة في اللقطة</td><td>يُبنى التطبيق ويعود خطأ ApplyBlocked مع قائمة الاستثناءات</td><td>قائمة الميزات غير القابلة للفرض</td></tr>
+    <tr><td>التحقق بعد التطبيق لا يستطيع إثبات كل المسارات</td><td>النتيجة UNKNOWN/PARTIAL — لا PASS</td><td>حالة «غير متحقق منه / جزئي» والامتثال «غير معروف»</td></tr>
+    <tr><td>فشل قناة الإرسال</td><td>Director يرفض بـ channel send failed</td><td>رسالة الخطأ من القناة</td></tr>
+    <tr><td>انقطاع أثناء النشر الجماعي (أكثر من عتبة الفشل)</td><td>Fleet يوقف النشر (RolloutStopped) ويحوّل الوظيفة إلى قائمة فشل</td><td>ورقة «أوقف اصطياد الفشل → يشخّص → يصلح → يعيد»</td></tr>
+    <tr><td>محاولة مسح الجدول (خلط)</td><td>سجل التدقيق (HASH chain) يكشف كسر السلسلة</td><td>«سلسلة التدقيق مكسورة»</td></tr>
+  </table>
+</section>
+
+<!-- ==================== §20 ==================== -->
+<section class="block" id="s20">
+  <h2><span class="secno">§20</span>سيناريو الاسترداد</h2>
+  <p class="lead">أربعة أوضاع استرداد يوفّرها <span class="mono">backend/recovery.py</span>:</p>
+  <table>
+    <tr><th>الوضع</th><th>الاسم العربي</th><th>الفعل</th><th>الشروط</th><th>القابلية للتطبيق الآن</th></tr>
+    <tr><td><span class="mono">R1_RESTORE_POINT</span></td><td>استعادة نقطة الحفظ</td><td>إرسال أمر CLEAR_POLICY لإزالة التقييدات المطبّقة</td><td>بيان استرداد + تأكيدان باسْمَين مختلفَين</td><td>يُستعد (rolled-back) أو خطة فقط حسب القراءة الفعلية</td></tr>
+    <tr><td><span class="mono">R2_REPROVISION</span></td><td>إعادة التسجيل</td><td>خطة إعادة تفعيل Device Owner عبر DPM</td><td>بيان استرداد + تأكيدان باسْمَين مختلفَين</td><td>خطة فقط ما لم يمر عبر exec_ بموافقة</td></tr>
+    <tr><td><span class="mono">R3_LAB_FLASH</span></td><td>فلاش مختبر للبرنامج الثابت</td><td>مرفوض دائمًا — بوابة حوكمة</td><td>لا تُنفَّذ أبدًا من التطبيق (مختبر + بشران)</td><td><span class="tag t-unsup">مرفوض</span></td></tr>
+    <tr><td><span class="mono">R4_DIAGNOSTIC</span></td><td>تشخيص</td><td>تفريغ قراءة-فقط (getprop/dumpsys/state.json)</td><td>عرض (VIEW) فقط</td><td>مفعل وسليم</td></tr>
+  </table>
+  <h3>سير R1 خطوة بخطوة</h3>
+  <div class="flow">
+    <div class="step"><b>1. اختيار الوضع</b><small>R1 من صفحة الاسترداد.</small></div>
+    <div class="arrowsmall">←</div>
+    <div class="step"><b>2. التحقق</b><small>حيازة بيان الاسترداد في هذه الوحدة (لا يُعرض السرّ).</small></div>
+    <div class="arrowsmall">←</div>
+    <div class="step"><b>3. التأكيد البشري</b><small>اسمان مختلفان + سبب.</small></div>
+    <div class="arrowsmall">←</div>
+    <div class="step"><b>4. تنفيذ</b><small>CLEAR_POLICY موقّع عبر القناة.</small></div>
+    <div class="arrowsmall">←</div>
+    <div class="step"><b>5. فحص لاحق</b><small>هل زالت التقييدات؟ (COMPLETE/PARTIAL/PLAN_ONLY)</small></div>
+  </div>
+  <p class="note">النتيجة منفّذة أو «خطة فقط» حسب وجود قراءة فعلية — لا يُسجَّل «اكتمل» بلا إثبات.</p>
+</section>
+
+<!-- ==================== §21 ==================== -->
+<section class="block" id="s21">
+  <h2><span class="secno">§21</span>إعادة الضبط المصنعية وأنواعها</h2>
+  <table>
+    <tr><th>النوع</th><th>ما هو</th><th>موقف المنصة</th></tr>
+    <tr><td>إعادة ضبط المصنعية داخل النظام</td><td>استعادة إعدادات المصنع عبر قوائم الإعدادات (يُحجب عبر قيد FACTORY_RESET)</td><td>يُحظر عبر <span class="mono">user_restriction_disable_factory_reset</span> في سياسات الاختبار (هاتف فقط/إغلاق كامل)</td></tr>
+    <tr><td>إعادة ضبط عبر قائمة الاسترداد (Recovery/Boootloader)</td><td>إعادة ضبط عبر القائمة الفنية لو وضع الجهاز في الوضع المقفل</td><td><b>غير قابل للتحكم من طبقة التطبيق</b> — خارج نطاق DPC</td></tr>
+    <tr><td>إعادة الفلاش عبر ODIN/أدوات خارجية</td><td>كتابة برنامج ثابت كامل (lab)</td><td><b>بوابة حوكمة فقط</b>: R3 مرفوض دائمًا من التطبيق (مختبر + موافقة مزدوجة)</td></tr>
+    <tr><td>محو البيانات على مسح مالك الجهاز</td><td>افتراضي في أجهزة Device Owner عند إزالة الوكيل</td><td>منطق استرداد R1 يُزيل السياسة محاولًا الحفاظ على الجهاز مُدارًا؛ ومنهجية Shield تصونه</td></tr>
+  </table>
+  <div class="boxed warn"><h4>ملاحظة</h4><p class="small" style="margin:0">المنصة لا «تنجح» أبدًا في منع إعادة الضبط عبر الوسائل الفنية خارج نظام أندرويد؛ هي تمنع ما يقع تحت سلطة تطبيق الإدارة (قيد UserManager) وتصيب صراحة ما لا تصل إليه.</p></div>
+</section>
+
+<!-- ==================== §22 ==================== -->
+<section class="block" id="s22">
+  <h2><span class="secno">§22</span>دليل المستخدم النهائي</h2>
+  <p class="lead">ما يهم الموظف الذي يسلّم له الجهاز (موجود في صفحة «المساعدة» تقريبًا باستهلاك مبسّط):</p>
+  <ul>
+    <li>الجهاز مُدار من قبل المؤسسة: بعض الميزات مغلقة، ولا يمكنك فتحها من طرفك.</li>
+    <li>أي محاولة لتغيير إعدادات Wi‑Fi / الكاميرا / التثبيت … لن تنجح لأن الحظر يطبَّق بمستوى مالك الجهاز.</li>
+    <li>إذا واجهت مشكلة: راجع مدير تقنية المعلومات — يملك أدوات الاسترداد (مع موافقة ثانية وأسباب موثقة).</li>
+    <li>لا تتلصص على بيانات الشركة بطرق غير مصرّح بها (تصحيح أخطاء/جذر…) — مغلقة.</li>
+    <li>عند انتهاء الخدمة يُؤمَّن إعادة تهيئة آمنة في المختبر.</li>
+  </ul>
+</section>
+
+<!-- ==================== §23 ==================== -->
+<section class="block" id="s23">
+  <h2><span class="secno">§23</span>دليل المسؤول (مشغّل / مدير)</h2>
+  <ul>
+    <li><b>التشغيل:</b> افتح المنصة مباشرةً في وضع «المشغّل المحلي» — لا تسجيل دخول تفاعلي. أمان العمليات الحساسة قائم على «الحيازة»: بيان استرداد مشفّر خاص بكل جهاز على هذه الوحدة.</li>
+    <li><b>الروتين:</b> سجّل الأجهزة، افحصها، طبّق السياسات، راقب «حالة الالتزام»، ولّد التقارير.</li>
+    <li><b>التفريق بالقوة:</b> كل عملية حساسة (تطبيق سياسة/استرداد) تتطلب حيازة بيان الاسترداد؛ والعمليات الأشد (استرداد R1/R2) تتطلب تأكيدين باسْمَين مختلفَين عبر <span class="mono">approval.confirm()</span>.</li>
+    <li><b>الاسترداد:</b> لا تستخدم R1 إلا بعد سبب وإجراء موافقة لائقة؛ R3 محجوز للمختبر.</li>
+    <li><b>الملاحظة المحورية:</b> الصفحة تُظهر «غير معروف» في نتائج التحقق إذا لم توجد قراءة فعلية موثوقة. العمل المؤسسي الصحيح هو: أجهزة فعلية + قراءات فعلية.</li>
+    <li><b>السجلات:</b> راجع «السجلات» لفحص سلسلة التدقيق (Tamper).</li>
+  </ul>
+</section>
+
+<!-- ==================== §24 ==================== -->
+<section class="block" id="s24">
+  <h2><span class="secno">§24</span>أكثر من 1000 جهاز</h2>
+  <p class="lead">الأساس التنظيمي موجود (Fleet Engine + محاكي)، والاختبار الجماعي على أجهزة حقيقية لم يحدث بعد — لذا ضع علامة «مخطط» على ما يلي كله حتى عينة مادية:</p>
+  <table>
+    <tr><th>الوظيفة</th><th>موجود في الشيفرة؟</th><th>الواقع التشغيلي</th></tr>
+    <tr><td>إنشاء المهام الجماعية (jobs) بالمعرّفات والحالات</td><td><span class="tag t-impl">نعم</span></td><td><span class="mono">create_job</span> لائحة جاهزة</td></tr>
+    <tr><td>التنفيذ الموجّي (waves) بحجم عتبة فشل</td><td><span class="tag t-impl">نعم</span></td><td>حجم الموجة الافتراضي 5، وعتبة الإيقاف 10%</td></tr>
+    <tr><td>إيقاف الطوارئ للوظائف المعلّقة</td><td><span class="tag t-impl">نعم</span></td><td><span class="mono">emergency_stop_all</span> يوقف الوظائف في DRAFT/QUEUED/RUNNING</td></tr>
+    <tr><td>محاكي أسطول 1000 جهاز</td><td><span class="tag t-impl">نعم</span></td><td><span class="mono">FleetSimulator</span> بذرعات حتمية وقابلية حقن فشل</td></tr>
+    <tr><td>نشر متناسب 5→20→100→باقٍ</td><td><span class="tag t-impl">نعم</span></td><td><span class="mono">simulate_bulk</span> (مراقبة الإيقاف عند <0.90 مناسبة)</td></tr>
+    <tr><td>لوحة أسطول وشاشات إحصائيات جماعية</td><td><span class="tag t-plan">مقترح</span></td><td>غير موجود في الواجهة حاليًا</td></tr>
+    <tr><td>قائمة تقارير جماعية لكل نوع حالة</td><td><span class="tag t-plan">مقترح</span></td><td>—</td></tr>
+    <tr><td>اختبار إجهاد مادي 1000 جهاز حقيقي</td><td><span class="tag t-nv">غير متحقق منه</span></td><td>لا عينة أجهزة</td></tr>
+  </table>
+</section>
+
+<!-- ==================== §25 ==================== -->
+<section class="block" id="s25">
+  <h2><span class="secno">§25</span>نشر جماعي لـ 100 جهاز</h2>
+  <p class="lead">سيناريو: نرغب بتطبيق سياسة «هاتف فقط» على 100 جهاز. مقابل توزيع: (5) أجهزة اختبار أولًا — وبعد ذلك تنشر الأوامر؛ عند تجاوز عتبة الفشل يتوقف النشر تلقائيًا ويصفّي الجهاز المتبقي: ناجح / فاشل / جزئي / غير مدعوم.</p>
+  <div class="flow">
+    <div class="step"><b>1. دفعة 5</b><small>أمثلة على الوحدة. تحقق من كل جهاز.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>2. الدفعات الكبرى</b><small>20 → 100 (أو 5→20→100 بحسب النمط المخزن).</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>3. الإيقاف</b><small>إذا فشل أكثر من عتبة (10%) → RolloutStopped.</small></div>
+    <div class="arrow">←</div>
+    <div class="step"><b>4. التصنيف</b><small>نجاح / فشل / جزئي / غير مدعوم.</small></div>
+  </div>
+  <table>
+    <tr><th>نتيجة الجهاز</th><th>معناها</th><th>الإجراء</th></tr>
+    <tr><td>ناجح</td><td>قراءة لاحقة مثبتة ومرضية مع evidence</td><td>تحديث «متوافق» والسجل</td></tr>
+    <tr><td>فاشل</td><td>لا تحقق / فشل الإرسال / الجهاز غير متصل</td><td>قائمة الفشل + سبب</td></tr>
+    <tr><td>جزئي</td><td>بعض المسارات فقط مثبتة/متعارضة</td><td>توثيق PARTIAL</td></tr>
+    <tr><td>غير مدعوم</td><td>الميزة خارج نطاق الجهاز/الإصدار</td><td>استثناء لقطة موثق</td></tr>
+  </table>
+  <p class="note">مهم: أي «ناجح» يتطلب دليلًا. إن كان الجهاز غير متصل فلا يُعدّ ناجحًا بل فاشلًا بقائمة.</p>
+</section>
+
+<!-- ==================== §26 ==================== -->
+<section class="block" id="s26">
+  <h2><span class="secno">§26</span>التحقق والالتزام</h2>
+  <p class="lead">نموذجان متكاملان في المنصة — مهمان للمدير لفهم أي نتيجة:</p>
+  <div class="grid2">
+    <div class="boxed">
+      <h4>التحقق (Verification)</h4>
+      <p class="small">أربع نتائج: <b>PASS/FAIL/PARTIAL/UNKNOWN</b><br>· PASS لا يستحق الدليل إلا إذا كان المصدر REAL_DEVICE.<br>· قيمة «RESTRICTED» تثبت فعليًا أن تقييد إداري نشط (مرضٍ لما يُراد إيقافه).<br>· المسارات غير المقروءة = UNKNOWN.</p>
+    </div>
+    <div class="boxed">
+      <h4>الالتزام (Compliance)</h4>
+      <p class="small">أربع نتائج: <b>COMPLIANT/NON_COMPLIANT/PARTIAL/UNKNOWN</b><br>· انتهاك واحد مثبَت آخر = غير متوافق فورًا.<br>· لا مسار ناقص في القراءة = جزئي/غير معروف، ليس متوافقًا.</p>
+    </div>
+  </div>
+  <div class="boxed good"><h4>عدد الميزات التي يمكن التحقق منها الآن فعليًا على المحاكي</h4><p class="small" style="margin:0">القراءة الحالية (من فحص AVD-5554) تلتقط على الأقل: WIFI · BLUETOOTH · MOBILE_DATA · TETHERING (منها RESTRICTED), ومسارات قراءة أخرى (مثل ADB/LOCATION عبر settings get). وباقي المسارات (مثل SAFE_BOOT، SCREEN_CAPTURE…) غير مقروءة → تُعرض صراحةً باللون «غير معروف» بدلًا من افتراض النجاح.</p></div>
+</section>
+
+<!-- ==================== §27 ==================== -->
+<section class="block" id="s27">
+  <h2><span class="secno">§27</span>الأمان والصلاحيات</h2>
+  <table>
+    <tr><th>الطبقة</th><th>التفصيل الفعلي</th></tr>
+    <tr><td>المصادقة</td><td>لا تسجيل دخول تفاعلي عند بدء التشغيل (وضع «المشغّل المحلي»). كل عملية حساسة تحكمها «حيازة» بيان استرداد مشفّر خاص بالجهاز (DPAPI)، والعمليات الأشد تتطلب تأكيدات بشرية بأسماء. الأدوار الداخلية (RBAC) باقية للمسارات القديمة التي تستخدمها</td></tr>
+    <tr><td>الصلاحيات</td><td>أدوار مضمّنة: SUPER_ADMIN (كل شيء)، FLEET_ADMIN (أسطول)، OPERATOR (مشغّل)، POLICY_ADMIN (سياسات)، AUDITOR (مراجع). الاستعلام لكل (دور، عملية) يعيد ALLOW/DENY/REQUIRES_APPROVAL</td></tr>
+    <tr><td>العمليات الحساسة</td><td>UNLOCK · PARTIAL_UNLOCK · RECOVER · UNENROLL · RETIRE · FACTORY_RESET · FIRMWARE · KEY_MANAGEMENT · BULK_APPLY</td></tr>
+    <tr><td>الموافقة المزدوجة</td><td>FACTORY_RESET · RETIRE · FIRMWARE · UNENROLL — تحتاج موافقة مستقلة مزدوجة</td></tr>
+    <tr><td>التوقيع الرقمي للأوامر</td><td>كل أمر يُوقع رقميًا قبل الإرسال (توقيع قناة) — يُمنع العبث أثناء النقل</td></tr>
+    <tr><td>سجل التدقيق</td><td>سلسلة تراكمية (HMAC) مع فحص Tamper مدمج في الواجهة</td></tr>
+    <tr><td>منع التلاعب بالبيانات</td><td>لا يمرّ PASS على بيانات وهمية؛ SOLID في فحص الأدلة</td></tr>
+  </table>
+  <div class="boxed prop"><h4>مقترح إضافي (لاحقًا)</h4><p class="small" style="margin:0">فحص «تمثيل المعرّفين» عند الظروف القصوى (break-glass) وتسجيل سبب التفعيل؛ لا يوجد الآن في الشيفرة.</p></div>
+</section>
+
+<!-- ==================== §28 ==================== -->
+<section class="block" id="s28">
+  <h2><span class="secno">§28</span>إعادة تقييم الواجهة الحالية</h2>
+  <h3>الواجهة (Qt RTL)</h3>
+  <p class="lead">تضمّ 15 صفحة بجودة عالية للغة العربية، مع تلوين حالات حيوي وسجل تشغيل. الآن ندخل مرحلة «مراجعة الاستخدام» الآتية:</p>
+  <table>
+    <tr><th>النقطة</th><th>التقييم</th><th>ملاحظة</th></tr>
+    <tr><td>لغة واتجاه RTL</td><td>ممتاز</td><td>أسماء الحالات والترجمات لكل صفحة متسقة</td></tr>
+    <tr><td>رحلة «تسجيل → فحص → سياسة → تطبيق → تحقق» متناثرة عبر صفحات متعددة</td><td>يمكن تحسينها</td><td>مقترح: معالج خطوة بخطوة (Wizard) يدمج هذه الخطوات</td></tr>
+    <tr><td>عرض «المصدر» للمعاينة (REAL_DEVICE / DEVICE_NOT_ATTACHED)</td><td>ممتاز</td><td>يحقق الشفافية المطلوبة</td></tr>
+    <tr><td>الإيماءات الواضحة عند تشغيل شاشة الاسترداد للعمليات المزدوجة</td><td>فعالة جزئيًا</td><td>الوشرح الواضح موجه عبر نص «السبب / الموافق» — تحسين: خطوة تحقق من العواقب (2-Step confirm)</td></tr>
+    <tr><td>الوصول لشاشة «معاينة» للتطبيق</td><td>كفئة جيدة</td><td>— لكن المبتدئ قد يخطئ بين «التحقق» بعد التطبيق وبين «معاينة» قبل التطبيق؛ توضع أسماء أوضح في اقتراحاتنا (§33)</td></tr>
+  </table>
+</section>
+
+<!-- ==================== §29 ==================== -->
+<section class="block" id="s29">
+  <h2><span class="secno">§29</span>التنقل المقترح</h2>
+  <div class="boxed prop">
+    <h4>«شجرة تنقل» مقترحة على بنية الحالي (لا تنفيذ في هذه النسخة)</h4>
+    <ol>
+      <li><b>الإعدادات > الصفحة الرئيسية:</b> بطاقات رقمية + «إضافة جهاز» وحيدًا إلى ياهتمام.</li>
+      <li><b>الأجهزة</b> ← قائمة/بحث/فلتر الحالة؛ «تفاصيل الجهاز» أصبحا طلقة داخل الحيوان.</li>
+      <li><b>السياسات</b> ← عرض السادسة + صانع «مخصص جديد» (مقترح؛ التنفيذ لاحقًا).</li>
+      <li><b>المهمة «نشر»</b> تجمع: اختيار الجهاز + السياسة + المعاينة + التطبيق + التحقق في نافذة واحدة معالج.</li>
+      <li><b>التشغيل/الأداء</b> في قسم «عمليات»: الاسترداد والموافقات المعلقة.</li>
+      <li><b>السجلات والتقارير</b> + التشخيص (كما هي) ضمن «مراقبة».</li>
+    </ol>
+  </div>
+  <p class="note">المقصد: تقليل الصفحات «الميّتة» في النظرة، مع بقاء كل الوظائف.</p>
+</section>
+
+<!-- ==================== §30 ==================== -->
+<section class="block" id="s30">
+  <h2><span class="secno">§30</span>واجهة ذاتية الشرح (تلميحات / نموذج الحالات)</h2>
+  <ul>
+    <li><b>تلميحات Tooltip</b> عن كل زر / خلية حالة → يوضح معناها فورًا (يحلّ في Qt بـ setToolTip).</li>
+    <li><b>لوحة ملخص واحدة أعلى صفحات العمل:</b> «الجهاز: X · السياسة: Y · الحالة: قيد المراجعة» (مقترح).</li>
+    <li><b>شريط الحالة السفلية</b> يتحول إلى «سطر ماذا يحدث الآن؟» في كل عملية (الآن يعرض النتيجة فقط).</li>
+    <li><b>أيقونات مرموزة للحالة</b> (متوافق✓ / غير معروف◌ / فشل✗) توضح القراءة مع اللون.</li>
+  </ul>
+  <div class="boxed prop"><h4>نمط لعرض الحالة المقترح للتلميحات</h4><p class="small" style="margin:0">بجوار أي خلية حالة نعرض ملخصًا صغيرًا: <span class="mono">WIFI=مقيّد · CAMERA=مقيّد · ADB=مقيّد …</span> مع مصدر القراءة في الركن.</p></div>
+</section>
+
+<!-- ==================== §31 ==================== -->
+<section class="block" id="s31">
+  <h2><span class="secno">§31</span>المعالج (Wizard) المقترح للإعداد</h2>
+  <div class="boxed prop">
+    <h4>سير «تجهيز جهاز موظف» — ينتهي بالنافذة الموجودة لكن بخطوات متتابعة</h4>
+    <div class="flow">
+      <div class="step prop"><b>الجهاز</b><small>اختر/أضف من قائمة ADB المرئية.</small></div>
+      <div class="arrow">←</div>
+      <div class="step prop"><b>الفحص</b><small>قراءة فعليّة للجهاز.</small></div>
+      <div class="arrow">←</div>
+      <div class="step prop"><b>السياسة</b><small>اختر هاتف فقط/قياسية…</small></div>
+      <div class="arrow">←</div>
+      <div class="step prop"><b>المعاينة</b><small>قارن قبل/بعد.</small></div>
+      <div class="arrow">←</div>
+      <div class="step prop"><b>التطبيق</b><small>حيازة بيان الاسترداد + تأكيدات.</small></div>
+      <div class="arrow">←</div>
+      <div class="step prop"><b>التسليم</b><small>دليل + تقرير.</small></div>
+    </div>
+    <p class="small" style="margin:0">هذا المعالج <b>مقترح</b> — الحالي ينفّذ نفس الهيكل لكنه مبعثر عبر 6 صفحات منفصلة (§10). القيمة المضافة: تقليل الأخطاء التشغيلية (تسلسل مضمون، وحلقة تحكم واحدة لكل حالة).</p>
+  </div>
+</section>
+
+<!-- ==================== §32 ==================== -->
+<section class="block" id="s32">
+  <h2><span class="secno">§32</span>نموذج الحالات المقترح</h2>
+  <p class="lead">في الواجهة الحالية تحمل الحالة معنيين (تسجيل/امتثال). الاقتراح: حالة مزدوجة واضحة بأعمدة منفصلة:</p>
+  <table>
+    <tr><th>العمود الحالي</th><th>اقتراح</th><th>أمثلة</th></tr>
+    <tr><td>enrollment_state</td><td>«مرحلة الجهاز» (تسجيل)</td><td>قيد التسجيل ← مسجّل ← متوافق ← معزول ← خارج الخدمة</td></tr>
+    <tr><td>compliance_state</td><td>«حالة الالتزام» (قياس فوري)</td><td>متوافق / غير متوافق / جزئي / غير معروف</td></tr>
+    <tr><td>device_owner_state</td><td>«إدارة الجهاز» (شارة)</td><td>مفعّل / غير مفعّل / غير معروف</td></tr>
+  </table>
+  <p class="note">النموذج المقترح مهارة: الفصل بين «مرحلة» و«التزام» يمنع الخلط الحالي (جهاز مسجّل لكنه قد يكون «غير معروف الالتزام»).</p>
+</section>
+
+<!-- ==================== §33 ==================== -->
+<section class="block" id="s33">
+  <h2><span class="secno">§33</span>أسماء أزرار عربية واضحة (مقترحات)</h2>
+  <table>
+    <tr><th>الزر الحالي</th><th>الاقتراح الأوضح</th><th>السبب</th></tr>
+    <tr><td>تطبيق السياسة الآن</td><td>طبّق وتحقّق الآن</td><td>يذكّر المستخدم أن التطبيق يتبعه تحقق فوري (خطوتان مهمتان)</td></tr>
+    <tr><td>تحديث القائمة (ADB)</td><td>إعادة البحث عن الأجهزة</td><td>أوضح لغير التقني</td></tr>
+    <tr><td>فحص الجهاز (قراءة فعلية)</td><td>قراءة حالة الجهاز الآن</td><td>يؤكد أن النتيجة «قراءة» لا تخمين</td></tr>
+    <tr><td>تنفيذ الاسترداد</td><td>بدء مسار الاسترداد (يتطلب موافقة)</td><td>يعلن العواقب قبل التنفيذ</td></tr>
+    <tr><td>حذف محلي آمن…</td><td>تسجيل خروج وإنهاء بيانات هذه الجلسة</td><td>توضيح نطاق «الحذف»</td></tr>
+  </table>
+</section>
+
+<!-- ==================== §34 ==================== -->
+<section class="block" id="s34">
+  <h2><span class="secno">§34</span>ممازج الواجهة المفاهيمية</h2>
+  <p class="lead">هذه <b>رسومات مفاهيمية مقترحة وليست لقطات شاشة حقيقية</b>. عُرضت لتقييم الشكل والموضع قبل التنفيذ.</p>
+  <div class="svgbox concept">
+    <svg viewBox="0 0 820 520" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Tahoma" font-size="12">
+      <defs><style>.w{fill:#ffffff;stroke:#c9d3e0;stroke-width:1.2}.h{fill:#eef6ff;stroke:#2f6fed}.k{fill:#eef2f7}.t{fill:#1c2833}.g{fill:#1d8a4c}.r{fill:#c0392b}.a{fill:#b76e00}</style></defs>
+      <!-- Window frame -->
+      <rect x="10" y="10" width="800" height="500" rx="10" fill="#eef2f7" stroke="#c9d3e0" stroke-width="2"/>
+      <rect x="10" y="10" width="800" height="34" rx="10" fill="#17324d"/>
+      <text x="30" y="32" fill="#fff" font-weight="bold">معالج: تجهيز جهاز موظف — الخطوة 3 من 6: اختيار السياسة</text>
+      <text x="770" y="32" fill="#fff" font-size="11">✕</text>
+      <!-- Steps -->
+      <rect class="k" x="30" y="60" width="120" height="24" rx="6"/><text class="t" x="90" y="76" text-anchor="middle">1 الجهاز ✓</text>
+      <rect class="k" x="160" y="60" width="120" height="24" rx="6"/><text class="t" x="220" y="76" text-anchor="middle">2 الفحص ✓</text>
+      <rect class="h" x="290" y="60" width="120" height="24" rx="6"/><text class="t" x="350" y="76" text-anchor="middle">3 السياسة</text>
+      <rect class="k" x="420" y="60" width="120" height="24" rx="6"/><text class="t" x="480" y="76" text-anchor="middle">4 المعاينة</text>
+      <rect class="k" x="550" y="60" width="120" height="24" rx="6"/><text class="t" x="610" y="76" text-anchor="middle">5 التطبيق+تحقق</text>
+      <rect class="k" x="680" y="60" width="120" height="24" rx="6"/><text class="t" x="740" y="76" text-anchor="middle">6 التسليم</text>
+      <!-- Cards of policies -->
+      <text class="t" x="30" y="112" font-weight="bold">اختر السياسة المراد تطبيقها:</text>
+      <rect class="w" x="30" y="126" width="360" height="86" rx="8"/>
+      <circle cx="56" cy="160" r="9" fill="#2f6fed"/><text x="52" y="164" fill="#fff">✓</text>
+      <text class="t" x="74" y="150" font-weight="bold">هاتف فقط (موصى به لمهمة أولية)</text>
+      <text class="t" x="74" y="168" fill="#5a6a7c">اتصالات/رسائل/جهات اتصال + حظر Wi-Fi/كاميرا/تثبيت…</text>
+      <text class="t" x="74" y="184" fill="#2f6fed" font-size="11">متوافق مع هذه العينة: 12/18 ميزة قابلة للتطبيق — الباقي «غير متحقق</text>
+      <text class="t" x="74" y="200" fill="#5a6a7c" font-size="11">تم التحقق من المصدر: قراءة فعلية REAL_DEVICE</text>
+      <rect class="w" x="420" y="126" width="360" height="86" rx="8"/>
+      <circle cx="446" cy="160" r="9" fill="#c9d3e0"/><text x="442" y="164" fill="#fff">2</text>
+      <text class="t" x="464" y="150" font-weight="bold">السياسة القياسية (Corporate Default)</text>
+      <text class="t" x="464" y="168" fill="#5a6a7c">متوازن: يقيّد المطور/التثبيت ويراقب كاميرا/موقع</text>
+      <text class="t" x="464" y="184" fill="#5a6a7c" font-size="11">13/18 قياسي — انظر المعاينة في الخطوة 4</text>
+      <text class="t" x="464" y="200" fill="#5a6a7c" font-size="11">لم يُتحقق بعد على هذه العينة</text>
+      <rect class="w" x="30" y="230" width="360" height="86" rx="8"/>
+      <circle cx="56" cy="264" r="9" fill="#c9d3e0"/><text x="52" y="268" fill="#fff">3</text>
+      <text class="t" x="74" y="254" font-weight="bold">إغلاق كامل (Full Lockdown)</text>
+      <text class="t" x="74" y="272" fill="#5a6a7c">أقصى قيود قابلة للتطبيق — صريح بالممرات غير قابلة</text>
+      <text class="t" x="74" y="288" fill="#5a6a7c" font-size="11">يُوصى به فقط للتجريب/الجهات الحساسة</text>
+      <text class="t" x="74" y="304" fill="#b76e00" font-size="11">تحذير: سيفقد الجهاز Wi-Fi وكل الاتصالات غير الخلوية</text>
+      <rect class="w" x="420" y="230" width="360" height="86" rx="8"/>
+      <circle cx="446" cy="264" r="9" fill="#c9d3e0"/><text x="442" y="268" fill="#fff">4</text>
+      <text class="t" x="464" y="254" font-weight="bold">عزل (Quarantine) — يستخدم للاشتباه</text>
+      <text class="t" x="464" y="272" fill="#5a6a7c">حظر Wi-Fi/كاميرا/تثبيت…</text>
+      <text class="t" x="464" y="288" fill="#5a6a7c" font-size="11">مناسب للجهاز المشبوه قبل التحليل</text>
+      <text class="t" x="464" y="304" fill="#5a6a7c" font-size="11">—</text>
+      <!-- Bottom bar -->
+      <text class="t" x="30" y="352" fill="#5a6a7c" font-size="11">تلميح:</text>
+      <text class="t" x="278" y="352" fill="#c0392b" font-size="11">* حرجة: قد يُمنع الجهاز من الاستخدام — الطبقة السفلية ستعرض ملخص التغييرات.</text>
+      <rect class="w" x="30" y="372" width="740" height="80" rx="8"/>
+      <text class="t" x="46" y="396" font-weight="bold">ملخص التغييرات المسبق على هذه العينة</text>
+      <text class="t" x="46" y="416">Wi-Fi: من ON ← إلى مقيّد</text>
+      <text class="t" x="46" y="434" fill="#2f6fed">الكاميرا: غير مقروءة حاليًا ← يُتحقق بعد التطبيق</text>
+      <rect x="620" y="452" width="140" height="30" rx="6" fill="#2f6fed"/><text x="690" y="472" text-anchor="middle" fill="#fff" font-weight="bold">التالي →</text>
+      <rect x="30" y="452" width="120" height="30" rx="6" fill="#fff" stroke="#c9d3e0"/><text x="90" y="472" text-anchor="middle" fill="#33506b">← رجوع</text>
+    </svg>
+    <div class="figcap">شكل 3: <b>مفهومي</b> — واجهة مقترحة لاختيار سياسة (بعرض شفافية التأثير على العينة) — ليست لقطة من التطبيق الحالي</div>
+  </div>
+</section>
+
+<!-- ==================== §35 ==================== -->
+<section class="block" id="s35">
+  <h2><span class="secno">§35</span>فحص الواقع التنفيذي (الوثيقة مقابل الشيفرة)</h2>
+  <p class="lead">هنا مقارنة مباشرة بين ما «تُصرح به المستندات» وما يوجد فعلًا في الشيفرة، وتحديد الفجوة والإجراء.</p>
+  <table>
+    <tr><th>الادعاء/الوثيقة</th><th>الموجود لوحده في الشيفرة</th><th>الفجوة</th><th>الإجراء المقترح</th></tr>
+    <tr><td>«التطبيق على جهاز حقيقي يقيّد النظام»</td><td>الخط الكامل جاهز (Director → قناة → تحقق) لكنلا يوجد وكيل مركَّب على جهاز حقيقي</td><td>الكثافة الإثباتية: لا يوجد حتى الآن PASS على جهاز فعلي</td><td>تركيب الوكيل على جهاز عيني+ إثبات فعلي → ثم تحديث هذا المستند بنتائج</td></tr>
+    <tr><td>«التوافق مع أندرويد 7→15»</td><td>جدول آلي في طبقة التوافق + سجل شركات</td><td>لم تُختبَر كل عينة فعليًا</td><td>وثائق مختبرية لكل نسخة/شريحة عينة</td></tr>
+    <tr><td>«دعم متعدد الشركات»</td><td>سجل الأسماء + Generic/Samsung</td><td>لا يوجد محول إجرائي بياناتيًا لـ Xiaomi/Huawei… (يُنتقى عند المطلوب)</td><td>بناء محولات بياناتيات عند الحاجة بمعيار إثبات</td></tr>
+    <tr><td>«إدارة الجميع 1000+»</td><td>FleetEngine + محاكي</td><td>لا اختبار إجهاد مادي</td><td>تشغيل صارم للمحاكي ثم اختبار مادي مركزي</td></tr>
+    <tr><td>«لوحة ويب»</td><td>API أساسي فقط</td><td>لا واجهة ويب</td><td>القرار: هل تكملة واجهة ويب في النسخة القادمة؟</td></tr>
+    <tr><td>«واجهة للمشترين»</td><td>واجهة Qt ممتازة</td><td>لا تحتوي على معالج موحّد (§31)</td><td>البناء على النسخة القادمة على نفس بنية الـ Controller</td></tr>
+  </table>
+</section>
+
+<!-- ==================== §36 ==================== -->
+<section class="block" id="s36">
+  <h2><span class="secno">§36</span>تصنيف الوظائف</h2>
+  <p class="lead">مصنفات وظائف المنصة حسب حالة التنفيذ (لا يوجد «مُدَّعٍ» دون دليل):</p>
+  <table>
+    <tr><th>الوظيفة</th><th>التصنيف</th></tr>
+    <tr><td>الواجهة العربية Qt (15 صفحة) + وحدة التحكم</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>محركات السياسات/القدرات/التوافق/التحقق/الالتزام</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>الاسترداد R1..R4 + الموافقات + السجل</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>أسطول المهام والمحاكي 1000</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>التوقيع الرقمي للأوامر</td><td><span class="tag t-impl">منفَّذ</span></td></tr>
+    <tr><td>وكيل الأندرويد DPC (المرحلة 3)</td><td><span class="tag t-part">منفَّذ جزئيًا</span></td></tr>
+    <tr><td>محولات Samsung Knox (مقفلة حتى دليل)</td><td><span class="tag t-part">منفَّذ جزئيًا</span></td></tr>
+    <tr><td>واجهة ويب للمدير</td><td><span class="tag t-plan">مخطط</span></td></tr>
+    <tr><td>معالج واجهة تجهيز الجهاز</td><td><span class="tag t-plan">مخطط</span></td></tr>
+    <tr><td>استعادة R3 (فلاش مختبري) من التطبيق</td><td><span class="tag t-unsup">غير مدعوم</span></td></tr>
+    <tr><td>منع إعادة الفلاش عبر وسائل خارج أندرويد</td><td><span class="tag t-unsup">غير ممكن من طبقة التطبيق</span></td></tr>
+    <tr><td>نتيجة PASS على جهاز حقيقي</td><td><span class="tag t-nv">غير متحقَّق منه</span></td></tr>
+    <tr><td>اختبار أسطول 1000 على أجهزة مادية</td><td><span class="tag t-nv">غير متحقَّق منه</span></td></tr>
+    <tr><td>توافق كل نسخة 7→15 على عينة حقيقية</td><td><span class="tag t-nv">غير متحقَّق منه</span></td></tr>
+  </table>
+</section>
+
+<!-- ==================== §37 ==================== -->
+<section class="block" id="s37">
+  <h2><span class="secno">§37</span>الفجوات والطريق المقترح</h2>
+  <div class="grid3">
+    <div class="boxed"><h4>قصير المدى (أولوية 1)</h4><p class="small" style="margin:0">· تركيب الوكيل على عينة حقيقية (يفتح الباب لـ PASS الفعلي).<br>· إغلاق الفجوة في مسار «تطبيق→تحقق» على جهاز فعلي.<br>· إعداد أدوات التوثيق بكل نسخة Android.</p></div>
+    <div class="boxed"><h4>متوسط المدى (أولوية 2)</h4><p class="small" style="margin:0">· معالج تجهيز الجهاز (§31) في الواجهة.<br>· لوحا مراقبة الأسطول (§24).<br>· محولات شركات جديدة مع إثبات.</p></div>
+    <div class="boxed"><h4>بعيد المدى (أولوية 3)</h4><p class="small" style="margin:0">· واجهة ويب.<br>· تحسين «منع إعادة التمكين» كحماية متعددة الطبقات بآليات OEM.<br>· تعميق الاختبار الجماعي الموزع.</p></div>
+  </div>
+</section>
+
+<!-- ==================== §38 ==================== -->
+<section class="block" id="s38">
+  <h2><span class="secno">§38</span>الخلاصة ومعايير القبول</h2>
+  <p class="lead">منهجية التحقق المعتمدة: <b>من الصفر إلى جهاز مؤسسي</b> عبر مراحل §7/§8، مع «لا نجاح بلا دليل» كقاعدة صارمة.</p>
+  <h3>معايير القبول (أسئلة تطرحها قبل إعلان «جاهز»)</h3>
+  <table>
+    <tr><th>#</th><th>السؤال</th><th>الإجابة المرجعية</th></tr>
+    <tr><td>1</td><td>هل أستطيع تشغيل التطبيق والعمل مباشرةً دون تسجيل دخول؟</td><td>نعم — §3. تفتح المنصة بوضع «المشغّل المحلي»؛ العمليات الحساسة تطلب حيازة بيان الاسترداد.</td></tr>
+    <tr><td>2</td><td>هل أستطيع تسجيل جهاز وفحصه قراءة فعلية؟</td><td>نعم لجهاز متصل عبر ADB — §8 خطوات 2–4 و§10 صفحة الأجهزة.</td></tr>
+    <tr><td>3</td><td>هل أستطيع رؤية القدرات قبل التطبيق؟</td><td>نعم — صفحة «فحص القدرات» و المعاينة §8/6.</td></tr>
+    <tr><td>4</td><td>هل يفهم المسؤولون الفرق بين «متوافق» و«غير معروف»؟</td><td>نعم — §6 و§26 (لا نجاح بلا دليل).</td></tr>
+    <tr><td>5</td><td>هل تتصل خطوة التطبيق بخطوة تحقق فورية وأدلة؟</td><td>نعم — §11.2 (بوابة الدليل REAL_DEVICE).</td></tr>
+    <tr><td>6</td><td>هل يوجد مسار استرداد للأجهزة؟</td><td>نعم R1/R2/R4 الآن، وR3 مرفوضًا من التطبيق — §20.</td></tr>
+    <tr><td>7</td><td>هل يمنع النظام العمليات العشوائية؟</td><td>نعم: حيازة بيان الاسترداد لكل عملية حساسة + تأكيدان باسْمَين مختلفَين للعمليات الأشد — §27.</td></tr>
+    <tr><td>8</td><td>هل تعمل المنصة فعليًا على <b>جهاز حقيقي</b>؟</td><td>المرحلة التالية: تركيب الوكيل وإثبات PASS فعلي — الحالي «غير متحقق منه» بمصداقية.</td></tr>
+    <tr><td>9</td><td>هل يوجد سجل تدقيق غير قابل للتلاعب؟</td><td>نعم — سلسلة HMAC + فحص Tamper — §27.</td></tr>
+    <tr><td>10</td><td>هل التصاميم المقترحة ميّزة عن الموجودة بوضوح؟</td><td>نعم — كل شيء «مقترح» في صناديق أرجوانية (§29–§34).</td></tr>
+  </table>
+  <div class="boxed good"><h4>الحكم الحالي</h4><p class="small" style="margin:0">المنصة <b>جاهزة لجولة أولى من المراقبة المتحكم بها</b> في بيئة مختبر ومحاكي، وادعاء «نشر إنتاجي على أجهزة حقيقية» مؤجل حتى اكتمال تركيب الوكيل وإثبات PASS على عينة مادية.</p></div>
+  <br>
+  <h3>مسرد المصطلحات <span style="font-size:.7em">(المرجعي السريع)</span></h3>
+  <table id="glossary">
+    <tr><th>المصطلح</th><th>المعنى</th></tr>
+    <tr><td>AD-4</td><td>تسلسل: اكتشف → عرّف → قيّم → اختر → راجع → طبق → تحقق → دليل → امتثال</td></tr>
+    <tr><td>DPC / Device Owner</td><td>وكيل جهاز مالك على الجهاز (يملك صلاحيات فرض القيود)</td></tr>
+    <tr><td>evidence_id</td><td>معرّف الدليل المرتبط بنتيجة التحقق (لا PASS بدونها)</td></tr>
+    <tr><td>بيان استرداد</td><td>سريّة لكل جهاز، مولّدة ومشفّرة (DPAPI) في هذه الوحدة؛ بموجبها تُغلق العمليات الحساسة (عامل الحيازة). لا تُعرض ولا تُشارك؛ يظهر للعرض فقط «Recovery ID» مثل <span class="mono">XK2P-9T4Q</span></td></tr>
+    <tr><td>REAL_DEVICE / SIMULATED</td><td>مصدر القراءة: جهاز فعلي حقيقي / محاكاة (المحاكاة لا تمنح PASS)</td></tr>
+    <tr><td>BLOCK / ALLOW / RESTRICT / WARN_AUDIT</td><td>أهداف السياسة: تقييد / إتاحة / تقييد مشروط / تحذير وتدقيق فقط</td></tr>
+    <tr><td>R1…R4</td><td>أوضاع الاسترداد: نقطة حفظ / إعادة تأهيل / فلاش مختبر (مرفوض) / تشخيص</td></tr>
+    <tr><td>RolloutStopped</td><td>إيقاف تلقائي للنشر الجماعي عند تجاوز عتبة الفشل (10%)</td></tr>
+    <tr><td>تأكيد مُسمّى (Named Confirmation)</td><td>تأكيد بشري باسم محدّد عبر <span class="mono">approval.confirm()</span>؛ القاعدة المزدوجة تتطلب اسمين مختلفين</td></tr>
+  </table>
+</section>
+
+<div class="foot">
+  نهاية الدليل — أُعدّ هذا المستند من التحقيق النصي الفعلي للشيفرة (لا ادعاءات).<br>
+  أي تحديث في الشيفرة لاحقًا يجب أن يحدّث هذا المستند في نفس الجلسة.
+</div>
+
+</div>
+</body>
+</html>
