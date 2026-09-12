@@ -20,6 +20,7 @@ def _fresh_db() -> str:
 
 class RecoveryFlows(unittest.TestCase):
     def setUp(self):
+        self._prev_env = os.environ.get("ALP_DB")
         self.db = _fresh_db()
         from backend.director import DirectorError  # noqa: F401
         from backend.state_machine import transition  # noqa: F401
@@ -29,6 +30,12 @@ class RecoveryFlows(unittest.TestCase):
                 "api_level, enrollment_state, device_owner_state, control_channel) "
                 "VALUES ('DEV-1','emulator-5554','sdk_gphone64_x86_64',16,36,"
                 "'PHONE_ONLY','ACTIVE','LOCAL_ADB')")
+
+    def tearDown(self):
+        if self._prev_env is None:
+            os.environ.pop("ALP_DB", None)
+        else:
+            os.environ["ALP_DB"] = self._prev_env
 
     def test_modes_vocabulary(self):
         self.assertEqual(len(RECOVERY_MODES), 4)

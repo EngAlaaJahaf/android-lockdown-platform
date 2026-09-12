@@ -91,6 +91,7 @@ class Director:
               approval: Optional[dict] = None,
               compat_layer=None, vendor_adapter=None,
               force: bool = False, evidence_src: str = "SIMULATED",
+              lane_subset: Optional[set] = None,
               job_execution_id: int = 0) -> PipelineResult:
         """Full AD-4 pipeline for a single device. Returns result; raises on block."""
         res = PipelineResult(device_id, policy.policy_id)
@@ -109,6 +110,12 @@ class Director:
                 f"policy {policy.policy_id} has {len(snap.exceptions)} unresolved "
                 f"exceptions on {device_id}: {sorted(snap.exceptions)}")
 
+        # Optional transport-safe lane filter (e.g. exclude ADB/USB lanes whose
+        # restrictions would sever the adb channel on lab AVDs).
+        effective = list(snap.resolved)
+        if lane_subset:
+            effective = [r for r in snap.resolved if r.feature in lane_subset]
+
         # 2. Authorization + approval gate
         rbac.authorize(op_role, "APPLY", require_mfa=True, mfa_ok=mfa_ok, approval=approval)
         if not can_transition("ENROLLED", "PHONE_ONLY") and capability.device_owner is not True:
@@ -116,11 +123,11 @@ class Director:
 
         # 3. Build signed command + send over channel
         expected = {}
-        for r in snap.resolved:
+        for r in effective:
             expected[r.feature] = "OFF" if r.desired == "BLOCK" else ("ON" if r.desired == "ALLOW" else "RESTRICT")
         env = new_command(job_execution_id, device_id, "APPLY_POLICY",
                           {"policy_id": policy.policy_id, "version": policy.version,
-                           "snapshot": [r.__dict__ for r in snap.resolved]},
+                           "snapshot": [r.__dict__ for r in effective]},
                           key=self.signing_key)
         res.command = env
 

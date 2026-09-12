@@ -15,8 +15,18 @@ from .config import DBPATH, SCHEMA_SQL, MIGRATIONS_DIR
 _lock = threading.Lock()
 
 
+def _resolve_path(explicit: Optional[str] = None) -> str:
+    """Canonical default DB path: explicit arg wins, then the ALP_DB env var,
+    then the module-level default. ALP_DB stays authoritative so components or
+    tests that re-point config.DBPATH / db.DBPATH at runtime never leak a stale
+    store into sibling callers."""
+    if explicit:
+        return explicit
+    return os.environ.get("ALP_DB") or DBPATH
+
+
 def connect(db_path: Optional[str] = None) -> sqlite3.Connection:
-    db_path = db_path or DBPATH
+    db_path = _resolve_path(db_path)
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
@@ -37,7 +47,7 @@ def migrated() -> bool:
 def run_migrations(db_path: Optional[str] = None) -> list[str]:
     """Apply schema.sql + migrations/*.sql idempotently. Returns applied files."""
     applied = []
-    db_path = db_path or DBPATH
+    db_path = _resolve_path(db_path)
     with _lock:
         with connect(db_path) as c:
             c.executescript(_read(SCHEMA_SQL))

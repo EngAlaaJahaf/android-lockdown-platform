@@ -10,6 +10,7 @@ for sub in ("backend", "policy-engine", "capability-engine",
     sys.path.insert(0, os.path.join(ROOT, sub))
 
 from backend import director, db
+from backend import config as _cfg
 from policy_engine import phone_only, corporate_default_v1
 from policy_engine.snapshot import resolve
 from capability_engine import CapabilityProfile
@@ -45,9 +46,25 @@ def make_fake_verify(observed_devices):
 class TestDirector(unittest.TestCase):
     def setUp(self):
         import tempfile
-        os.environ["ALP_DB"] = os.path.join(tempfile.mkdtemp(prefix="alp_dir_"), "d.db")
+        path = os.path.join(tempfile.mkdtemp(prefix="alp_dir_"), "d.db")
+        # Sync the authoritative routing (env + module attrs) so this module
+        # runs against *its own* DB and restores afterwards — no leakage into
+        # sibling test modules regardless of discovery/run order.
+        self._prev = {"env": os.environ.get("ALP_DB"),
+                      "cfg": _cfg.DBPATH, "db": db.DBPATH}
+        os.environ["ALP_DB"] = path
+        _cfg.DBPATH = path
+        db.DBPATH = path
         os.environ["ALP_SIGNING_KEY"] = "director-test-key"
         db.run_migrations()
+
+    def tearDown(self):
+        if self._prev["env"] is None:
+            os.environ.pop("ALP_DB", None)
+        else:
+            os.environ["ALP_DB"] = self._prev["env"]
+        _cfg.DBPATH = self._prev["cfg"]
+        db.DBPATH = self._prev["db"]
         # policy must be review-approved
         from backend.db import connect
         with connect() as c:

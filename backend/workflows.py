@@ -204,8 +204,13 @@ def run_director_apply(device_id: str, policy_id: str,
                        serial: Optional[str] = None,
                        real: bool = False,
                        signing_key: str = "",
-                       chan_dir: Optional[str] = None) -> dict:
-    """Full AD-4 pipeline for one device. Raises DirectorError/ApplyBlocked."""
+                       chan_dir: Optional[str] = None,
+                       channel_send=None) -> dict:
+    """Full AD-4 pipeline for one device. Raises DirectorError/ApplyBlocked.
+
+    channel_send: optional injected real transport (e.g. backend.channel).
+    When neither chan_dir nor channel_send is given the command is prepared only.
+    """
     from .director import Director, ApplyBlocked, DirectorError
     from .config import SIGNING_KEY
     from policy_engine.snapshot import resolve
@@ -227,7 +232,9 @@ def run_director_apply(device_id: str, policy_id: str,
     channel, chan_state = None, {}
     serial = serial or dev["serial"]
     attached = bool(serial) and serial in attached_serials()
-    if chan_dir and attached:
+    if channel_send is not None:
+        channel, chan_state = channel_send, {}
+    elif chan_dir and attached:
         channel, chan_state = staged_channel(serial, chan_dir)
 
     if real and attached:
@@ -246,11 +253,13 @@ def run_director_apply(device_id: str, policy_id: str,
         db_path=None, resolve_fn=resolve,
         verify_fn=VerificationEngine(lambda _dev: obs).verify,
         channel_send=channel, signing_key=key)
+    subset_raw = os.environ.get("ALP_LANE_SUBSET", "")
+    lane_subset = {s.strip().upper() for s in subset_raw.split(",") if s.strip()} or None
     res = director.apply(device_id, pol, cap,
                          op_role=op_role, mfa_ok=mfa_ok,
                          compat_layer=AndroidCompatibilityLayer(api),
                          vendor_adapter=adapter,
-                         evidence_src=source)
+                         evidence_src=source, lane_subset=lane_subset)
     return {
         "device_id": device_id, "policy_id": pol.policy_id, "stage": res.stage,
         "evidence_id": res.evidence_id, "audit_id": res.audit_id,

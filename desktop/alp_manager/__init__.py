@@ -1,0 +1,1 @@
+"""ALP Manager — desktop application package."""

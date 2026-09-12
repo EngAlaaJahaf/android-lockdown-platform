@@ -24,10 +24,10 @@ from . import VendorAdapter, GenericAdapter, SamsungAdapter
 # Known product families (name-based; additive, never exhaustive)
 # ---------------------------------------------------------------------------
 _SAMSUNG_FAMILIES = [
-    {"family": "J3 (2017)", "pattern": r"SM-J3[0-9]",
-     "notes": "Android 7 floor reference (SM-J320FN)"},
     {"family": "J3 (2018+)", "pattern": r"SM-J33",
      "notes": "J337P = Android 9 / Knox 3.3 target of record"},
+    {"family": "J3 (2017)", "pattern": r"SM-J3[0-9]",
+     "notes": "Android 7 floor reference (SM-J320FN)"},
     {"family": "J5", "pattern": r"SM-J5", "notes": ""},
     {"family": "J7", "pattern": r"SM-J7", "notes": ""},
     {"family": "A", "pattern": r"SM-A[0-9]", "notes": "SM-A145P dual-OS (14/15) lab reference"},
