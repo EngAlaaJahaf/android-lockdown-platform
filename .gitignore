@@ -1,0 +1,6 @@
+.alp/
+__pycache__/
+*.pyc
+android-agent/alp-debug.keystore
+android-agent/build/
+reports/phase3/*.json.bak

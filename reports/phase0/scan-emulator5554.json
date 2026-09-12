@@ -1,0 +1,121 @@
+{
+  "device_id": "",
+  "android_version": 16,
+  "api_level": 36,
+  "manufacturer": "google",
+  "model": "sdk_gphone64_x86_64",
+  "build_fingerprint": "google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys",
+  "device_owner": false,
+  "states": {
+    "WIFI": "ANDROID_VERSION_DEPENDENT",
+    "BLUETOOTH": "ANDROID_VERSION_DEPENDENT",
+    "MOBILE_DATA": "ANDROID_VERSION_DEPENDENT",
+    "LOCATION": "ANDROID_VERSION_DEPENDENT",
+    "GPS": "PARTIAL",
+    "CAMERA": "ANDROID_VERSION_DEPENDENT",
+    "MICROPHONE": "ANDROID_VERSION_DEPENDENT",
+    "USB": "ANDROID_VERSION_DEPENDENT",
+    "ADB": "ANDROID_VERSION_DEPENDENT",
+    "DEVELOPER_OPTIONS": "ANDROID_VERSION_DEPENDENT",
+    "SAFE_BOOT": "ANDROID_VERSION_DEPENDENT",
+    "FACTORY_RESET": "ANDROID_VERSION_DEPENDENT",
+    "APP_INSTALLATION": "ANDROID_VERSION_DEPENDENT",
+    "UNKNOWN_SOURCES": "ANDROID_VERSION_DEPENDENT",
+    "BROWSER": "UNKNOWN",
+    "PLAY_STORE": "UNKNOWN",
+    "HOTSPOT": "UNKNOWN",
+    "TETHERING": "ANDROID_VERSION_DEPENDENT",
+    "ACCOUNTS": "ANDROID_VERSION_DEPENDENT",
+    "USER_MANAGEMENT": "ANDROID_VERSION_DEPENDENT",
+    "SCREEN_CAPTURE": "ANDROID_VERSION_DEPENDENT",
+    "LOCK_TASK": "UNKNOWN",
+    "APPLICATIONS": "ANDROID_VERSION_DEPENDENT",
+    "CALLS": "UNKNOWN",
+    "SMS": "UNKNOWN",
+    "CONTACTS": "UNKNOWN",
+    "ETHERNET": "ANDROID_VERSION_DEPENDENT",
+    "USB_NETWORKING": "UNKNOWN",
+    "VPN": "ANDROID_VERSION_DEPENDENT",
+    "BLUETOOTH_PAN": "ANDROID_VERSION_DEPENDENT",
+    "FACTORY_RESET_RECOVERY": "NOT_FEASIBLE",
+    "REFLAH_FIRMWARE": "NOT_FEASIBLE"
+  },
+  "methods": {
+    "CAMERA": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "MICROPHONE": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "USB": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "ADB": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "DEVELOPER_OPTIONS": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "FACTORY_RESET": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "APP_INSTALLATION": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "UNKNOWN_SOURCES": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "TETHERING": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "ACCOUNTS": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "USER_MANAGEMENT": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "SCREEN_CAPTURE": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "APPLICATIONS": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "MOBILE_DATA": [
+      "user_restriction_by_api",
+      "dpm_device_owner"
+    ],
+    "SAFE_BOOT": [
+      "user_restriction_disable_safe_boot"
+    ],
+    "LOCATION": [
+      "user_restriction_disable_location_services"
+    ],
+    "BLUETOOTH": [
+      "user_restriction_disable_bluetooth"
+    ],
+    "WIFI": [
+      "user_restriction_disable_wifi"
+    ],
+    "GPS": [
+      "user_restriction_location",
+      "settings"
+    ]
+  },
+  "evidence": {},
+  "class_tags": [
+    "ANDROID_VERSION_DEPENDENT"
+  ]
+}

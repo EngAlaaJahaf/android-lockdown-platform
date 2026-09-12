@@ -1,0 +1,12 @@
+{
+  "cmd_id": "F1D98EEAB7CF49",
+  "applied_at": "2026-09-12T00:30:08Z",
+  "admin_active": true,
+  "applied": [
+    "WIFI",
+    "BLUETOOTH",
+    "TETHERING"
+  ],
+  "skipped": [],
+  "errors": []
+}

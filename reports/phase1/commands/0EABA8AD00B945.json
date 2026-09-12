@@ -1,0 +1,304 @@
+{
+  "cmd_id": "0EABA8AD00B945",
+  "job_execution_id": 0,
+  "device_id": "AVD-5554",
+  "action": "APPLY_POLICY",
+  "nonce": "3f68e9e0f894478b9bb89a81770aa286",
+  "issued_at": 1789168490,
+  "expires_at": 1789168790,
+  "body": {
+    "policy_id": "POL-PHONE_ONLY",
+    "version": 1,
+    "snapshot": [
+      {
+        "feature": "CALLS",
+        "desired": "ALLOW",
+        "method": "",
+        "supported": "UNKNOWN",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "SMS",
+        "desired": "ALLOW",
+        "method": "",
+        "supported": "UNKNOWN",
+        "risk": "LOW",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "CONTACTS",
+        "desired": "ALLOW",
+        "method": "",
+        "supported": "UNKNOWN",
+        "risk": "LOW",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "WIFI",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_wifi",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "AV_DEP: partially enforced below API 28",
+        "exception": false
+      },
+      {
+        "feature": "BLUETOOTH",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_bluetooth",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "HOTSPOT",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_tethering",
+        "supported": "UNKNOWN",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "TETHERING",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_tethering",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "USB_NETWORKING",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_usb_networking",
+        "supported": "UNKNOWN",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "BLUETOOTH_PAN",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_bluetooth",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "VPN",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_vpn",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "ETHERNET",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_ethernet",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "CAMERA",
+        "desired": "BLOCK",
+        "method": "dpm_camera_disabled",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "MICROPHONE",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_microphone",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "GPS",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_location_services",
+        "supported": "PARTIAL",
+        "risk": "HIGH",
+        "fallback": "PARTIAL: HW RAW off not guaranteed",
+        "exception": false
+      },
+      {
+        "feature": "LOCATION",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_location_services",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "BROWSER",
+        "desired": "BLOCK",
+        "method": "package_hide_browser",
+        "supported": "UNKNOWN",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "PLAY_STORE",
+        "desired": "BLOCK",
+        "method": "package_hide_play_store",
+        "supported": "UNKNOWN",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "APP_INSTALLATION",
+        "desired": "BLOCK",
+        "method": "user_restriction_block_install_unknown_sources",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "UNKNOWN_SOURCES",
+        "desired": "BLOCK",
+        "method": "user_restriction_block_unknown_sources",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "DEVELOPER_OPTIONS",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_debugging_features",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "ADB",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_debugging_features",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "USB",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_usb_file_transfer",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "SCREEN_CAPTURE",
+        "desired": "BLOCK",
+        "method": "dpm_screen_capture_disabled",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "ACCOUNTS",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_add_user",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "USER_MANAGEMENT",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_add_user",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "APPLICATIONS",
+        "desired": "RESTRICT",
+        "method": "package_allowlist",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "allowlist defined by org; not enforced on legacy 7.x fully",
+        "exception": false
+      },
+      {
+        "feature": "LOCK_TASK",
+        "desired": "RESTRICT",
+        "method": "lock_task_kiosk",
+        "supported": "UNKNOWN",
+        "risk": "MEDIUM",
+        "fallback": "AV_DEP on OEM builds",
+        "exception": false
+      },
+      {
+        "feature": "MOBILE_DATA",
+        "desired": "RESTRICT",
+        "method": "user_restriction_disable_background_data",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "PARTIAL: full data cut shares semantics with SMS for operators",
+        "exception": false
+      },
+      {
+        "feature": "SAFE_BOOT",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_safe_boot",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "HIGH",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "FACTORY_RESET",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_factory_reset",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "CRITICAL",
+        "fallback": "",
+        "exception": false
+      },
+      {
+        "feature": "FACTORY_RESET_RECOVERY",
+        "desired": "WARN_AUDIT",
+        "method": "governance_lab_only",
+        "supported": "UNKNOWN",
+        "risk": "CRITICAL",
+        "fallback": "NOT_FEASIBLE from DPC — recovery/ODIN",
+        "exception": false
+      },
+      {
+        "feature": "REFLAH_FIRMWARE",
+        "desired": "WARN_AUDIT",
+        "method": "governance_lab_only",
+        "supported": "UNKNOWN",
+        "risk": "CRITICAL",
+        "fallback": "NOT_FEASIBLE from DPC — firmware layer",
+        "exception": false
+      }
+    ]
+  },
+  "signature": "10fb77795f0f13c4925b77a96f591f9f49da9228c6548dd5e1b716c6d8afa853"
+}

@@ -1,0 +1,208 @@
+{
+  "cmd_id": "D97AC6AF31D645",
+  "job_execution_id": 0,
+  "device_id": "AVD-5554",
+  "action": "APPLY_POLICY",
+  "nonce": "6c446814572649aebd4cb248c9b82020",
+  "issued_at": 1789170602,
+  "expires_at": 1789170902,
+  "body": {
+    "policy_id": "PHONE_ONLY",
+    "version": 1,
+    "snapshot": [
+      {
+        "feature": "CALLS",
+        "desired": "ALLOW",
+        "method": "dpm_policy_allow_implicit",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "SMS",
+        "desired": "ALLOW",
+        "method": "dpm_policy_allow_implicit",
+        "risk": "LOW"
+      },
+      {
+        "feature": "CONTACTS",
+        "desired": "ALLOW",
+        "method": "dpm_policy_allow_implicit",
+        "risk": "LOW"
+      },
+      {
+        "feature": "WIFI",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_wifi",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "BLUETOOTH",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_bluetooth",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "HOTSPOT",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_tethering",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "TETHERING",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_tethering",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "USB_NETWORKING",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_usb_networking",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "BLUETOOTH_PAN",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_bluetooth_pan",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "VPN",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_metered_vpn",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "ETHERNET",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_ethernet",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "CAMERA",
+        "desired": "BLOCK",
+        "method": "dpm_camera_disabled",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "MICROPHONE",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_microphone",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "GPS",
+        "desired": "BLOCK",
+        "method": "location_off",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "LOCATION",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_location_services",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "BROWSER",
+        "desired": "BLOCK",
+        "method": "package_hide_browser",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "PLAY_STORE",
+        "desired": "BLOCK",
+        "method": "package_hide_play_store",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "APP_INSTALLATION",
+        "desired": "BLOCK",
+        "method": "user_restriction_block_install_unknown_sources",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "UNKNOWN_SOURCES",
+        "desired": "BLOCK",
+        "method": "user_restriction_block_unknown_sources",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "DEVELOPER_OPTIONS",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_debugging_features",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "ADB",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_debugging_features",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "USB",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_usb_file_transfer",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "SCREEN_CAPTURE",
+        "desired": "BLOCK",
+        "method": "dpm_screen_capture_disabled",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "ACCOUNTS",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_add_user",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "USER_MANAGEMENT",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_add_user",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "APPLICATIONS",
+        "desired": "RESTRICT",
+        "method": "package_allowlist",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "LOCK_TASK",
+        "desired": "RESTRICT",
+        "method": "lock_task_kiosk",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "MOBILE_DATA",
+        "desired": "RESTRICT",
+        "method": "background_data_off",
+        "risk": "MEDIUM"
+      },
+      {
+        "feature": "SAFE_BOOT",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_safe_boot",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "FACTORY_RESET",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_factory_reset",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "FACTORY_RESET_RECOVERY",
+        "desired": "WARN_AUDIT",
+        "method": "governance_lab_only",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "REFLAH_FIRMWARE",
+        "desired": "WARN_AUDIT",
+        "method": "governance_lab_only",
+        "risk": "CRITICAL"
+      }
+    ]
+  },
+  "signature": "eca38018d59d54a00cffbb90cf6aa2fb3a8e96cdd02aa0a5d5bc619d66fa78a2"
+}

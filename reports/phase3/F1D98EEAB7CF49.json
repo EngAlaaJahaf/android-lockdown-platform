@@ -1,0 +1,34 @@
+{
+  "cmd_id": "F1D98EEAB7CF49",
+  "job_execution_id": 0,
+  "device_id": "AVD-5554",
+  "action": "APPLY_POLICY",
+  "nonce": "60232e116a524951bbdda445a2dd9586",
+  "issued_at": 1789173008,
+  "expires_at": 1789173308,
+  "body": {
+    "policy_id": "PHONE_ONLY",
+    "version": 1,
+    "snapshot": [
+      {
+        "feature": "WIFI",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_wifi",
+        "risk": "CRITICAL"
+      },
+      {
+        "feature": "BLUETOOTH",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_bluetooth",
+        "risk": "HIGH"
+      },
+      {
+        "feature": "TETHERING",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_tethering",
+        "risk": "HIGH"
+      }
+    ]
+  },
+  "signature": "daebea52ba9b40922899eca5d9f24cd6942646f7adae0055d6e5c02ba0a41884"
+}
