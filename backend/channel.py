@@ -52,13 +52,22 @@ def adb_channel(serial: str, out_dir: str = ""):
             state["delivered"].append(err)
             return err
         intent = f"com.alp.agent.{action}"
-        b = sh("shell", "am", "broadcast", "-n", f"com.alp.agent/CommandReceiver",
-               "-a", intent)
+        # Wake + deliver. On builds that vault background broadcasts (standby
+        # bucket RESTRICTED / app-freezer), broadcasting to a background app is
+        # silently deferred forever, so we first foreground the launcher via
+        # `am start`; while the app is foreground the broadcast dispatches
+        # immediately. Both transports funnel into the same AlpOps pipeline,
+        # deduped by cmd_id, so double-processing never happens.
+        n = sh("shell", "am", "start", "-n", "com.alp.agent/.MainActivity",
+               "--activity-no-history")
+        b = sh("shell", "am", "broadcast", "-n",
+               "com.alp.agent/.CommandReceiver", "-a", intent,
+               "--receiver-foreground")
         time.sleep(1)
-        out = {"ok": b.returncode == 0, "action": action,
+        out = {"ok": n.returncode == 0, "action": action,
                "cmd_id": envelope.get("cmd_id", ""), "intent": intent,
                "staged": local or True,
-               "error": None if b.returncode == 0 else b.stderr.strip()[:200]}
+               "error": None if n.returncode == 0 else n.stderr.strip()[:200]}
         state["delivered"].append(out)
         return out
 

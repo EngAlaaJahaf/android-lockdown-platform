@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(ROOT, "verification-engine"))
 
 from verification_engine.probe import (  # noqa: E402
     _parse_restrictions, _read_settings, _read_dpc_state, probe_live_device,
-    RESTRICTION_FEATURES)
+    _parse_camera_disabled, RESTRICTION_FEATURES)
 
 
 DUMP_MODERN = """Current admin:
@@ -33,6 +33,16 @@ DUMP_CLEAR = """Current admin:
     User restrictions:
 """
 
+DUMP_API30 = """Current Device Policy Manager state:
+  Device Owner:
+    admin=ComponentInfo{com.alp.agent/com.alp.agent.AlpDeviceAdminReceiver}
+    package=com.alp.agent
+  Enabled Device Admins (User 0, provisioningState: 3):
+    com.alp.agent/.AlpDeviceAdminReceiver:
+      UserRestrictionPolicyKey userRestriction_no_config_wifi
+      UserRestrictionPolicyKey userRestriction_no_bluetooth
+"""
+
 
 class ParseRestrictions(unittest.TestCase):
     def test_modern_true_lines(self):
@@ -50,9 +60,27 @@ class ParseRestrictions(unittest.TestCase):
     def test_clean_dump_yields_nothing(self):
         self.assertEqual(_parse_restrictions(DUMP_CLEAR), {})
 
+    def test_api30_policy_key_presence(self):
+        active = _parse_restrictions(DUMP_API30)
+        self.assertEqual(active.get("WIFI"), "no_config_wifi")
+        self.assertEqual(active.get("BLUETOOTH"), "no_bluetooth")
+        self.assertNotIn("TETHERING", active)
+
     def test_explicit_false_beats_token(self):
         dump = "User restrictions:\n  no_config_wifi=false\n"
         self.assertEqual(_parse_restrictions(dump), {})
+
+    def test_camera_disabled_true(self):
+        dump = """Current admin:
+    mDeviceOwner: package com.alp.agent
+  mCameraDisabled: true
+"""
+        self.assertTrue(_parse_camera_disabled(dump))
+
+    def test_camera_disabled_only_literal_true(self):
+        self.assertFalse(_parse_camera_disabled(
+            "Current admin:\n  mDeviceOwner: package com.alp.agent\n  mCameraDisabled: false\n"))
+        self.assertFalse(_parse_camera_disabled("Camera settings: some.dump\n  mCameraController: present\n"))
 
 
 class ProbeHonesty(unittest.TestCase):

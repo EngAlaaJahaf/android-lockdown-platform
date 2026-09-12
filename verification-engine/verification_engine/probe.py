@@ -67,33 +67,46 @@ def _run(serial: str, *args: str):
 def _parse_restrictions(dumpsys: str) -> dict:
     """Extract ACTIVE restrictions -> {feature: restriction_key} (only proven ones).
 
-    dumpsys device_policy lists active restrictions as lines such as:
-        no_config_wifi=true        (modern, 'User restrictions:' section)
-        no_config_wifi: true       (older dump formats)
-    A restriction is reported active ONLY when the token is observed with a
-    true value in the dump. It is never inferred from absence.
+    dumpsys device_policy lists active restrictions in one of two shapes:
+        userRestriction_no_config_wifi     (API 30+ policy-key list; presence = active)
+        no_config_wifi=true                (modern, 'User restrictions:' section)
+        no_config_wifi: true               (older dump formats)
+    A restriction is reported active ONLY when the token is observed as active
+    in the dump. It is never inferred from absence.
     """
     active = {}
     lines = dumpsys.splitlines()
     for tok, feat in RESTRICTION_FEATURES.items():
         proven = False
-        for ln in lines:
-            if tok not in ln:
-                continue
-            after = ln.split(tok, 1)[1]
-            if "false" in after.split("true", 1)[0]:
-                continue                     # explicitly false line wins
-            if "true" in after:
-                proven = True
-                break
-            stripped = after.strip().lstrip("=: \t")
-            if stripped == "true" or after.strip().startswith("="):
-                if after.strip().startswith("="):
-                    proven = "true" in after
+        key_token = "userRestriction_" + tok
+        if any(key_token in ln for ln in lines):
+            proven = True                 # API 30+ policy-key presence = enforced
+        else:
+            for ln in lines:
+                if tok not in ln:
+                    continue
+                after = ln.split(tok, 1)[1]
+                if "false" in after.split("true", 1)[0]:
+                    continue             # explicitly false line wins
+                if "true" in after:
+                    proven = True
                     break
+                stripped = after.strip().lstrip("=: \t")
+                if stripped == "true" or after.strip().startswith("="):
+                    if after.strip().startswith("="):
+                        proven = "true" in after
+                        break
         if proven:
             active.setdefault(feat, tok)
     return active
+
+
+def _parse_camera_disabled(dumpsys: str) -> bool:
+    """Camera control (setCameraDisabled) surfaces in the policy dump as e.g.
+    'mCameraDisabled: true' / 'Camera disabled: true'. Only a literal true line
+    counts as evidence the camera is disabled."""
+    return any("camera" in ln.lower() and "true" in ln.lower()
+               for ln in dumpsys.splitlines())
 
 
 def _read_settings(serial: str) -> dict:
@@ -142,6 +155,8 @@ def probe_live_device(serial: str) -> dict:
     for feat in restrictions:
         if feat in ("WIFI", "ADB"):
             observed[feat] = "RESTRICTED"
+    if _parse_camera_disabled(dp_out):
+        observed["CAMERA"] = "RESTRICTED"      # only when the dump literally proves it
 
     return {
         "identity": {
@@ -156,5 +171,6 @@ def probe_live_device(serial: str) -> dict:
         "restrictions": restrictions,
         "observed": observed,
         "dpc": dpc,
+        "camera_disabled": _parse_camera_disabled(dp_out),
         "source": "REAL_DEVICE",
     }

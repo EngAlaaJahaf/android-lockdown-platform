@@ -21,4 +21,14 @@ public class MainActivity extends Activity {
                 + "\nadmin_active=" + active);
         setContentView(tv);
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        android.util.Log.d("ALP", "MainActivity onResume");
+        // Activity-nudge path: the management app starts this launcher after it
+        // drops an envelope; onResume fires both on first launch and when the
+        // top-most activity is re-delivered. AlpOps dedupes by cmd_id.
+        AlpOps.processPending(this);
+    }
 }

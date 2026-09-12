@@ -41,6 +41,8 @@
         <receiver android:name=".CommandReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="com.alp.agent.APPLY_POLICY" />
+                <action android:name="com.alp.agent.CLEAR_POLICY" />
+                <action android:name="com.alp.agent.GET_STATE" />
                 <action android:name="com.alp.agent.REPORT_CAPABILITY" />
             </intent-filter>
         </receiver>

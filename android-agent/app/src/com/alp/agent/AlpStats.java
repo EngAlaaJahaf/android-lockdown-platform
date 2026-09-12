@@ -47,6 +47,8 @@ final class AlpStats {
             s.endArray();
             s.endObject();
             File f = new File(context.getFilesDir(), "state.json");
+            android.util.Log.d("ALP", "writeState cmd=" + cmdId + " applied=" + applied
+                    + " errors=" + errors);
             FileOutputStream fos = new FileOutputStream(f);
             OutputStreamWriter w = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
             w.write(s.toString());
@@ -54,6 +56,7 @@ final class AlpStats {
             w.close();
             record(context, "state_written");
         } catch (Exception e) {
+            android.util.Log.e("ALP", "writeState failed", e);
             record(context, "state_write_error");
         }
     }
