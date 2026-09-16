@@ -9,3 +9,13 @@ build/
 dist/
 # Runtime-generated reports are not sources
 reports/DEV-1/
+# Local SQLite state (contains runtime device data, never a source artifact)
+database/alp.db
+database/alp.db.*
+# Recovery-Vault encryption key + signed R0/R1 command envelopes (runtime secrets/evidence)
+database/vault.key
+database/audit_r0/
+reports/live_commands/
+# Runtime watcher/diagnostic logs (live files, never packaged)
+*.log
+scripts/restore_watch.log
