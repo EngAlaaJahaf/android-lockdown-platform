@@ -64,6 +64,12 @@ class CapabilityProfile:
     manufacturer: str = ""
     model: str = ""
     build_fingerprint: str = ""
+    security_patch: str = ""
+    kernel_version: str = ""
+    bootloader: str = ""
+    verified_boot: str = ""
+    encryption: str = ""
+    baseband: str = ""
     device_owner: bool = False
     states: dict = field(default_factory=dict)
     methods: dict = field(default_factory=dict)

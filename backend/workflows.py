@@ -11,9 +11,16 @@ import json
 import os
 import subprocess
 import sys
+import time
 from typing import Optional
 
 from .db import connect
+
+# A windowed (console=False) app must never flash console windows when it
+# shells out to adb.exe. On Windows, children of a GUI app get their own
+# console unless CREATE_NO_WINDOW is requested explicitly.
+_NO_WINDOW = (getattr(subprocess, "CREATE_NO_WINDOW", 0)
+              if sys.platform == "win32" else 0)
 
 
 def adb() -> str:
@@ -24,7 +31,8 @@ def adb() -> str:
 
 
 def attached_serials() -> list[str]:
-    r = subprocess.run([adb(), "devices"], capture_output=True, text=True, timeout=20)
+    r = subprocess.run([adb(), "devices"], capture_output=True, text=True,
+                       timeout=20, creationflags=_NO_WINDOW or 0)
     out = []
     for ln in r.stdout.splitlines()[1:]:
         if ln.strip() and "offline" not in ln:
@@ -42,7 +50,7 @@ def attached_detailed() -> list[dict]:
     is connected.
     """
     r = subprocess.run([adb(), "devices", "-l"], capture_output=True,
-                       text=True, timeout=20)
+                       text=True, timeout=20, creationflags=_NO_WINDOW or 0)
     out = []
     for ln in r.stdout.splitlines()[1:]:
         if not ln.strip():
@@ -65,7 +73,8 @@ def adb_observe(serial: str) -> dict:
     def g(*args: str) -> str:
         try:
             r = subprocess.run([adb(), "-s", serial, "shell", *args],
-                               capture_output=True, text=True, timeout=15)
+                               capture_output=True, text=True, timeout=15,
+                               creationflags=_NO_WINDOW or 0)
             return r.stdout.strip()
         except Exception:
             return ""
@@ -83,6 +92,42 @@ def adb_observe(serial: str) -> dict:
     if v in ("1", "0"):
         facts["MOBILE_DATA"] = "OFF" if v == "1" else "ON"
     return facts
+
+
+def apps(serial: str) -> dict:
+    """Real application inventory via `pm list packages` (host-side ADB).
+
+    Honest only: returns exactly what `pm` printed. No package is ever
+    claimed blocked/enabled here — app-level blocking happens through the
+    device-owner DPC agent once enrolled (AGENT path); this view is the
+    read-only inventory a manager reviews before policy scoping.
+    """
+    def g(*args: str) -> list[str]:
+        try:
+            r = subprocess.run([adb(), "-s", serial, "shell", *args],
+                               capture_output=True, text=True, timeout=30,
+                               creationflags=_NO_WINDOW or 0)
+        except Exception:
+            return []
+        out = []
+        for ln in r.stdout.splitlines():
+            pkg = ln.strip()
+            if pkg.startswith("package:"):
+                name = pkg.split(":", 1)[1].strip()
+                if name:
+                    out.append(name)
+        return out
+    all_pkgs = set(g("pm", "list", "packages"))
+    third_party = sorted(set(g("pm", "list", "packages", "-3")) & all_pkgs)
+    system = sorted(all_pkgs - set(third_party))
+    return {
+        "serial": serial,
+        "count": len(all_pkgs),
+        "third_party_count": len(third_party),
+        "system_count": len(system),
+        "third_party": third_party,
+        "system": system,
+    }
 
 
 def live_probe(serial: str) -> dict:
@@ -145,7 +190,63 @@ def resolve_policy(policy_id: str):
     }
     key = mapping.get(policy_id, policy_id).upper()
     b = ALL_REFERENCE_POLICIES.get(key)
-    return b() if b else None
+    if b:
+        return b()
+    if policy_id.startswith("POL-CUST"):
+        return _load_custom_policy(policy_id)
+    return None
+
+
+def _load_custom_policy(policy_id: str):
+    """Rehydrate a console-created custom policy (POL-CUST-*) from the DB."""
+    from policy_engine import Policy
+    with connect() as c:
+        row = c.execute(
+            "SELECT policy_id, display_name, category, version, status, "
+            "requirements, created_by FROM policies WHERE policy_id=?",
+            (policy_id,)).fetchone()
+    if not row:
+        return None
+    p = Policy(row["policy_id"], row["display_name"], row["category"],
+               version=row["version"] or 1, status=row["status"] or "ACTIVE")
+    for r in json.loads(row["requirements"] or "[]"):
+        p.add(r.get("feature", ""), r.get("desired_state", "BLOCK"),
+              risk=r.get("risk", "MEDIUM"))
+    return p
+
+
+def create_custom_policy(name: str, category: str, features,
+                         risk: str = "MEDIUM", created_by: str = "console") -> object:
+    """Create a console-managed custom policy (checkbox builder / Full Lockdown).
+
+    `features` is a list of feature names to BLOCK. The policy is persisted
+    with a POL-CUST-* id and becomes immediately resolvable (apply-able).
+    """
+    from policy_engine import Policy, FEATURES
+    features = [f.strip().upper() for f in features if f and f.strip().upper() in FEATURES]
+    if not features:
+        raise ValueError("no valid features selected for custom policy")
+    if category not in ("CORPORATE_DEFAULT", "PHONE_ONLY", "PARTIAL_LOCKDOWN",
+                        "FULL_LOCKDOWN", "MAINTENANCE", "QUARANTINE"):
+        raise ValueError(f"invalid category {category!r}")
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    policy_id = f"POL-CUST-{ts}"
+    p = Policy(policy_id, name or f"سياسة مخصصة {ts}", category,
+               version=1, status="ACTIVE", created_by=created_by,
+               change_reason="created live from the management console")
+    for f in features:
+        p.add(f, "BLOCK", risk,
+              fallback="org-defined; enforcement depends on real device capability")
+    reqs = json.dumps(
+        [{"feature": r.feature, "desired_state": r.desired_state, "risk": r.risk}
+         for r in p.requirements], ensure_ascii=False)
+    with connect() as c:
+        c.execute(
+            "INSERT INTO policies (policy_id, display_name, category, version, status, checksum, requirements, created_by) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (policy_id, p.display_name, category, p.version, p.status,
+             p.checksum(), reqs, created_by))
+    return p
 
 
 def persist_reference_policies() -> int:
@@ -195,17 +296,36 @@ def enroll_device(device_id: Optional[str], serial: str,
     """Live ADB scan -> register device + profile + capabilities. Idempotent."""
     from capability_engine.scanner import adb_scan
     prof = adb_scan(adb=adb(), serial=serial)
+    if prof.model:
+        prof.model = prof.model.replace("_", "-")   # SM_J337P -> SM-J337P (adb -l spelling)
     dev_id = device_id or f"AVD-{serial.split('-')[-1]}"
     with connect() as c:
         exists = c.execute("SELECT id FROM devices WHERE device_id=?", (dev_id,)).fetchone()
         if not exists:
             c.execute(
                 """INSERT INTO devices (device_id, serial, manufacturer, model, android_version,
-                   api_level, build_fingerprint, enrollment_state, device_owner_state, control_channel, is_lab)
-                   VALUES (?,?,?,?,?,?,?, 'ENROLLMENT_PENDING', ?, 'LOCAL_ADB', ?)""",
+                   api_level, build_fingerprint, security_patch, bootloader_state,
+                   verified_boot_state, encryption_state,
+                   enrollment_state, device_owner_state, control_channel, is_lab)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?, 'ENROLLMENT_PENDING', ?, 'LOCAL_ADB', ?)""",
                 (dev_id, serial, prof.manufacturer, prof.model, prof.android_version,
                  prof.api_level, prof.build_fingerprint,
+                 prof.security_patch or None,
+                 prof.bootloader.upper() or "UNKNOWN",
+                 prof.verified_boot.upper() or "UNKNOWN",
+                 prof.encryption.upper() or "UNKNOWN",
                  "ACTIVE" if device_owner else "NONE", 1 if lab else 0))
+            c.execute("UPDATE devices SET last_seen_at=datetime('now') WHERE device_id=?", (dev_id,))
+        else:
+            c.execute(
+                """UPDATE devices SET security_patch=COALESCE(NULLIF(?,''),security_patch),
+                       bootloader_state=COALESCE(NULLIF(?,''),bootloader_state),
+                       verified_boot_state=COALESCE(NULLIF(?,''),verified_boot_state),
+                       encryption_state=COALESCE(NULLIF(?,''),encryption_state),
+                       last_seen_at=datetime('now')
+                   WHERE device_id=?""",
+                (prof.security_patch, prof.bootloader.upper(), prof.verified_boot.upper(),
+                 prof.encryption.upper(), dev_id))
         key = f"{prof.model}|{prof.android_version}|{(prof.build_fingerprint or '?')[:24]}"
         p = c.execute("SELECT id FROM device_profiles WHERE profile_key=?", (key,)).fetchone()
         if not p:

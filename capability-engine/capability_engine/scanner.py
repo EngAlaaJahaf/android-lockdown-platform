@@ -10,8 +10,12 @@ from __future__ import annotations
 
 import subprocess
 import re
+import sys
 
 from . import CapabilityProfile, CapabilityState, ClassTag
+
+_NO_WINDOW = (getattr(subprocess, "CREATE_NO_WINDOW", 0)
+              if sys.platform == "win32" else 0)
 
 ANDROID_VERSION_MAP = {
     "7": 7, "7.0": 7, "7.1": 7, "7.1.1": 7, "7.1.2": 7,
@@ -36,7 +40,8 @@ def adb_scan(adb: str = "adb", serial: Optional[str] = None) -> CapabilityProfil
     """
     def run(*args: str) -> str:
         cmd = [adb] + (["-s", serial] if serial else []) + list(args)
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30,
+                           creationflags=_NO_WINDOW or 0)
         if r.returncode != 0:
             raise RuntimeError(f"adb {' '.join(args)} failed: {r.stderr.strip()}")
         return r.stdout.strip()
@@ -63,6 +68,14 @@ def adb_scan(adb: str = "adb", serial: Optional[str] = None) -> CapabilityProfil
         manufacturer=br,
         model=md,
         build_fingerprint=fp,
+        # Extended identity — only populated from real getprop values; anything
+        # the device does not expose stays "" (honest: never guessed).
+        security_patch=g("ro.build.version.security_patch"),
+        kernel_version=_kernel_version(run),
+        bootloader=g("ro.boot.bootloader"),
+        verified_boot=g("ro.boot.verifiedbootstate"),
+        encryption=g("ro.crypto.state"),
+        baseband=g("gsm.version.baseband"),
     )
 
     # ---- Honest feature assessment from readable state (device owner NOT yet enforced) ----
@@ -79,6 +92,15 @@ def _parse_version(s: str) -> Optional[int]:
         return None
     n = int(m.group(0))
     return n if 6 <= n <= 16 else None
+
+
+def _kernel_version(run) -> str:
+    """`uname -r` -> kernel release string; '' if unreadable (honest)."""
+    try:
+        out = run("shell", "uname", "-r")
+    except Exception:
+        return ""
+    return (out or "").strip()[:64]
 
 
 def _apply_observable_os_facts(prof: CapabilityProfile, props: dict, api: Optional[int]):

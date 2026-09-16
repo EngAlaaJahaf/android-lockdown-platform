@@ -44,8 +44,10 @@ _MAPPINGS = {
     "BLUETOOTH": {"BLOCK": ["user_restriction_disable_bluetooth"]},
     "MOBILE_DATA": {"RESTRICT": ["user_restriction_disable_background_data"],
                     "BLOCK": ["user_restriction_disable_background_data"]},
-    "LOCATION": {"BLOCK": ["user_restriction_disable_location_services"]},
-    "GPS": {"BLOCK": ["user_restriction_disable_location_services"]},
+    "LOCATION": {"BLOCK": ["user_restriction_disable_location_services"],
+                  "RESTRICT": ["user_restriction_disable_location_services"]},
+    "GPS": {"BLOCK": ["user_restriction_disable_location_services"],
+            "RESTRICT": ["user_restriction_disable_location_services"]},
     "CAMERA": {"BLOCK": ["dpm_camera_disabled"]},
     "MICROPHONE": {"BLOCK": ["user_restriction_disable_microphone"]},
     "USB": {"BLOCK": ["user_restriction_disable_usb_file_transfer"]},
@@ -107,7 +109,3 @@ class AndroidCompatibilityLayer:
             if feature == "WIFI" and desired == "BLOCK" and 23 <= self.api_level < 28:
                 out.append("wifi_lockdown_global_setting")
         return out or None
-
-
-class Layer(AndroidCompatibilityLayer):  # back-compat alias
-    pass

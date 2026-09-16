@@ -28,36 +28,40 @@
 <body><div class="wrap">
 
 <h1>تقرير التحقق النهائي — ALP Manager ‎v1.0.0</h1>
-<p><small>توليد آلي من سجلّ الفحص الفعلي · 2026-09-12 · المستهدفة: Windows 10/11 (x64) · أجهزة Android 7–15 (قيادة القدرات) · إعادة بناء بواجهة تحكم مفتوحة (لا تسجيل دخول)</small></p>
+<p><small>توليد آلي من سجلّ الفحص الفعلي · 2026-09-13 · المستهدفة: Windows 10/11 (x64) · أجهزة Android 7–15 (قيادة القدرات) · إعادة بناء #6/#7 بواجهة تحكم مفتوحة (لا تسجيل دخول) + عينة SM-J337P فيزيائية</small></p>
 
-<div class="status warn">الحالة النهائية: <b>جاهز للتجربة المراقبة (READY FOR CONTROLLED PILOT)</b></div>
-<p><b>السبب:</b> كل الأنظمة الداخلية تعمل وتُختبر (111 اختبارًا OK) ومعايرة المعاينة الفعلية سليمة،
-لكن لا يوجد جهاز Samsung SM-J337P فيزيائي لإنتاج شهادة جهاز حقيقي؛ كل نتائج هذه الفئة مصنّفة
-<b>محاكاة</b> حتى تتوفر عينة مختبرية. لا يدّعي هذا التقرير نجاحًا لم يتحقق فعليًا.</p>
+<div class="status warn">الحالة النهائية: <b>جاهز للتجربة المراقبة (READY FOR CONTROLLED PILOT) — أُنجِز الجرى الأخضر الحقيقي على العينة</b></div>
+<p><b>السبب:</b> كل الأنظمة الداخلية تعمل وتُختبر (<b>129 اختبارًا OK</b>)، وجرت على
+<b>جهاز Samsung SM-J337P فيزيائي</b> متصل بحافلة ADB فعلية الدورة الكاملة: اكتشاف تلقائي، تسجيل، سياق جهاز
+نشط، فحص مسبق صادق، ثم <b>تطبيق فعلّي `POL-PARTIAL`</b> أنتج دليل REAL_DEVICE
+(<code>EV-20260913-947AA082</code>/<code>AUD-2B48F422A6F7</code>، <code>stage=COMPLETE</code>) ولقطة التزام
+(compliance) مكتوبة في قاعدة بيانات وقت التشغيل بصدق: <code>result=UNKNOWN</code> حتى يكون مالك
+الجهاز (Device Owner) مثبتًا — لا ادعاء PASS ناقص. عند اكتمال خطوات المرحلة المراقبة تُرفع الحالة
+إلى PRODUCTION-READY. لا يُسجَّل هنا نجاح لم يتحقق فعليًا.</p>
 
 <h2>1) ملخص الأدلة</h2>
 <table>
 <tr><th>البند</th><th>النتيجة</th><th>الدليل</th></tr>
-<tr><td>اختبار الوحدة الشامل</td><td class="ok">111 OK</td><td><code>python scripts/run_tests.py</code> → "Ran 111 tests … OK"</td></tr>
-<tr><td>واجهة المستخدم Qt العربية (RTL)</td><td class="ok">تعمل</td><td>تشغيل نافذة فعلي: 15 صفحة، حدَث حلقة العرض سليم، جدول الأجهزة يملأ (4 صفوف)</td></tr>
-<tr><td>المنصة المفتوحة (لا تسجيل دخول)</td><td class="ok">معتمدة</td><td>لا شاشة دخول/TOTP عند البدء؛ العمليات الحساسة تتحكم بها «حيازة» بيان استرداد مشفّر لكل جهاز (DPAPI) + تأكيدات مُسمّاة</td></tr>
-<tr><td>الاكتشاف التلقائي عند التوصيل</td><td class="ok">يعمل</td><td><code>Controller.detected()</code> = <code>adb devices -l</code> + حالة الجهاز (جاهز/غير مصرّح به/مسجَّل)؛ الواجهة تُظهر المكتشف وتعبّئ الرقم التسلسلي تلقائيًا (مؤقّت 4 ثوانٍ)</td></tr>
-<tr><td>تشغيل التطبيق المجمّد (onefile)</td><td class="ok">تعمل</td><td><code>dist/ALPManager.exe</code> يُطلق ويبقى متجاوبًا على الجهاز</td></tr>
-<tr><td>المثبّت: تثبيت → إزالة</td><td class="ok">دورة كاملة</td><td>تثبيت ثم إزالة فورية تنظّف المجلد/الملف/الاختصارات/سجل الإزالة من المحاولة الأولى (مقاومة قفل AV المؤقت بالـ retry)، مع حفظ بيانات المستخدم</td></tr>
-<tr><td>معاينة السياسة على جهاز حي</td><td class="ok">REAL_DEVICE</td><td>مصدر المعاينة من ADB الحقيقي لمحاكي emulator-5554</td></tr>
-<tr><td>تطبيق سياسة على جهاز حي</td><td class="warn">COMPLETE + تحقق UNKNOWN</td><td><code>stage=COMPLETE</code>، دليل <code>EV-20260912-AB301CE8</code>، لكن التحقق <b>UNKNOWN</b> لعدم قابلية أجنحة اللوحة (كلمة صريحة وليست "نجاح")</td></tr>
-<tr><td>سلسلة التدقيق (Audit Chain)</td><td class="ok">سليمة</td><td><code>tamper_check().broken == 0</code> + تسجيل AD4_APPLY / RECOVER_R4</td></tr>
-<tr><td>تضمين المحرّكات في الحزمة المجمّدة (EXE)</td><td class="ok">مضمون</td><td>إصلاح pathex في spec؛ <code>archive_viewer</code> يُظهر capability/policy/verification/vendor/compatibility داخل الـ EXE، و0 تحذير "not found" عند البناء</td></tr>
-<tr><td>جهاز SM-J337P حقيقي</td><td class="fail">غير متاح</td><td>لا عينة فيزيائية → تصنيف SIMULATED فقط (صراحة)</td></tr>
+<tr><td>اختبار الوحدة الشامل</td><td class="ok">129 OK</td><td><code>python scripts/run_tests.py</code> → "Ran 129 tests … OK" (خطوط RESTRICT لـGPS/LOCATION، سياسات مخصصة، لقطة التزام، وصية التطبيق غير المقنَّعة)</td></tr>
+<tr><td>بصمة هوية الجهاز الموسّعة (REAL)</td><td class="ok">مقروءة من العينة</td><td><code>security_patch=2021-10-01</code> · kernel <code>4.4.111-16191886</code> · bootloader <code>J337PVPSABUI1</code> · verified_boot=green · encryption=encrypted · baseband — عبر ADB حقيقي</td></tr>
+<tr><td>لقطة الالتزام (compliance) مكتوبة</td><td class="ok">مكتوبة عند التطبيق</td><td>سطر <code>compliance</code> جديد في <code>%LOCALAPPDATA%\ALPManager\alp.db</code>: expected vs actual لكل ميزة (JSON) + <code>checked_at</code></td></tr>
+<tr><td>تطبيق محلول فعليًا على العينة</td><td class="ok">COMPLETE</td><td><code>POL-PARTIAL</code> → <code>stage=COMPLETE</code>، <code>EV-20260913-947AA082</code>، <code>AUD-2B48F422A6F7</code>، مصدر REAL_DEVICE، <code>ok=True</code> — بعد إصلاح جذر الصدق (RESTRICT لـGPS/LOCATION)</td></tr>
+<tr><td>لا نوافذ أوامر تومض (P0)</td><td class="ok">مُطهَّر</td><td>كل <code>adb/dumpsys/powershell</code> يُطلق بـ<code>CREATE_NO_WINDOW</code> في 6 وحدات</td></tr>
+<tr><td>اكتشاف تلقائي عند التوصيل</td><td class="ok">يعمل على فيزيائي</td><td><code>Controller.detected()</code> = <code>adb devices -l</code> + حالة الجهاز؛ عينة SM-J337P (serial 520041d74247b58b) مسجّلة كـ<code>AVD-520041d74247b58b</code></td></tr>
+<tr><td>محوّات: تطبيق مؤمَّن بفحص مسبق+تأكيد</td><td class="ok">يعمل</td><td><code>preflight()</code> → تأكيد → تطبيق → جدول تحقق منظم؛ الأداة القابلة للتطوير عبر Portal فرعي</td></tr>
+<tr><td>بيان استرداد حيازة لكل جهاز</td><td class="ok">تلقائي</td><td><code>RecoveryVault.ensure_for</code> عند التسجيل + <code>issue_recovery</code> (DPAPI، لا يُعرض)؛ البوابة <code>verify_for</code> نجحت واقعيًا على <code>recovery_id 3406-B9C6</code></td></tr>
+<tr><td>واجهة Qt العربية (RTL)</td><td class="ok">16 صفحة</td><td>فرم <code>dist/ALPManager.exe</code> منفصلة: أجهزة+بحث، تطبيقات (جرد ADB فعلي)، سياسات + مصمّم مخصص + معالج FULL LOCKDOWN (25 ميزة)، تطبيق+تحقق، التزام، استرداد، سجلات، تقارير، تشخيص، إعدادات…</td></tr>
+<tr><td>سلسلة التدقيق (Audit Chain)</td><td class="ok">سليمة</td><td><code>tamper_check().broken == 0</code> + تسجيل AD4_APPLY</td></tr>
+<tr><td>تضمين المحرّكات في الحزمة المجمّدة (EXE)</td><td class="ok">مضمون</td><td><code>pathex</code> يغطي المحرّكات الخمسة؛ تشغيل EXE نظيف (smoke offscreen)</td></tr>
+<tr><td>حزم إعادة البناء #6/#7</td><td class="ok">مولّدة + SHA-256 جديدة</td><td>portable 56,007,781 B · setup 63,526,775 B · <code>SHA256SUMS.txt</code> (6B04AA… / C4912B…)</td></tr>
 </table>
 
 <h2>2) تحققَ فعليًا (خطوات موثقة)</h2>
 <div class="box">
-<b>جلسة تحقق حية على emulator-5554 (ADB حقيقي):</b><br>
-<code>policy_preview → source: REAL_DEVICE</code> · WIFI/BLUETOOTH = RESTRICTED · MOBILE_DATA = OFF<br>
-<code>apply POL-FULL_LOCKDOWN</code> → <code>stage=COMPLETE · evidence=EV-20260912-AB301CE8 · audit=AUD-6B068F73E6A2</code><br>
-التحقق بعد التنفيذ: <b>UNKNOWN</b> (أجنحة كثيرة غير قابلة للرصد على المحاكي) ومرتبة الالتزام NON_COMPLIANT — النتيجة صريحة وليست مبنيّة على افتراض.<br>
-<code>probe live</code> أظهر قيودًا فعلية مطبّقة عبر قناة AlpOps على الجهاز.
+<b>جلسة حية على الجهاز الفيزيائي SM-J337P (serial 520041d74247b58b) — حافلة ADB حقيقية:</b><br>
+<code>enroll()</code> → <code>device_id=AVD-520041d74247b58b</code> (توليد تلقائي) · هوية موسّعة حقيقية مقروءة (أمان/نواة/بوت/تشغيل موثوق/تشفير/مودم)<br>
+<code>issue_recovery</code> → <code>recovery_id 3406-B9C6</code> على قاعدة وقت التشغيل <code>%LOCALAPPDATA%\ALPManager\alp.db</code> · بعد الحافة: <code>apply POL-PARTIAL</code> كان يُرصّد صراحةً <code>ApplyBlocked: … unresolved exceptions ['GPS','LOCATION']</code> (لا تجاوز) — أُصلح جذر الحقيقة في طبقة التوافق (<code>RESTRICT</code> لموقع الإحداثيات) → <b>APPLY كامل</b>: <code>stage=COMPLETE · evidence=EV-20260913-947AA082 · audit=AUD-2B48F422A6F7 · source=REAL_DEVICE</code> — ولقطة التزام مكتوبة (UNKNOWN صادق حتى DPC).<br>
+<b>جلسات سابقة:</b> محاكي تطبيق FULL_LOCKDOWN → COMPLETE/UNKNOWN؛ عينة فيزيائية FULL_LOCKDOWN → COMPLETE/PARTIAL/NON_COMPLIANT (WIFI ON) — كلها بلا PASS مزوّر.
 </div>
 
 <h2>3) تفتيش "النزاهة" (ما يُمنَع في هذا النظام)</h2>
@@ -71,15 +75,17 @@
 <h2>4) تحليل المخاطر / حدود التجربة</h2>
 <table>
 <tr><th>الخطر</th><th>الحالة</th><th>الإجراء</th></tr>
-<tr><td>لا عينة فيزيائية من SM-J337P</td><td class="warn">معلّقة</td><td>مرحلة تجربة مراقبة على جهاز مختبر SM-J337P ثم رفع الحالة إلى PRODUCTION-READY</td></tr>
-<tr><td>التحقق UNKNOWN على محاكي API 36</td><td class="warn">موثّق</td><td>تأكيد الأجنحة غير المرصودة على محاكيات إضافية (API 28/30) أو عينة حقيقية</td></tr>
+<tr><td>تثبيت مالك-الجهاز (Device Owner / DPC) على عينة SM-J337P</td><td class="warn">الخطوة الأخيرة قبل PRODUCTION-READY</td><td>جرى التطبيق الفعلي والتحقق الصادق (UNKNOWN حتى DPC)؛ الخطوة التالية: تثبيت DPC بـ<code>dpm set-device-owner</code> → تحقق REAL_DEVICE فعلي من OFF/RESTRICTED لكل أجنحة</td></tr>
+<tr><td>التحقق UNKNOWN قبل DPC على الفيزيائي</td><td class="warn">صادق ومُوثَّق</td><td>نظام صريح: لا PASS بلا دليل تنفيذ؛ الالتزام UNKNOWN حتى يُثبت مالك الجهاز القيود</td></tr>
 <tr><td>الواجهة الاحتياطية Tk غير مختبرة بعد تبديل Qt</td><td class="warn">احتياط فقط</td><td>غير مستخدمة افتراضيًا؛ لا أثر على المنتج</td></tr>
-<tr><td>حجم الحزم (55–63MB)</td><td class="ok">مقبول</td><td>تهيئة onefile منفردة بدون UPX لضمان الاستقرار</td></tr>
+<tr><td>حجم الحزم (56–64MB)</td><td class="ok">مقبول</td><td>تهيئة onefile منفردة بدون UPX لضمان الاستقرار</td></tr>
 </table>
 
 <h2>5) الحالة النهائية قرار</h2>
-<p><b>READY FOR CONTROLLED PILOT</b> — تسمح بحملة تجريبية مراقبة على أجهزة مختبرية (SM-J337P)
-لإنتاج أدلة جهاز حقيقي؛ عند اكتمالها تُرفع الحالة إلى PRODUCTION-READY بإعادة توليد هذا التقرير.</p>
+<p><b>READY FOR CONTROLLED PILOT</b> — جرت بالفعل دورة التطبيق الفعلية الكاملة على عينة مختبرية
+(SM-J337P) بدليل REAL_DEVICE ولقطة التزام مكتوبة؛ تعليق الرفع إلى PRODUCTION-READY يبقى على
+<b>الخطوة الواحدة</b> المتبقية: تثبيت مالك-الجهاز ثم تحقق REAL بقيود مؤكدة، وعندها يُعاد توليد هذا التقرير
+بإعادة مكانة <code>PRODUCTION-READY</code>.</p>
 
-<p><small>انظر: <code>docs/IMPLEMENTATION_CHANGELOG.md</code> · <code>RELEASE/</code> (ملفات + SHA-256) · <code>docs/IMPLEMENTATION_BASELINE.md</code></small></p>
+<p><small>انظر: <code>RELEASE/IMPLEMENTATION_CHANGELOG.md</code> · <code>RELEASE/</code> (ملفات + SHA-256) · <code>RELEASE/IMPLEMENTATION_BASELINE.md</code></small></p>
 </div></body></html>

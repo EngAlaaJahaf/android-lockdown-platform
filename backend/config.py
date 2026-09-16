@@ -23,3 +23,9 @@ API_PORT = int(os.environ.get("ALP_API_PORT", "8765"))
 SIGNING_KEY = os.environ.get("ALP_SIGNING_KEY", "")   # MUST be overridden in deployment
 SESSION_TTL_SECONDS = int(os.environ.get("ALP_SESSION_TTL", "1800"))
 AUDIT_CHAIN_SALT = os.environ.get("ALP_AUDIT_SALT", "alp-audit-chain")
+
+
+def signing_key() -> str:
+    """Current signing key, read at call time so module import order can never
+    freeze an empty key (test-suite safety). Empty => commands are rejected."""
+    return os.environ.get("ALP_SIGNING_KEY", "") or SIGNING_KEY

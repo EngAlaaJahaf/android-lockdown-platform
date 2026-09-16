@@ -17,6 +17,7 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final String ACTION_CLEAR_POLICY = "com.alp.agent.CLEAR_POLICY";
     public static final String ACTION_GET_STATE = "com.alp.agent.GET_STATE";
     public static final String ACTION_REPORT = "com.alp.agent.REPORT_CAPABILITY";
+    public static final String ACTION_WITHDRAW_DO = "com.alp.agent.WITHDRAW_DO";
     public static final String EXTRA_ENVELOPE = "envelope";
 
     @Override

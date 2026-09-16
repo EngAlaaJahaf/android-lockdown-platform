@@ -27,6 +27,8 @@ a = Analysis(
     hiddenimports=[
         "alp_manager.app",
         "alp_manager.app_qt",
+        "alp_manager.logger",
+        "alp_manager.controller",
         "policy_engine",
         "capability_engine",
         "verification_engine",
@@ -35,6 +37,7 @@ a = Analysis(
         "vendor_adapters",
         "vendor_adapters.registry",
         "backend.recovery",
+        "backend.recovery_credentials",
         "backend.channel",
         "backend.workflows",
         "backend.director",

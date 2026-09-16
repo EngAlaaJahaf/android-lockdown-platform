@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مصفوفة التوافق Android 7 → 15 — حارس الموبايل</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}
+  th,td{border:1px solid #2a3550;padding:6px 9px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}.warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}.mut{color:#8ba3c7}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>مصفوفة التوافق — Android 7 → 15</h1>
+<p><small>PHASE 3 · 2026-09-13 · المصادر: Android Developers API reference + API diffs (21/24) + AOSP —
+كل مستوى API مذكور مُتحقق منه رسميًا؛ ما لم يُختبر على عتاد حي يُصنَّف NOT_VERIFIED (§50).</small></p>
+
+<div class="box">
+<b>الخلاصة التنفيذية:</b> آلية الوكيل الحالية (قيود <code>UserManager</code> عبر مالك الجهاز) مدعومة عبر كامل النطاق 7→15
+من حيث الـAPI — المفاتيح المستخدمة قديمة (API 18–24). الفروق الحقيقية بين الإصدارات ليست في «هل يوجد القيد»
+بل في: (1) طبقة التطبيق العالمية Global-layer على الإصدارات الحديثة، (2) انقسام الأذونات <code>MANAGE_DEVICE_POLICY_*</code>
+من API 31، (3) قيود الخلفية/التخزين التي تمسّ سلوك الوكيل نفسه، (4) تباين المصنّعين (OEM).
+</div>
+
+<h2>1) مفاتيح القيود المستخدمة — مستوى الإدخال الرسمي</h2>
+<table>
+<tr><th>المفتاح</th><th>أُضيف في</th><th>ملاحظة التوثيق</th></tr>
+<tr><td><code>no_config_wifi</code> · <code>no_bluetooth</code> · <code>no_config_tethering</code> · <code>no_config_vpn</code> · <code>no_unmute_microphone</code> · <code>no_factory_reset</code> · <code>no_debugging_features</code></td><td class="ok">API 21 (قائمة Added Fields في API diff 21 — مُتحقق)</td><td>مالك الجهاز يطبّقها عموميًا</td></tr>
+<tr><td><code>no_share_location</code></td><td class="ok">API 18 (مُتحقق)</td><td>—</td></tr>
+<tr><td><code>no_safe_boot</code></td><td class="ok">API 23 (مُتحقق)</td><td>مالك الجهاز/مالك الملف على المستخدم الرئيسي فقط</td></tr>
+<tr><td><code>no_install_unknown_sources</code> · <code>no_modify_accounts</code> · <code>no_usb_file_transfer</code></td><td class="warn">حقبة multi-user (≤ API 21) — يُثبَّت المستوى الدقيق لكل مفتاح عند الفحص</td><td>سلوك OEM قد يختلف (MTP ظلّ يُعدّ على J3 رغم القيد)</td></tr>
+<tr><td>عائلة <code>DPM.add/clear/getUserRestriction</code></td><td class="ok">API 24 (قائمة Added Methods في API diff 24 — مُتحقق)</td><td>قبل API 24 كانت الطريقة <code>UserManager.setUserRestriction</code> (مهملة في 21) — وكيلنا يستهدف 24+ لهذا المسار</td></tr>
+<tr><td><code>DPM.setCameraDisabled</code></td><td class="ok">قديم (حقبة DeviceAdmin المبكرة)</td><td>يعمل لمالك الجهاز عبر كل النطاق</td></tr>
+</table>
+
+<h2>2) المصفوفة الكاملة 7 → 15</h2>
+<table>
+<tr><th>البُعد</th><th>7 (24–25)</th><th>8 (26–27)</th><th>9 (28) ✓</th><th>10–11 (29–30)</th><th>12–13 (31–33)</th><th>14–15 (34–35)</th></tr>
+<tr><td>تجهيز مالك الجهاز</td><td>NFC + <code>dpm</code> (ADB)</td><td>+ QR (من 24)</td><td class="ok">مُثبت — <code>dpm set-device-owner</code></td><td>نفسه + واجهة الإعداد الحديثة</td><td>نفسه؛ صلاحيات مجزأة (§3)</td><td>نفسه — <span class="warn">NOT_VERIFIED</span></td></tr>
+<tr><td>فرض القيود (وكيلنا الحالي)</td><td class="ok">SUPPORTED (المفاتيح ≤24 موجودة)</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED — مُثبت (12 قيدًا + كاميرا)</td><td class="ok">متوقع SUPPORTED</td><td class="warn">متوقع SUPPORTED مع انقسام الأذونات — <span class="warn">NOT_VERIFIED</span></td><td class="warn">كما قبله + طبقة Global — <span class="warn">NOT_VERIFIED</span></td></tr>
+<tr><td>إزالة القيود R1 (زر/بيان)</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED — مُثبت (زر ROLLBACK مبني)</td><td colspan="3">متوقع SUPPORTED — <span class="warn">NOT_VERIFIED (بقايا Global-layer على 14+ تُرصد لا تُمسح)</span></td></tr>
+<tr><td>قيود الخلفية على الوكيل نفسه</td><td>خفيف</td><td>حدود تنفيذ الخلفية (26)</td><td>Standby buckets + App freezer</td><td>قيود أشد + نطاقات تخزين (29/30)</td><td>قيود الإشعارات/المنبهات الدقيقة</td><td>الأشد — <span class="warn">يتطلب تصميم إيقاظ مُعاد</span></td></tr>
+<tr><td>ADB سلكي (تجهيز/تشخيص/استرداد)</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED — مُثبت</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED</td><td class="ok">SUPPORTED (تصميمًا)</td></tr>
+<tr><td>ADB لاسلكي (اقتران)</td><td class="fail" colspan="3">UNSUPPORTED (أُضيف في 30)</td><td class="warn">SUPPORTED تصميمًا — <span class="warn">NOT_VERIFIED</span></td><td class="ok">SUPPORTED تصميمًا</td><td class="ok">SUPPORTED تصميمًا</td></tr>
+<tr><td>Lock Task / Kiosk</td><td colspan="6">REQUIRES_DEVICE_OWNER — <span class="fail">UNSUPPORTED في وكيلنا (غير منفّذ — يُعلَن صراحةً)</span></td></tr>
+<tr><td>Allowlist التطبيقات</td><td colspan="6">REQUIRES_DEVICE_OWNER — <span class="fail">UNSUPPORTED في وكيلنا (غير منفّذ — يُعلَن صراحةً)</span></td></tr>
+<tr><td>Knox الموسّع</td><td colspan="6">REQUIRES_KNOX — <span class="fail">GATED (لا SDK/ترخيص)</span></td></tr>
+</table>
+
+<h2>3) ملاحظات الإصدارات الحرجة (موثّقة)</h2>
+<div class="box">
+<b>API 24 (الحد الأدنى الفعلي لوكيلنا):</b> عائلة <code>add/clear/getUserRestriction</code> في DPM — أي جهاز تحت 7.0 خارج نطاق الوكيل الحالي (يُصنَّف <code>UNSUPPORTED</code> لا «مدعوم جزئيًا»).<br>
+<b>API 31 (انقسام الأذونات):</b> ظهرت أذونات <code>MANAGE_DEVICE_POLICY_*</code> لكل قيد (مثال: <code>..._DEBUGGING_FEATURES</code>) — مالك الجهاز يحتفظ بالوصول، لكن أي مسار بديل (تطبيق إدارة بصلاحية) يجب أن يطلب الإذن المطابق لكل قيد على 12+.<br>
+<b>API 34+ (طبقة Global):</b> قيد مالك الجهاز قد يستقر في طبقتي per-admin وGlobal معًا؛ <code>clearUserRestriction(admin)</code> يزيل طبقة المالك موثوقًا — البقايا العالمية تُرصد عبر المسبار (مُصمَّم في وكيلنا) لا تُدَّعى إزالتها.<br>
+<b>OEM دائمًا:</b> سلوك MTP/USB والرموز الهندسية يختلف (شوهد على J3: واجهة MTP تُعدّ رغم <code>no_usb_file_transfer</code>) — الحكم النهائي لأي جهاز = فحص القدرات الحي لا الجدول.
+</div>
+
+<p><small>معايير الخروج: كل مستوى API أعلاه إما مُتحقق من التوثيق الرسمي أو موسوم NOT_VERIFIED — لا PASS بلا عتاد حي (§18).</small></p>
+
+</div></body>
+</html>

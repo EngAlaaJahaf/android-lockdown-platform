@@ -12,11 +12,18 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <application
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.Light"
         android:allowBackup="false"
+        android:testOnly="true"
         android:debuggable="true">
 
         <activity android:name=".MainActivity" android:exported="true">
@@ -46,5 +53,24 @@
                 <action android:name="com.alp.agent.REPORT_CAPABILITY" />
             </intent-filter>
         </receiver>
+
+        <receiver android:name=".WifiBootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.USER_UNLOCKED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".WifiLockdownReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".AlpForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 </manifest>

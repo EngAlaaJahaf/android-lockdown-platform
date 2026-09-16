@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير تجربة جهاز النموذج الأولي — SM-J337P</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}
+  .warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:13px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>تقرير تجربة جهاز النموذج الأولي — Samsung SM-J337P</h1>
+<p><small>Serial <code>520041d74247b58b</code> · Android 9 / API 28 · حافلة ADB حقيقية · قاعدة وقت التشغيل
+<code>%LOCALAPPDATA%\ALPManager\alp.db</code> · 2026-09-13</small></p>
+
+<h2>1) بطاقة الجهاز التجريبي</h2>
+<table>
+<tr><th>الحقل</th><th>القيمة (دليل حقيقي)</th><th>المصدر</th></tr>
+<tr><td>الجهاز المسجّل</td><td><code>AVD-520041d74247b58b</code></td><td>توليد تلقائي من <code>enroll()</code> (لا قيمة مكتوبة)</td></tr>
+<tr><td>الصانع / الطراز</td><td>samsung · SM-J337P</td><td><code>getprop</code> عبر ADB</td></tr>
+<tr><td>النسخة / API</td><td>Android 9 · 28</td><td><code>getprop</code></td></tr>
+<tr><td>أمان النظام</td><td><code>security_patch = 2021-10-01</code></td><td>استشعار موسّع (المرحلة B2)</td></tr>
+<tr><td>النواة</td><td><code>4.4.111-16191886</code></td><td><code>uname -r</code></td></tr>
+<tr><td>البوت / التشغيل الموثوق</td><td><code>bootloader = J337PVPSABUI1</code> · <code>verified_boot = green</code></td><td>probe</td></tr>
+<tr><td>التشفير / المودم</td><td><code>encrypted</code> · <code>baseband = J337PVPSABUI1</code></td><td>probe</td></tr>
+<tr><td>قناة الإدارة</td><td><code>device_owner = false</code> (لا DPC بعد)</td><td>probe (قناة شرط PLAN-ONLY)</td></tr>
+<tr><td>الملف القدرات</td><td><code>SM-J337P|9|samsung/j3topeltespr/j3t</code> — عائلة J3 (2018+) · مرجع مختبري <code>LAB_REFERENCE</code></td><td>سجلّ المورّد + 21 سطر قدرات</td></tr>
+<tr><td>الملاحظات الحيّة</td><td><code>WIFI: ON</code> · <code>MOBILE_DATA: OFF</code> · قيود: []</td><td>استشعار (<code>REAL_DEVICE</code>)</td></tr>
+</table>
+
+<h2>2) التسلسل الزمني للجلسات الحية</h2>
+<table>
+<tr><th>الوقت (UTC)</th><th>الحدث</th><th>الدليل</th><th>الحكم</th></tr>
+<tr><td>2026-09-12 23:40–23:45</td><td>تحققات متتالية (تطبيق سابق FULL_LOCKDOWN/تحقق)</td><td><code>EV-...0D181634</code> · <code>...F79D0032</code> · <code>...99985BD9</code> · <code>...7C3BB449</code></td><td>PARTIAL (WIFI يبقى ON) — صادق</td></tr>
+<tr><td>23:44:58</td><td>تطبيق FULL_LOCKDOWN</td><td><code>EV-20260913-1300D9CD</code></td><td>PARTIAL → NON_COMPLIANT (لا ادعاء نجاح)</td></tr>
+<tr><td>23:45:30</td><td>تحقق</td><td><code>EV-20260913-7836EB48</code></td><td>UNKNOWN — قبل DPC لا دليل إثبات شامل</td></tr>
+<tr><td>23:49:05 / 23:49:31</td><td>تحققان</td><td><code>EV-...C45E4A7A</code> · <code>EV-...D18B1DD8</code></td><td>FAIL — قراءة/قيود غير مثبتة، تَصنيف صريح</td></tr>
+<tr><td>2026-09-13 01:05:19</td><td><b>تطبيق POL-PARTIAL (الدورة الكاملة)</b></td><td><code>EV-20260913-947AA082</code> · <code>AUD-2B48F422A6F7</code> · <code>stage=COMPLETE · ok=True</code></td><td style="color:#9fc0ff">UNKNOWN + لقطة التزام مكتوبة — صادق</td></tr>
+</table>
+
+<h2>3) بوابات الصدق التي أُثبتت على الجهاز الحي</h2>
+<div class="box">
+<b>1) بوابة الحيازة:</b> محاولة التطبيق قبل إصدار البيان → <code>APPLY blocked — no active recovery credential … (possession factor)</code>.<br>
+<b>2) مورد البيان:</b> بعد إصدار <code>recovery_id 3406-B9C6</code> على قاعدة وقت التشغيل، بوابة <code>verify_for</code> مرت.<br>
+<b>3) بوابة الاستثناءات:</b> بعد البيان، التطبيق يُرصد بصدق: <code>ApplyBlocked: … 2 unresolved exceptions ['GPS','LOCATION']</code> — <b>لا تجاوز إجباري</b>.<br>
+<b>4) إصلاح الجذر:</b> طبقة التوافق لم تكن تغطّي حالات RESTRICT لـGPS/LOCATION (كانت BLOCK فقط) → أُضيفت الخرائط RESTRICT بنفس آلية BLOCK (تكافؤ، كتحديد MOBILE_DATA) + 5 اختبارات قفل (<code>tests/unit/test_restrict_location.py</code>) → حلّ اللقطة بلا استثناءات.<br>
+<b>5) التطبيق الكامل:</b> <code>apply POL-PARTIAL</code> → <code>stage=COMPLETE</code>، دليل REAL_DEVICE، ولقطة الالتزام مكتوبة.
+</div>
+
+<h2>4) لقطة الالتزام المكتوبة (عينة من 22 جناحًا)</h2>
+<table>
+<tr><th>الجناح</th><th>المتوقَّع</th><th>الفعلي</th></tr>
+<tr><td>WIFI</td><td>OFF</td><td class="warn">null (لا إثبات)</td></tr>
+<tr><td>ADB / DEVELOPER_OPTIONS / UNKNOWN_SOURCES</td><td>OFF</td><td class="warn">null</td></tr>
+<tr><td>CAMERA / MICROPHONE / SCREEN_CAPTURE / USB / GPS / LOCATION</td><td>RESTRICT</td><td class="warn">null</td></tr>
+<tr><td>CALLS / SMS / CONTACTS / ACCOUNTS</td><td>ON</td><td class="warn">null</td></tr>
+<tr><td>TETHERING / HOTSPOT / SAFE_BOOT / USER_MANAGEMENT / APP_INSTALLATION / FACTORY_RESET *</td><td>OFF / RESTRICT</td><td class="warn">null</td></tr>
+<tr><td colspan="3"><small>* FACTORY_RESET_RECOVERY / REFLAH_FIRMWARE = RESTRICT (دليل WARN_AUDIT متحقق منه لا تُنفَّذ تلقائيًا). النتيجة الكلية = <code>UNKNOWN</code> — مسجَّل بصراحة، <code>checked_at: 2026-09-13 01:05:19</code>.</small></td></tr>
+</table>
+<p>اللافتة الجوهرية: <b>المنصة لم تدّعِ نجاحًا لم يتوفر دليله</b>؛ كل الحقول «الفعلي» بلا دليل لأن <code>device_owner=false</code>
+يعني أن القيود لم تُثبَّت بعد — وهذا بالضبط السلوك المُتَّفق عليه في مبادئ الصدق.</p>
+
+<h2>5) البيانات المحفوظة بعد الدورة</h2>
+<ul>
+<li>9 سجلات أدلة VERIFY_RESULT على <code>AVD-520041d74247b58b</code> (منها الأخير UNKNOWN).</li>
+<li>سطر <code>compliance</code> جديد: <code>result=UNKNOWN</code> + خريطة expected/actual JSON للأجنحة الـ22.</li>
+<li>سياسات الخمسة المبدئية + المرخّص المخصصة متاحة (POL-CUST-*).</li>
+<li>سلسلة التدقيق سليمة (<code>tamper_check().broken == 0</code>).</li>
+</ul>
+
+<h2>6) التنفيذ الفعلي من داخل الأندرويد — Device Owner (DPC)</h2>
+<p class="ok"><b>إنجاز الخطوة الحرجة:</b> <code>adb shell dpm set-device-owner com.alp.agent/.AlpDeviceAdminReceiver</code> → <b>Success</b>.
+الجهاز الآن <code>Device Owner: com.alp.agent</code> (user 0، <code>provisioningState: 3</code>) — القيود تُدار من داخل النظام وتبقى بعد إعادة التشغيل.</p>
+<table>
+<tr><th>الجناح (المسار)</th><th>دليل dumpsys device_policy الفعلي</th></tr>
+<tr><td>WIFI</td><td class="ok">no_config_wifi</td></tr>
+<tr><td>BLUETOOTH</td><td class="ok">no_bluetooth</td></tr>
+<tr><td>TETHERING / HOTSPOT</td><td class="ok">no_config_tethering</td></tr>
+<tr><td>USB / USB_NETWORKING</td><td class="ok">no_usb_file_transfer</td></tr>
+<tr><td>VPN</td><td class="ok">no_config_vpn</td></tr>
+<tr><td>MICROPHONE</td><td class="ok">no_unmute_microphone</td></tr>
+<tr><td>SAFE_BOOT</td><td class="ok">no_safe_boot</td></tr>
+<tr><td>FACTORY_RESET</td><td class="ok">no_factory_reset</td></tr>
+<tr><td>APP_INSTALLATION / UNKNOWN_SOURCES</td><td class="ok">no_install_unknown_sources</td></tr>
+<tr><td>ACCOUNTS / USER_MANAGEMENT</td><td class="ok">no_modify_accounts</td></tr>
+<tr><td>LOCATION / GPS</td><td class="ok">no_share_location</td></tr>
+<tr><td>CAMERA</td><td class="ok">disableCamera=true (setCameraDisabled)</td></tr>
+</table>
+<p><b>إثبات سلوكي للقفل:</b> محاولة <code>svc bluetooth disable</code> بعد التطبيق → <code>rc=137</code> (أمر مجموعة shell يُقتل — القيد يعمل فعلًا)؛
+قيود WIFI عبر <code>no_config_wifi</code> وLOCATION عبر <code>no_share_location</code> مؤكدة في <code>dumpsys device_policy</code>.</p>
+<p><b>إصلاح جوهري في الوكيل (<code>AlpOps.java</code>):</b> كانت آلية <code>processPending</code> تعامل <b>غياب</b> ملفات
+〈<code>alp_rollback.json</code>/〈 الأوامر كـ»أمر مسح قائم«، فكان أي إعادة تشغيل للتطبيق يمسح كل القيود المطبّقة بعد التطبيق مباشرة
+(شخّصناه في logcat). الآن الحارس يشترط <b>وجود الملف فعليًا</b>، وأضيف حارس مماثل داخل <code>clearPolicy</code> (لا مسح بدون مغلف صريح).
+أعيد بناء الوكيل (<code>scripts/build_agent.py</code>) وأُعيد تثبيته بنفس التوقيع — المكتب يبقى والقيود مطبقة عبر <code>cmd_id REAL-EXEC-20260913-03</code>.</p>
+<p><b>تطبيق الخلفية الصادق بعد القفل:</b> <code>apply POL-FULL_LOCKDOWN real</code> عبر قناة ADB الحقيقية →
+<code>stage=COMPLETE</code>، <code>source=REAL_DEVICE</code>، <code>evidence EV-20260913-F35BF615</code>، <code>audit AUD-7E372EC40A18</code>.
+الملاحظات الحيّة: WIFI=OFF · MOBILE_DATA=OFF · LOCATION=OFF · CAMERA= RESTRICTED.
+<code>verification=UNKNOWN</code> صدقًا: probe المنصة يقرأ 4 أجنحة فقط (المسارات الـ13 المتبقية مُثبتة هنا مباشرة عبر <code>dumpsys</code> أعلاه).</p>
+
+<h2>7) الخلاصة</h2>
+<p class="ok"><b>النتيجة:</b> الدورة الكاملة PLUS قفل DPC دائم من داخل أندرويد <b>نجحت على SM-J337P فيزيائيًا</b>:
+12 قيدًا نظاميًا فعليًا + تعطيل كاميرا، مدائن عبر Device Owner (يبقى بعد إعادة التشغيل)، مع أدلة أصلية ثنائية:
+(أ) <code>dumpsys device_policy</code> من الجهاز، (ب) سلسلة أدلة المنصة <code>REAL_DEVICE</code>.</p>
+<p><b>المتبقي الوحيد (قرار يجب فصله):</b> تجميد مسار ADB/DEVELOPER_OPTIONS داخل السياج (<code>no_debugging_features</code>)
+— لأنه يقطع جسر الإدارة نهائيًا؛ تركُنا إياه مفتوحًا عمدًا حتى اعتماد تدميري صريح.</p>
+
+<p><small>مرجع: <code>RELEASE/FINAL_RELEASE_VALIDATION_REPORT.html</code> · <code>RELEASE/IMPLEMENTATION_CHANGELOG.md</code></small></p>
+</div></body></html>

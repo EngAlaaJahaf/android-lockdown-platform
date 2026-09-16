@@ -21,8 +21,12 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 
 from . import VerificationResult  # noqa: F401  (re-exported convenience)
+
+_NO_WINDOW = (getattr(subprocess, "CREATE_NO_WINDOW", 0)
+              if sys.platform == "win32" else 0)
 
 
 # UserManager restriction constant -> feature vocabulary used by ALP.
@@ -58,7 +62,8 @@ def _adb(serial: str):
 def _run(serial: str, *args: str):
     try:
         r = subprocess.run([_adb(serial), "-s", serial, *args],
-                           capture_output=True, text=True, timeout=25)
+                           capture_output=True, text=True, timeout=25,
+                           creationflags=_NO_WINDOW or 0)
         return (r.returncode, r.stdout)
     except Exception:
         return (-1, "")
@@ -73,10 +78,38 @@ def _parse_restrictions(dumpsys: str) -> dict:
         no_config_wifi: true               (older dump formats)
     A restriction is reported active ONLY when the token is observed as active
     in the dump. It is never inferred from absence.
+
+    Honesty fix: the Global Policies block lists vendor-default guest
+    restrictions (e.g. no_config_wifi) even when the resolved policy is null
+    (not enforced on the device-owner user). A restriction found ONLY inside a
+    Global Policies block with Resolved = null is a false positive and is
+    therefore skipped.
     """
-    active = {}
     lines = dumpsys.splitlines()
+    in_global = False
+    global_entries = set()
+
+    # --- pass 1: find Global entries with Resolved = null ---
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("Global Policies"):
+            in_global = True
+        elif in_global and ln.strip().startswith("Resolved Policy"):
+            if i + 1 < len(lines) and lines[i + 1].strip() in ("null", "none", ""):
+                # Look back up to 4 lines for the restriction key
+                for j in range(max(0, i - 4), i + 1):
+                    for tok in RESTRICTION_FEATURES:
+                        key_token = "userRestriction_" + tok
+                        if key_token in lines[j]:
+                            global_entries.add(tok)
+            in_global = False
+        elif in_global and ln.strip() == "" and not ln.startswith(" "):
+            in_global = False
+
+    # --- pass 2: original logic, excluding global-only false positives ---
+    active = {}
     for tok, feat in RESTRICTION_FEATURES.items():
+        if tok in global_entries:
+            continue
         proven = False
         key_token = "userRestriction_" + tok
         if any(key_token in ln for ln in lines):
@@ -166,6 +199,12 @@ def probe_live_device(serial: str) -> dict:
             "android_version": props.get("ro.build.version.release", ""),
             "api_level": props.get("ro.build.version.sdk", ""),
             "build_fingerprint": props.get("ro.build.fingerprint", ""),
+            "security_patch": props.get("ro.build.version.security_patch", ""),
+            "kernel_version": _extra_prop(serial, "shell", "uname", "-r"),
+            "bootloader": props.get("ro.boot.bootloader", ""),
+            "verified_boot": props.get("ro.boot.verifiedbootstate", ""),
+            "encryption": props.get("ro.crypto.state", ""),
+            "baseband": props.get("gsm.version.baseband", ""),
             "device_owner": ("Device Owner" in dp_out or "device owner" in (dp_out or "").lower()),
         },
         "restrictions": restrictions,
@@ -174,3 +213,9 @@ def probe_live_device(serial: str) -> dict:
         "camera_disabled": _parse_camera_disabled(dp_out),
         "source": "REAL_DEVICE",
     }
+
+
+def _extra_prop(serial: str, *args: str) -> str:
+    """Read an extra identity property; '' when not readable (honest)."""
+    rc, out = _run(serial, *args)
+    return (out or "").strip()[:64] if rc == 0 else ""

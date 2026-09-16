@@ -18,15 +18,18 @@ import sys
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QFont
 from PySide6.QtWidgets import (
-    QApplication, QAbstractItemView, QComboBox, QFrame, QHBoxLayout, QHeaderView,
-    QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
-    QPushButton, QPlainTextEdit, QSpinBox, QStackedWidget, QTableWidget,
+    QApplication, QAbstractItemView, QCheckBox, QComboBox, QDialog, QFrame,
+    QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QMainWindow, QMessageBox, QPushButton, QPlainTextEdit,
+    QScrollArea, QSpinBox, QStackedWidget, QTableWidget,
     QTableWidgetItem, QVBoxLayout, QWidget,
 )
 from PySide6.QtCore import QUrl
 
 from backend.recovery import RECOVERY_MODES
+from backend.workflows import classify_device
 from .controller import Controller
+from . import logger
 
 __version__ = "1.0.0-rc1"
 APP_TITLE = "منصة إدارة وتقييد أجهزة المؤسسة"
@@ -67,6 +70,7 @@ VERDICT_AR = {"PASS": "نجح التحقق", "FAIL": "فشل التحقق", "PAR
 REC_STATUS_AR = {"COMPLETE": "اكتمل", "PARTIAL": "جزئي", "FAILED": "فشل",
                  "REFUSED": "مرفوض", "PLAN_ONLY": "خطة فقط"}
 REC_MODE_AR = {
+    "R0_WITHDRAW": "سحب DeviceOwner (إلغاء المالك من الوكيل)",
     "R1_RESTORE_POINT": "استعادة نقطة الحفظ (إزالة التقييدات المطبّقة)",
     "R2_REPROVISION": "إعادة التسجيل (خطة فقط)",
     "R3_LAB_FLASH": "فلاش مختبر للبرنامج الثابت (مرفوض دائمًا)",
@@ -75,13 +79,28 @@ REC_MODE_AR = {
 FEATURE_AR = {
     "WIFI": "شبكة Wi-Fi", "BLUETOOTH": "البلوتوث", "MOBILE_DATA": "بيانات الجوال",
     "LOCATION": "الموقع الجغرافي", "CAMERA": "الكاميرا", "MICROPHONE": "الميكروفون",
-    "TETHERING": "نقطة الاتصال (Hotspot)", "USB": "نقل الملفات عبر USB",
-    "VPN": "شبكات VPN", "ADB": "تصحيح الأخطاء (ADB)", "SAFE_BOOT": "الإقلاع الآمن",
-    "FACTORY_RESET": "إعادة الضبط المصنعية", "APP_INSTALLATION": "تثبيت التطبيقات",
-    "ACCOUNTS": "إدارة الحسابات", "ETHERNET": "شبكة إيثرنت",
-    "DEVELOPER_OPTIONS": "خيارات المطور", "SCREEN_CAPTURE": "لقطات الشاشة",
-    "GPS": "GPS",
+    "TETHERING": "نقطة الاتصال (Hotspot)", "HOTSPOT": "المشاركة (Hotspot)",
+    "USB": "نقل الملفات عبر USB", "VPN": "شبكات VPN", "ADB": "تصحيح الأخطاء (ADB)",
+    "SAFE_BOOT": "الإقلاع الآمن", "FACTORY_RESET": "إعادة الضبط المصنعية",
+    "APP_INSTALLATION": "تثبيت التطبيقات", "ACCOUNTS": "إدارة الحسابات",
+    "ETHERNET": "شبكة إيثرنت", "DEVELOPER_OPTIONS": "خيارات المطور",
+    "SCREEN_CAPTURE": "لقطات الشاشة", "GPS": "GPS", "BROWSER": "المتصفح",
+    "PLAY_STORE": "متجر التطبيقات", "UNKNOWN_SOURCES": "المصادر غير المعروفة",
+    "USB_NETWORKING": "شبكة USB", "BLUETOOTH_PAN": "تقاسم بلوتوث",
+    "USER_MANAGEMENT": "إدارة المستخدمين", "LOCK_TASK": "وضع القفل (Kiosk)",
+    "APPLICATIONS": "السماح بالتطبيقات",
 }
+
+# ميزات تُعرض في مُنشئ السياسة المخصصة (قابلة للتقييد BLOCK) — الحوكمة
+# (FACTORY_RESET_RECOVERY / REFLAH_FIRMWARE) لا تعرض لأنها مشروطة بالمختبر فقط.
+CUSTOM_POLICY_BLOCKABLE = (
+    "WIFI", "BLUETOOTH", "MOBILE_DATA", "LOCATION", "GPS", "CAMERA",
+    "MICROPHONE", "USB", "USB_NETWORKING", "ADB", "DEVELOPER_OPTIONS",
+    "SAFE_BOOT", "FACTORY_RESET", "APP_INSTALLATION", "UNKNOWN_SOURCES",
+    "BROWSER", "PLAY_STORE", "HOTSPOT", "TETHERING", "ACCOUNTS",
+    "USER_MANAGEMENT", "SCREEN_CAPTURE", "LOCK_TASK", "APPLICATIONS",
+    "ETHERNET", "VPN", "BLUETOOTH_PAN",
+)
 OBSERVED_AR = {
     "ON": "مفعّل", "OFF": "معطّل", "RESTRICTED": "مقيّد بإدارة المؤسسة",
     "": "غير معلوم",
@@ -128,9 +147,93 @@ class Task(QRunnable):
         try:
             res = self.fn(*self.args, **self.kwargs)
         except Exception as ex:  # noqa: BLE001 — يُعرض للمسؤول بالعربية
+            logger.log_error(f"task:{self.tag}", ex)
             BUS.done.emit(self.tag, {"ok": False, "error": f"{type(ex).__name__}: {ex}"}, True)
         else:
             BUS.done.emit(self.tag, res, False)
+
+
+class FullLockdownWizard(QDialog):
+    """معالج القفل الكامل — خطوات واضحة: الاسم ← مراجعة الميزات المقيّدة ← إنشاء.
+
+    ينشئ سياسة FULL_LOCKDOWN مخصصة (POL-CUST-*) من مجموعة أمنية قياسية قابلة
+    للتعديل. التطبيق على الجهاز يحدث لاحقًا عبر صفحة «تطبيق السياسة» بفحص
+    مسبق حقيقي — لا يُدّعى هنا أن شيئًا طُبِّق فعلًا.
+    """
+
+    DEFAULT_FULL_LOCKDOWN = (
+        "WIFI", "BLUETOOTH", "MOBILE_DATA", "LOCATION", "GPS", "CAMERA",
+        "MICROPHONE", "USB", "ADB", "DEVELOPER_OPTIONS", "SAFE_BOOT",
+        "FACTORY_RESET", "APP_INSTALLATION", "UNKNOWN_SOURCES", "BROWSER",
+        "PLAY_STORE", "HOTSPOT", "TETHERING", "ACCOUNTS", "USER_MANAGEMENT",
+        "SCREEN_CAPTURE", "VPN", "ETHERNET", "USB_NETWORKING", "BLUETOOTH_PAN",
+    )
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("معالج القفل الكامل")
+        self.resize(620, 520)
+        self.selected = []
+        self.name = ""
+
+        lay = QVBoxLayout(self)
+        intro = QLabel(
+            "سيرشدك هذا المعالج في إنشاء سياسة «قفل كامل» مخصصة:\n"
+            "1) اسم السياسة (اختياري)    2) مراجعة الميزات المقيّدة    3) إنشاء.")
+        intro.setWordWrap(True)
+        intro.setObjectName("note")
+        lay.addWidget(intro)
+
+        nrow = QHBoxLayout()
+        nrow.addWidget(QLabel("اسم السياسة:"))
+        self._name = QLineEdit()
+        self._name.setPlaceholderText("مثال: قفل كامل — بعثة «الربيع» (اتركه فارغًا للافتراضي)")
+        nrow.addWidget(self._name, 1)
+        lay.addLayout(nrow)
+
+        lbl = QLabel("الميزات المراد تقييدها (Block):")
+        lay.addWidget(lbl)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        holder = QWidget()
+        grid = QGridLayout(holder)
+        self._checks = {}
+        for i, feat in enumerate(self.DEFAULT_FULL_LOCKDOWN):
+            cb = QCheckBox(FEATURE_AR.get(feat, feat))
+            cb.setToolTip(feat)
+            cb.setChecked(True)
+            self._checks[feat] = cb
+            grid.addWidget(cb, i // 3, i % 3)
+        scroll.setWidget(holder)
+        lay.addWidget(scroll, 1)
+
+        note = QLabel(
+            "يبقى الاتصال الهاتفي (CALLS/SMS/CONTACTS) مسموحًا. التطبيق الفعلي "
+            "على الجهاز يتم لاحقًا من صفحة «تطبيق السياسة» بفحص مسبق حقيقي — "
+            "هذه الخطوة تنشئ السياسة فقط.")
+        note.setObjectName("note")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+
+        btns = QHBoxLayout()
+        ok = QPushButton("إنشاء السياسة")
+        ok.setObjectName("btn_acc")
+        ok.clicked.connect(self._accept)
+        btns.addWidget(ok)
+        cancel = QPushButton("إلغاء")
+        cancel.clicked.connect(self.reject)
+        btns.addWidget(cancel)
+        lay.addLayout(btns)
+
+    def _accept(self):
+        feats = [f for f, cb in self._checks.items() if cb.isChecked()]
+        if not feats:
+            QMessageBox.warning(self, "القفل الكامل",
+                                "اختر ميزة واحدة على الأقل لتقييدها.")
+            return
+        self.selected = feats
+        self.name = self._name.text().strip()
+        self.accept()
 
 
 class App(QMainWindow):
@@ -142,6 +245,15 @@ class App(QMainWindow):
         self._busy = False
         self._session_label = None
         self._quick_status = None
+        self._active = None            # active device context {device_id, serial, model}
+        self._sensitive_busy = False
+        self._last_dev_sig = None
+        self._last_devices = {}        # device_id -> row (for confirm dialog)
+        self._sensitive_widgets = []
+        self._pols_cache = []
+        self._pols_loaded = False
+        self._pending_apply = False
+        self._last_recover = None
 
         self.setWindowTitle(f"{APP_TITLE} — {APP_TITLE_EN}  v{__version__}")
         self.resize(1320, 840)
@@ -181,6 +293,7 @@ class App(QMainWindow):
         pages = [
             ("dashboard", "الرئيسية"),
             ("devices", "الأجهزة"),
+            ("apps", "التطبيقات"),
             ("details", "تفاصيل الجهاز"),
             ("capabilities", "فحص القدرات"),
             ("policies", "السياسات"),
@@ -207,6 +320,7 @@ class App(QMainWindow):
         self._stack = QStackedWidget()
         self._build_dashboard()
         self._build_devices()
+        self._build_apps()
         self._build_details()
         self._build_capabilities()
         self._build_policies()
@@ -242,6 +356,12 @@ class App(QMainWindow):
         lay.addWidget(tag)
         lay.addStretch(1)
 
+        self._active_lbl = QLabel("الجهاز المحدد: —")
+        self._active_lbl.setObjectName("active_device")
+        self._active_lbl.setWordWrap(False)
+        lay.addWidget(self._active_lbl)
+
+        lay.addSpacing(14)
         self._quick_status = QLabel("")
         self._quick_status.setObjectName("quick_status")
         lay.addWidget(self._quick_status)
@@ -275,6 +395,21 @@ class App(QMainWindow):
                   self._card_ok, self._card_need):
             cards.addWidget(c[0])
         v.addLayout(cards)
+
+        cards2 = QHBoxLayout()
+        self._card_unknown = self._card("حالة الالتزام غير معروفة")
+        self._card_unscanned = self._card("غير مفحوصة (لا قراءة فعلية)")
+        self._card_adb = self._card("ADB")
+        self._card_lastop = self._card("آخر عملية")
+        for c in (self._card_unknown, self._card_unscanned,
+                  self._card_adb, self._card_lastop):
+            cards2.addWidget(c[0])
+        v.addLayout(cards2)
+
+        self._dash_status = QLabel("")
+        self._dash_status.setObjectName("note")
+        self._dash_status.setWordWrap(True)
+        v.addWidget(self._dash_status)
 
         t = QLabel("الأجهزة")
         t.setObjectName("section_title")
@@ -312,38 +447,58 @@ class App(QMainWindow):
         return table
 
     def _render_devices(self, devices):
-        for name, tbl in (("dashboard", getattr(self, "_table_dash", None)),
-                          ("devices", getattr(self, "_table_dev", None))):
-            if tbl is None:
-                continue
+        dash = getattr(self, "_table_dash", None)
+        if dash is not None:
+            self._fill_device_table(dash, devices)
+        self._dev_cache = devices
+        self._apply_device_filter()
+
+    def _fill_device_table(self, tbl, devices):
+        tbl.setRowCount(0)
+        for d in devices:
+            r = tbl.rowCount()
+            tbl.insertRow(r)
+            vals = [
+                tx(d, "device_id"), tx(d, "serial"), tx(d, "model"),
+                str(tx(d, "android_version")),
+                ar_state(d, "enrollment_state", ENROLL_AR),
+                ar_state(d, "device_owner_state", OWNER_AR),
+                ar_state(d, "compliance_state", COMPLIANCE_AR),
+            ]
+            for c, val in enumerate(vals):
+                it = QTableWidgetItem(val)
+                if c in (4, 6):  # تلوين الحالة
+                    it.setForeground(self._status_color(val))
+                tbl.setItem(r, c, it)
+        if not devices:
             tbl.setRowCount(0)
-            for d in devices:
-                r = tbl.rowCount()
-                tbl.insertRow(r)
-                vals = [
-                    tx(d, "device_id"), tx(d, "serial"), tx(d, "model"),
-                    str(tx(d, "android_version")),
-                    ar_state(d, "enrollment_state", ENROLL_AR),
-                    ar_state(d, "device_owner_state", OWNER_AR),
-                    ar_state(d, "compliance_state", COMPLIANCE_AR),
-                ]
-                for c, val in enumerate(vals):
-                    it = QTableWidgetItem(val)
-                    if c in (4, 6):  # تلوين الحالة
-                        it.setForeground(self._status_color(val))
-                    tbl.setItem(r, c, it)
-            if not devices:
-                tbl.setRowCount(0)
+
+    def _apply_device_filter(self):
+        tbl = getattr(self, "_table_dev", None)
+        if tbl is None:
+            return
+        q = (self._dev_search.text() or "").strip().lower()
+        src = getattr(self, "_dev_cache", []) or []
+        rows = (src if not q else
+                [d for d in src
+                 if q in (tx(d, "device_id") + " " + tx(d, "serial") + " " +
+                          tx(d, "model") + " " +
+                          ar_state(d, "enrollment_state", ENROLL_AR) + " " +
+                          ar_state(d, "compliance_state", COMPLIANCE_AR)).lower()])
+        tbl.setRowCount(0)
+        self._fill_device_table(tbl, rows)
 
     def _status_color(self, text) -> QColor:
-        if text in ("متوافق", "فعّال"):
+        if text in ("متوافق", "فعّال", "نجح التحقق", "سليمة"):
             return QColor("#1d8a4c")
-        if text in ("غير متوافق", "فشل", "مرفوض"):
+        if text in ("غير متوافق", "فشل", "مرفوض", "فشل التحقق"):
             return QColor("#c0392b")
-        if text in ("متوافق جزئيًا", "جزئي"):
+        if text in ("متوافق جزئيًا", "جزئي", "تحقق جزئي", "محظور"):
             return QColor("#c07a00")
         if text == "مقيّد بإدارة المؤسسة":
             return QColor("#2f6fed")
+        if text in ("غير معروف", "تحذير"):
+            return QColor("#c07a00")
         return QColor("#4a4a4a")
 
     # ------------------------------------------------------------------
@@ -375,9 +530,36 @@ class App(QMainWindow):
         v.addLayout(row)
 
         self._detect_lbl = QLabel("")
+        self._detect_lbl.setObjectName("detect_summary")
         self._detect_lbl.setWordWrap(True)
         self._detect_lbl.hide()
         v.addWidget(self._detect_lbl)
+
+        dt = QLabel("الأجهزة المكتشفة تلقائيًا (ADB) — اختر جهازًا ثم اضغط «فتح الجهاز» لتحديده")
+        dt.setObjectName("section_title")
+        v.addWidget(dt)
+        self._detect_table = QTableWidget(0, 5)
+        self._detect_table.setHorizontalHeaderLabels(
+            ["الجهاز", "الرقم التسلسلي", "الحالة", "الاتصال", "التسجيل"])
+        self._detect_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self._detect_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self._detect_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self._detect_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self._detect_table.setMaximumHeight(170)
+        self._detect_table.itemDoubleClicked.connect(lambda *_: self._open_device())
+        v.addWidget(self._detect_table)
+
+        discover = QHBoxLayout()
+        b_open = QPushButton("فتح الجهاز (تحديد)")
+        b_open.setObjectName("btn_acc")
+        b_open.clicked.connect(self._open_device)
+        discover.addWidget(b_open)
+        b_rescan = QPushButton("إعادة البحث (ADB)")
+        b_rescan.clicked.connect(lambda: self._task("devices", self._snapshot))
+        discover.addWidget(b_rescan)
+        discover.addStretch(1)
+        v.addLayout(discover)
+        self._sensitive_widgets.extend([b_open, self._detect_table])
 
         row2 = QHBoxLayout()
         b_probe = QPushButton("فحص الجهاز (قراءة فعلية)")
@@ -396,11 +578,107 @@ class App(QMainWindow):
         self._table_dev.itemSelectionChanged.connect(self._device_selected)
         v.addWidget(self._table_dev, 1)
 
+        v.addWidget(QLabel("بحث / تصفية: اكتب معرّفًا أو تسلسلًا أو طرازًا أو حالة"))
+        self._dev_search = QLineEdit()
+        self._dev_search.setPlaceholderText("مثال: SM-J337P أو AVD-… أو «مسجّل»")
+        self._dev_search.textChanged.connect(self._apply_device_filter)
+        v.addWidget(self._dev_search)
+
         self._dev_log = QPlainTextEdit()
         self._dev_log.setPlaceholderText("نتائج عمليات الأجهزة…")
         self._dev_log.setMaximumHeight(190)
         v.addWidget(self._dev_log)
         self._stack.addWidget(page)
+
+    # ------------------------------------------------------------------
+    # الصفحة: التطبيقات (قراءة فعلية عبر ADB — حزم مثبّتة فقط)
+    # ------------------------------------------------------------------
+    def _build_apps(self):
+        page = QWidget()
+        v = QVBoxLayout(page)
+        v.setContentsMargins(18, 16, 18, 16)
+        t = QLabel("التطبيقات المثبّتة — قراءة فعلية عبر ADB (pm list packages)")
+        t.setObjectName("section_title")
+        v.addWidget(t)
+
+        row = QHBoxLayout()
+        b = QPushButton("فحص تطبيقات الجهاز المحدد")
+        b.setObjectName("btn_acc")
+        b.clicked.connect(self._apps_scan)
+        row.addWidget(b)
+        self._apps_search = QLineEdit()
+        self._apps_search.setPlaceholderText("بحث في أسماء الحزم…")
+        self._apps_search.textChanged.connect(self._filter_apps)
+        row.addWidget(self._apps_search, 1)
+        self._apps_lbl = QLabel("")
+        self._apps_lbl.setObjectName("note")
+        row.addWidget(self._apps_lbl)
+        v.addLayout(row)
+
+        self._apps_table = QTableWidget(0, 3)
+        self._apps_table.setHorizontalHeaderLabels(
+            ["اسم الحزمة", "النوع", "مصدر القراءة"])
+        self._apps_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self._apps_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self._apps_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self._apps_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self._apps_table.verticalHeader().setVisible(False)
+        v.addWidget(self._apps_table, 1)
+
+        n = QLabel(
+            "هذه القائمة مرجع قراءة فقط: حظر/إخفاء التطبيقات على مستوى السياسات "
+            "يُنفَّذ من خلال وكيل DPC بعد تفعيل Device Owner — لا تدّعي هذه الصفحة "
+            "تطبيقًا أو إزالةً لأي تطبيق.")
+        n.setObjectName("note")
+        n.setWordWrap(True)
+        v.addWidget(n)
+        self._stack.addWidget(page)
+
+    def _apps_scan(self):
+        serial = (self._active or {}).get("serial") or \
+            (self._selected_device_row() or {}).get("serial")
+        if not serial:
+            self._err("التطبيقات",
+                      'حدّد جهازًا (من الأجهزة المكتشفة أو القائمة) ثم اضغط "فحص تطبيقات الجهاز المحدد".')
+            return
+        self._busy_start("جاري قراءة التطبيقات المثبّتة…")
+        self._task("apps", self.ctl.apps, serial)
+
+    def _h_apps(self, res, err):
+        self._busy_start("")
+        if err or not res.get("ok"):
+            self._apps_lbl.setText(self._fmt_json(res))
+            return
+        a = res["apps"]
+        self._apps_cache = a
+        self._apps_lbl.setText(
+            f"الإجمالي: {a['count']} — طرف ثالث: {a['third_party_count']} — "
+            f"النظام: {a['system_count']}  |  {a['serial']}")
+        self._filter_apps()
+
+    def _filter_apps(self):
+        tbl = getattr(self, "_apps_table", None)
+        if tbl is None:
+            return
+        a = getattr(self, "_apps_cache", None)
+        if not a:
+            tbl.setRowCount(0)
+            return
+        q = (self._apps_search.text() or "").strip().lower()
+        tp = set(a.get("third_party") or [])
+        all_pkgs = (a.get("third_party") or []) + (a.get("system") or [])
+        rows = [p for p in all_pkgs if not q or q in p.lower()]
+        tbl.setRowCount(0)
+        for pkg in rows:
+            r = tbl.rowCount()
+            tbl.insertRow(r)
+            it0 = QTableWidgetItem(pkg)
+            it1 = QTableWidgetItem("طرف ثالث" if pkg in tp else "النظام")
+            it1.setForeground(QColor("#2f6fed" if pkg in tp else "#5a6a7c"))
+            it2 = QTableWidgetItem("ADB — pm list packages")
+            tbl.setItem(r, 0, it0)
+            tbl.setItem(r, 1, it1)
+            tbl.setItem(r, 2, it2)
 
     def _selected_device_row(self) -> dict:
         tbl = self._table_dev
@@ -420,7 +698,73 @@ class App(QMainWindow):
         self._last_apply_dev = d
         if d:
             self._dev_log.setPlainText(f"تم تحديد الجهاز: {d['device_id']} [{d['serial']}]")
+            if d.get("device_id"):
+                self._set_active(device_id=d["device_id"])
             self._render_apply_preview()
+
+    # ------------------------------------------------------------------
+    # سياق الجهاز المحدد (الجهاز النشط) — يظهر في الشريط العلوي عبر كل الصفحات
+    # ------------------------------------------------------------------
+    def _set_active(self, device_id="", serial=""):
+        r = self.ctl.set_active_device(device_id=device_id, serial=serial)
+        if r.get("ok"):
+            self._active = r
+            self._render_active_banner()
+        return bool(r.get("ok"))
+
+    def _render_active_banner(self):
+        a = self._active
+        if a and a.get("device_id"):
+            text = (f"الجهاز المحدد: {a.get('model') or '؟'} "
+                    f"[{a.get('device_id')}] — {a.get('serial') or ''}")
+        else:
+            text = "لا يوجد جهاز محدد — اختر من صفحة الأجهزة"
+        self._active_lbl.setText(text)
+
+    def _sync_active(self, devices):
+        if self._active is not None and not any(
+                tx(d, "device_id") == self._active.get("device_id") for d in devices):
+            self._active = None
+        if self._active is None:
+            a = self.ctl.active_device()
+            if a.get("ok") and any(tx(d, "device_id") == a.get("device_id")
+                                   for d in devices):
+                self._active = a
+        self._render_active_banner()
+        active_id = self._active.get("device_id") if self._active else None
+        idx = self._apply_dev.findData(active_id)
+        if idx >= 0:
+            self._apply_dev.setCurrentIndex(idx)
+        idx2 = self._rec_dev.findData(active_id)
+        if idx2 >= 0:
+            self._rec_dev.setCurrentIndex(idx2)
+
+    def _open_device(self):
+        if self._sensitive_busy:
+            return
+        tbl = self._detect_table
+        sel = tbl.selectionModel().selectedRows()
+        if not sel:
+            self._err("فتح الجهاز", "اختر جهازًا من قائمة الأجهزة المكتشفة أولًا.")
+            return
+        r = sel[0].row()
+        it = tbl.item(r, 0)
+        if it is None:
+            return
+        serial = it.data(Qt.UserRole) or ""
+        model = it.text()
+        registered = bool(tbl.item(r, 4)) and tbl.item(r, 4).text() == "مسجّل"
+        self._dev_serial.setText(serial)
+        if serial and not registered:
+            self._quick_status.setText(f"تسجيل الجهاز {model or serial}…")
+            self._task("open_device", self.ctl.enroll, serial, "", False)
+        else:
+            ok = self._set_active(serial=serial or "")
+            if ok:
+                self._quick_status.setText("تم تحديد الجهاز")
+                self._task("devices", self._snapshot)
+            else:
+                self._err("فتح الجهاز", "الجهاز غير مسجّل بعد — جرّب «تسجيل الجهاز».")
 
     def _enroll(self):
         serial = self._dev_serial.text().strip()
@@ -432,12 +776,18 @@ class App(QMainWindow):
         self._task("enroll", self.ctl.enroll, serial, did, lab)
 
     def _probe_action(self):
-        d = self._selected_device_row()
-        if not d or not d["serial"]:
-            self._err("فحص الجهاز", 'اختر جهازًا مسجّلًا ثم اضغط "فحص الجهاز".')
+        d = None
+        if self._active and self._active.get("serial"):
+            d = self._active
+        else:
+            d = self._selected_device_row()
+        serial = (d or {}).get("serial")
+        if not serial:
+            self._err("فحص الجهاز",
+                      'حدّد جهازًا أولًا (من الأجهزة المكتشفة أو القائمة) ثم اضغط "فحص الجهاز".')
             return
         self._busy_start("فحص الجهاز…")
-        self._task("probe", self.ctl.probe, d["serial"])
+        self._task("probe", self.ctl.probe, serial)
 
     def _report_action(self):
         d = self._selected_device_row()
@@ -503,12 +853,13 @@ class App(QMainWindow):
         self._stack.addWidget(page)
 
     def _cap_scan(self):
-        d = self._selected_device_row()
-        if not d or not d["serial"]:
+        serial = (self._active or {}).get("serial") or \
+            (self._selected_device_row() or {}).get("serial")
+        if not serial:
             self._err("فحص القدرات", "اختر جهازًا أولًا.")
             return
         self._busy_start("جاري فحص القدرات…")
-        self._task("cap_scan", self.ctl.probe, d["serial"])
+        self._task("cap_scan", self.ctl.probe, serial)
 
     def _render_capabilities(self, bundle: dict):
         identity = bundle.get("identity") or {}
@@ -559,8 +910,116 @@ class App(QMainWindow):
         self._pol_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self._pol_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self._pol_table.verticalHeader().setVisible(False)
-        v.addWidget(self._pol_table, 1)
+        self._pol_table.setMaximumHeight(170)
+        v.addWidget(self._pol_table)
+
+        t2 = QLabel("مُنشئ سياسة مخصصة (تحديد الميزات المراد تقييدها)")
+        t2.setObjectName("section_title")
+        v.addWidget(t2)
+
+        builder = QFrame()
+        builder.setObjectName("box")
+        bl = QVBoxLayout(builder)
+        row0 = QHBoxLayout()
+        row0.addWidget(QLabel("الاسم:"))
+        self._cp_name = QLineEdit()
+        self._cp_name.setPlaceholderText("مثال: تقييد بعثة «الربيع»")
+        row0.addWidget(self._cp_name, 1)
+        row0.addWidget(QLabel("الفئة:"))
+        self._cp_cat = QComboBox()
+        for cat, lbl in (("CORPORATE_DEFAULT", "الوضع المؤسسي"),
+                         ("PHONE_ONLY", "الهاتف فقط"),
+                         ("PARTIAL_LOCKDOWN", "تقييد جزئي"),
+                         ("FULL_LOCKDOWN", "القفل الكامل"),
+                         ("MAINTENANCE", "الصيانة"),
+                         ("QUARANTINE", "حجر صحي")):
+            self._cp_cat.addItem(f"{lbl} ({cat})", cat)
+        row0.addWidget(self._cp_cat)
+        row0.addWidget(QLabel("المخاطرة:"))
+        self._cp_risk = QComboBox()
+        for r in ("MEDIUM", "HIGH", "CRITICAL", "LOW"):
+            self._cp_risk.addItem(RISK_AR.get(r, r), r)
+        row0.addWidget(self._cp_risk)
+        bl.addLayout(row0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setMaximumHeight(150)
+        grid_holder = QWidget()
+        grid = QGridLayout(grid_holder)
+        self._cp_checks = {}
+        for i, feat in enumerate(CUSTOM_POLICY_BLOCKABLE):
+            cb = QCheckBox(FEATURE_AR.get(feat, feat))
+            cb.setToolTip(feat)
+            self._cp_checks[feat] = cb
+            grid.addWidget(cb, i // 3, i % 3)
+        scroll.setWidget(grid_holder)
+        bl.addWidget(scroll)
+
+        rowbtn = QHBoxLayout()
+        b_create = QPushButton("إنشاء السياسة المخصصة")
+        b_create.setObjectName("btn_acc")
+        b_create.clicked.connect(self._custom_policy_action)
+        rowbtn.addWidget(b_create)
+        b_full = QPushButton("معالج القفل الكامل (Full Lockdown)")
+        b_full.setObjectName("btn_danger")
+        b_full.clicked.connect(self._full_lockdown_wizard)
+        rowbtn.addWidget(b_full)
+        rowbtn.addStretch(1)
+        bl.addLayout(rowbtn)
+        v.addWidget(builder)
+        self._pol_note = QLabel("")
+        self._pol_note.setObjectName("note")
+        self._pol_note.setWordWrap(True)
+        v.addWidget(self._pol_note)
+        v.addStretch(1)
         self._stack.addWidget(page)
+
+    def _selected_block_features(self):
+        return [f for f, cb in self._cp_checks.items() if cb.isChecked()]
+
+    def _custom_policy_action(self):
+        name = self._cp_name.text().strip()
+        feats = self._selected_block_features()
+        if not feats:
+            self._pol_note.setText("اختر ميزة واحدة على الأقل لتقييدها قبل الإنشاء.")
+            self._err("سياسة مخصصة", "اختر ميزة واحدة على الأقل لتقييدها.")
+            return
+        cat = self._cp_cat.currentData()
+        risk = self._cp_risk.currentData()
+        self._pol_note.setText("جاري إنشاء السياسة…")
+        self._task("policy_create", self.ctl.create_policy, name, cat,
+                   feats, risk)
+
+    def _full_lockdown_wizard(self):
+        wiz = FullLockdownWizard(self)
+        if not wiz.exec():
+            return
+        name = wiz.name or "القفل الكامل"
+        self._pol_note.setText("معالج القفل الكامل: جاري إنشاء السياسة…")
+        self._task("policy_create_full", self.ctl.create_policy, name,
+                   "FULL_LOCKDOWN", wiz.selected, "CRITICAL")
+
+    def _h_policy_create(self, res, err):
+        self._pol_note.setText("")
+        if err or not res.get("ok"):
+            self._pol_note.setText(self._fmt_json(res))
+            self._err("سياسة مخصصة", str((res or {}).get("error", "تعذر الإنشاء")))
+            return
+        self._pols_cache = None
+        self._pols_loaded = False
+        self._just_created_policy_id = res.get("policy_id")
+        self._task("devices", self._snapshot)
+        self._task("policies", self.ctl.policies)
+        self._pol_note.setText(
+            f"تم إنشاء السياسة {res['policy_id']} — تشمل {res['features']} ميزة. "
+            "افتح صفحة «تطبيق السياسة» لتجربتها على جهاز.")
+        self._quick_status.setText(f"سياسة جديدة: {res['policy_id']}")
+
+    def _h_policy_create_full(self, res, err):
+        self._h_policy_create(res, err)
+        if not err and res.get("ok"):
+            self._set_flow("القفل الكامل جاهز للتطبيق — افتح صفحة التطبيق للتحقق المسبق")
 
     def _render_policies(self, pols):
         self._pol_table.setRowCount(0)
@@ -604,6 +1063,7 @@ class App(QMainWindow):
         fl.addWidget(self._apply_sub)
         v.addWidget(form)
         self._apply_dev.activated.connect(self._apply_rec_refresh)
+        self._apply_dev.activated.connect(self._apply_dev_changed)
 
         t = QLabel("معاينة تغييرات السياسة قبل التنفيذ")
         t.setObjectName("section_title")
@@ -620,21 +1080,52 @@ class App(QMainWindow):
         self._prev_note.setObjectName("note")
         v.addWidget(self._prev_note)
 
+        t2 = QLabel("الفحص المسبق قبل التطبيق (من قراءة فعلية للجهاز والحسابات)")
+        t2.setObjectName("section_title")
+        v.addWidget(t2)
+        self._pref_table = QTableWidget(0, 3)
+        self._pref_table.setHorizontalHeaderLabels(["الحالة", "البند", "التفاصيل"])
+        self._pref_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self._pref_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self._pref_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self._pref_table.setMaximumHeight(170)
+        v.addWidget(self._pref_table)
+
+        self._flow_lbl = QLabel("")
+        self._flow_lbl.setObjectName("flow")
+        v.addWidget(self._flow_lbl)
+
         row = QHBoxLayout()
-        b = QPushButton("تطبيق السياسة الآن")
+        b = QPushButton("تطبيق السياسة الآن (يسبقه فحص مسبق + تأكيد)")
         b.setObjectName("btn_danger")
         b.clicked.connect(self._apply_action)
         row.addWidget(b)
-        b2 = QPushButton("تحديث المعاينة")
-        b2.clicked.connect(self._render_apply_preview)
+        b2 = QPushButton("تشغيل الفحص المسبق فقط")
+        b2.clicked.connect(self._preflight_action)
         row.addWidget(b2)
+        b3 = QPushButton("تحديث المعاينة")
+        b3.clicked.connect(self._render_apply_preview)
+        row.addWidget(b3)
         row.addStretch(1)
         v.addLayout(row)
+        self._sensitive_widgets.extend([self._apply_dev, self._apply_pol,
+                                        self._apply_sub, b, b2, b3])
 
         self._apply_log = QPlainTextEdit()
         self._apply_log.setReadOnly(True)
         v.addWidget(self._apply_log, 1)
         self._stack.addWidget(page)
+
+    def _apply_dev_changed(self, *_):
+        did = self._apply_dev.currentData()
+        if did and not self._sensitive_busy:
+            self._set_active(device_id=did)
+            idx = self._rec_dev.findData(did)
+            if idx >= 0:
+                self._rec_dev.blockSignals(True)
+                self._rec_dev.setCurrentIndex(idx)
+                self._rec_dev.blockSignals(False)
+        self._render_apply_preview()
 
     def _render_apply_preview(self, *_):
         did = self._apply_dev.currentData() or (self._last_apply_dev or {}).get("device_id")
@@ -677,14 +1168,108 @@ class App(QMainWindow):
     def _apply_action(self):
         did = self._apply_dev.currentData()
         pol = self._apply_pol.currentText()
-        sub = self._apply_sub.text().strip()
         if not did or not pol:
             self._err("تطبيق السياسة", "اختر الجهاز والسياسة.")
             return
         self._apply_rec_refresh()
-        pol_id = pol.split()[0]
-        self._busy_start("جاري تنفيذ التطبيق والتحقق…")
-        self._task("apply", self.ctl.apply, did, pol_id, True, sub)
+        self._pending_apply = True
+        self._set_flow("معاينة ✓ — تشغيل الفحص المسبق…")
+        self._lock_sensitive(True)
+        self._task("preflight", self.ctl.preflight, did, pol.split()[0])
+
+    def _preflight_action(self):
+        did = self._apply_dev.currentData()
+        pol = self._apply_pol.currentText()
+        if not did or not pol:
+            self._err("الفحص المسبق", "اختر الجهاز والسياسة أولًا.")
+            return
+        self._pending_apply = False
+        self._set_flow("معاينة ✓ — تشغيل الفحص المسبق…")
+        self._lock_sensitive(True)
+        self._task("preflight", self.ctl.preflight, did, pol.split()[0])
+
+    def _h_preflight(self, res, err):
+        self._busy_start("")
+        if err or not isinstance(res, dict) or not res.get("ok"):
+            self._apply_log.setPlainText(self._fmt_json(res or {}))
+            self._set_flow("الفحص المسبق: فشل")
+            self._quick_status.setText("فشل الفحص المسبق")
+            self._lock_sensitive(False)
+            return
+        self._render_preflight(res)
+        if not res.get("can_apply"):
+            self._apply_log.setPlainText(self._fmt_json(res))
+            self._set_flow("الفحص المسبق: محظور — لن يُنفَّذ التطبيق")
+            self._quick_status.setText(res.get("reason", "الفحص المسبق منع التطبيق"))
+            self._lock_sensitive(False)
+            self._err("تطبيق السياسة", res.get("reason", "التطبيق محظور"))
+            return
+        if not self._pending_apply:
+            v = res.get("verdict")
+            self._set_flow("الفحص المسبق: "
+                           + ("جاهز ✓" if v == "PASS" else "تحذيرات — لم يُنفَّذ التطبيق"))
+            self._quick_status.setText("الفحص المسبق اكتمل (بدون تنفيذ)")
+            self._lock_sensitive(False)
+            return
+        verdict_ar = {"PASS": "جاهز", "CONDITIONAL": "تحذيرات (غير محظور)"}.get(
+            res.get("verdict"), res.get("verdict"))
+        msg = ("سيتم تطبيق السياسة فعليًا على الجهاز ثم التحقق منه بقراءة فعلية "
+               "(REAL_DEVICE) مع رقم دليل evidence_id.\n\n"
+               f"الجهاز: {res.get('device_id')}\n"
+               f"السياسة: {self._apply_pol.currentText()}\n"
+               f"الفحص المسبق: {verdict_ar}\n\n"
+               + self._preflight_summary(res) +
+               "\n\nمتابعة التنفيذ؟")
+        ret = QMessageBox.question(self, "تأكيد التطبيق", msg,
+                                   QMessageBox.Yes | QMessageBox.No,
+                                   QMessageBox.No)
+        if ret != QMessageBox.Yes:
+            self._apply_log.setPlainText("أُلغي التطبيق بعد الفحص المسبق.")
+            self._set_flow("الفحص المسبق ✓ — أُلغي التنفيذ")
+            self._lock_sensitive(False)
+            return
+        self._set_flow("الفحص المسبق ✓ — تنفيذ التطبيق والتحقق…")
+        sub = self._apply_sub.text().strip()
+        self._task("apply", self.ctl.apply, res.get("device_id"),
+                   res.get("policy"), True, sub)
+
+    def _render_preflight(self, res):
+        self._pref_table.setRowCount(0)
+        labels = {"PASS": "جاهز", "FAIL": "محظور", "WARN": "تحذير",
+                  "UNKNOWN": "غير معروف"}
+        colors = {"PASS": "#1d8a4c", "FAIL": "#c0392b", "WARN": "#c07a00",
+                  "UNKNOWN": "#5a6a7c"}
+        for c in res.get("checks", []):
+            r = self._pref_table.rowCount()
+            self._pref_table.insertRow(r)
+            status = c.get("status", "")
+            it0 = QTableWidgetItem(labels.get(status, status))
+            it0.setForeground(QColor(colors.get(status, "#4a4a4a")))
+            self._pref_table.setItem(r, 0, it0)
+            self._pref_table.setItem(r, 1, QTableWidgetItem(c.get("name", "")))
+            self._pref_table.setItem(r, 2, QTableWidgetItem(c.get("detail", "")))
+
+    @staticmethod
+    def _preflight_summary(res) -> str:
+        marks = {"PASS": "✓", "FAIL": "✗", "WARN": "!", "UNKNOWN": "؟"}
+        return "\n".join(
+            f"{marks.get(c.get('status'), '·')} {c.get('name', '')}: "
+            f"{c.get('detail', '')}" for c in res.get("checks", []))
+
+    def _set_flow(self, text):
+        if self._flow_lbl is not None and text:
+            self._flow_lbl.setText(text)
+
+    def _lock_sensitive(self, locked):
+        """الجهاز يُقفَل أثناء العمليات الحساسة: لا يجوز تغيير الاختيار أو
+        تكرار التنفيذ حتى تكتمل العملية."""
+        self._busy = locked
+        self._sensitive_busy = locked
+        for w in self._sensitive_widgets:
+            w.setEnabled(not locked)
+        if locked:
+            self._quick_status.setText(
+                "عملية حساسة قيد التنفيذ — اختيار الجهاز/السياسة مغلق مؤقتًا")
 
     def _apply_rec_refresh(self, *_):
         """عرض حالة بيان الاسترداد (عامل الحيازة) للجهاز المحدد — لا يكشف السر."""
@@ -720,6 +1305,13 @@ class App(QMainWindow):
         self._verify_note.setWordWrap(True)
         self._verify_note.setObjectName("note")
         v.addWidget(self._verify_note)
+        self._verify_table = QTableWidget(0, 2)
+        self._verify_table.setHorizontalHeaderLabels(["البنود", "القيمة"])
+        self._verify_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self._verify_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self._verify_table.verticalHeader().setVisible(False)
+        self._verify_table.setMaximumHeight(280)
+        v.addWidget(self._verify_table)
         self._verify_log = QPlainTextEdit()
         self._verify_log.setReadOnly(True)
         v.addWidget(self._verify_log, 1)
@@ -808,6 +1400,9 @@ class App(QMainWindow):
         row.addWidget(b)
         row.addStretch(1)
         v.addLayout(row)
+        self._sensitive_widgets.extend([self._rec_dev, self._rec_mode,
+                                        self._rec_aprv1, self._rec_aprv2,
+                                        self._rec_reason, b])
 
         self._rec_log = QPlainTextEdit()
         self._rec_log.setReadOnly(True)
@@ -825,6 +1420,8 @@ class App(QMainWindow):
             self._err("الاسترداد", "اختر الجهاز والوضع.")
             return
         self._rec_rec_refresh()
+        self._set_flow("استرداد: " + REC_MODE_AR.get(mode, mode))
+        self._lock_sensitive(True)
         self._busy_start("جاري تنفيذ الاسترداد…")
         self._task("recover", self.ctl.recover, did, mode,
                    approver1=self._rec_aprv1.text().strip(),
@@ -1123,6 +1720,7 @@ class App(QMainWindow):
             try:
                 handler(res, err)
             except Exception as ex:  # noqa: BLE001
+                logger.log_error(f"ui:{tag}", ex)
                 self._quick_status.setText(f"خطأ داخلي في العرض: {ex}")
         if tag in ("devices",):
             self._quick_status.setText("")
@@ -1141,43 +1739,78 @@ class App(QMainWindow):
             self._quick_status.setText("تعذر تحديث الأجهزة.")
             return
         devices = res.get("devices", [])
+        self._last_devices = {tx(d, "device_id"): d for d in devices}
         adb = res.get("adb", {})
         attached = adb.get("devices", [])
         self._banner(attached)
         self._render_devices(devices)
-        self._render_detected(res.get("detected") or [])
+        self._render_detected(res.get("detected") or [], devices)
         self._render_dashboard_cards(devices, attached)
         self._render_compliance(devices)
+        sig = tuple(sorted(tx(d, "device_id") for d in devices))
+        if sig != self._last_dev_sig or not getattr(self, "_pols_loaded", False):
+            self._last_dev_sig = sig
+            if not self._pols_loaded:
+                try:
+                    self._pols_cache = self.ctl.policies()
+                    self._pols_loaded = True
+                except Exception:
+                    self._pols_cache = []
+            self._populate_combos(devices)
+        self._sync_active(devices)
 
-    def _render_detected(self, detected):
-        if getattr(self, "_detect_lbl", None) is None:
+    def _render_detected(self, detected, devices=None):
+        if getattr(self, "_detect_table", None) is None:
             return
-        fresh = [d for d in detected if not d["registered"]]
-        if not fresh:
-            self._detect_lbl.hide()
-            return
-        self._detect_lbl.show()
-        any_ready = any(d["ready"] and not d["registered"] for d in detected)
-        self._detect_lbl.setStyleSheet(
-            "color:#1d8a4c; font-weight:600;" if any_ready
-            else "color:#c07a00; font-weight:600;")
-        parts = []
-        field = None
+        self._detect_table.setRowCount(0)
         for d in detected:
-            if d["ready"] and not d["registered"] and field is None:
-                field = d["serial"]
-            label = d["model"] or d["serial"]
-            if d["registered"]:
-                parts.append(f"{label} (مسجَّل)")
-            elif d["ready"]:
-                parts.append(f"{label} — جاهز للتسجيل")
+            r = self._detect_table.rowCount()
+            self._detect_table.insertRow(r)
+            model = d.get("model") or "جهاز Android"
+            state = d.get("state") or "unknown"
+            conn = ("جاهز" if d.get("ready")
+                    else ("فعّل تصحيح الأخطاء (USB debugging)" if state == "unauthorized"
+                          else "غير جاهز / دون اتصال"))
+            reg = "مسجّل" if d.get("registered") else "غير مسجّل"
+            items = [QTableWidgetItem(model), QTableWidgetItem(d.get("serial") or ""),
+                     QTableWidgetItem(state), QTableWidgetItem(conn),
+                     QTableWidgetItem(reg)]
+            items[0].setData(Qt.UserRole, d.get("serial") or "")
+            if d.get("ready"):
+                items[3].setForeground(QColor("#1d8a4c"))
+                if not d.get("registered"):
+                    items[4].setForeground(QColor("#c07a00"))
+            elif state == "unauthorized":
+                items[3].setForeground(QColor("#c07a00"))
             else:
-                parts.append(f"{label} — فعِّل تصحيح الأخطاء (USB debugging)")
-        self._detect_lbl.setText("تم اكتشاف جهاز/أجهزة متصلة: " + " · ".join(parts) +
-                                 ". اكتب الرقم التسلسلي أو اضغط «تسجيل الجهاز».")
-        if field and self._dev_serial.text().strip() == "":
-            self._dev_serial.setText(field)
-        self._populate_combos(devices)
+                items[3].setForeground(QColor("#c0392b"))
+            for c, it in enumerate(items):
+                self._detect_table.setItem(r, c, it)
+        fresh = [d for d in detected if not d["registered"]]
+        if fresh:
+            self._detect_lbl.show()
+            any_ready = any(d["ready"] and not d["registered"] for d in detected)
+            self._detect_lbl.setStyleSheet(
+                "color:#1d8a4c; font-weight:600;" if any_ready
+                else "color:#c07a00; font-weight:600;")
+            parts = []
+            for d in detected:
+                label = d["model"] or d["serial"]
+                if d["registered"]:
+                    parts.append(f"{label} (مسجَّل)")
+                elif d["ready"]:
+                    parts.append(f"{label} — جاهز للتسجيل")
+                else:
+                    parts.append(f"{label} — فعِّل تصحيح الأخطاء (USB debugging)")
+            self._detect_lbl.setText(
+                "وُجد جهاز/أجهزة متصلة: " + " · ".join(parts) +
+                ". اختر واحدًا واضغط «فتح الجهاز» لتسجيله وتحديده.")
+            field = next((d["serial"] for d in detected
+                          if d["ready"] and not d["registered"]), None)
+            if field and self._dev_serial.text().strip() == "":
+                self._dev_serial.setText(field)
+        else:
+            self._detect_lbl.hide()
 
     def _h_enroll(self, res, err):
         if err:
@@ -1186,6 +1819,23 @@ class App(QMainWindow):
             return
         self._dev_log.setPlainText(self._fmt_json(res))
         self._quick_status.setText("تم تسجيل الجهاز")
+        self._task("devices", self._snapshot)
+
+    def _h_open_device(self, res, err):
+        if err or not (res or {}).get("ok"):
+            self._dev_log.setPlainText(self._fmt_json(res or {}))
+            self._quick_status.setText("تعذّر تسجيل/فتح الجهاز")
+            return
+        self._dev_log.setPlainText(self._fmt_json(res))
+        info = res.get("device") or {}
+        did = info.get("device_id", "")
+        serial = info.get("serial", "")
+        if did and self._set_active(device_id=did):
+            self._quick_status.setText(f"تم فتح الجهاز {did}")
+        elif serial and self._set_active(serial=serial):
+            self._quick_status.setText("تم فتح الجهاز")
+        else:
+            self._quick_status.setText("تم تسجيل الجهاز — اختره من القائمة")
         self._task("devices", self._snapshot)
 
     def _h_probe(self, res, err):
@@ -1232,25 +1882,76 @@ class App(QMainWindow):
     def _h_policies(self, res, err):
         if isinstance(res, list):
             self._render_policies(res)
+            self._pols_cache = res
+            self._pols_loaded = True
+            self._populate_combos(getattr(self, "_dev_cache", []) or [])
+            just = getattr(self, "_just_created_policy_id", None)
+            if just:
+                self._just_created_policy_id = None
+                for i in range(self._apply_pol.count()):
+                    if (self._apply_pol.itemText(i) or "").startswith(f"{just} "):
+                        self._apply_pol.setCurrentIndex(i)
+                        self._render_apply_preview()
+                        break
 
     def _h_preview(self, res, err):
         self._render_preview(res if isinstance(res, dict) else {})
 
     def _h_apply(self, res, err):
         self._busy_start("")
+        self._lock_sensitive(False)
         self._last_apply = res
         self._apply_log.setPlainText(self._fmt_json(res))
         if isinstance(res, dict) and res.get("ok"):
-            self._quick_status.setText("اكتمل التطبيق — تحقق فعلًا")
+            self._quick_status.setText("اكتمل التطبيق — تحقق فعليًا")
+            self._render_verify(res)
+            verdict = str(res.get("verification") or "")
+            self._set_flow("التطبيق ✓ — التحقق: "
+                           + VERDICT_AR.get(verdict, verdict or "غير معروف"))
             self._task("devices", self._snapshot)
         else:
-            self._quick_status.setText(
-                str((res or {}).get("error", "فشل التطبيق"))[:90])
+            err_text = str((res or {}).get("error", "فشل التطبيق"))
+            self._quick_status.setText(err_text[:90])
+            self._set_flow("التطبيق: فشل — " + err_text[:80])
+
+    def _render_verify(self, res):
+        """بنية واضحة لنتيجة آخر تطبيق/تحقق (صفحة التحقق)."""
+        if getattr(self, "_verify_table", None) is None:
+            return
+        verdict = str(res.get("verification") or "")
+        compliance = str(res.get("compliance") or "")
+        rows = [
+            ("الجهاز", tx(res, "device_id")),
+            ("السياسة", tx(res, "policy_id")),
+            ("المرحلة", tx(res, "stage")),
+            ("مصدر الأدلة", tx(res, "source")),
+            ("نتيجة التحقق", VERDICT_AR.get(verdict, verdict or "غير معروف")),
+            ("حالة الالتزام", COMPLIANCE_AR.get(compliance, compliance or "غير معروف")),
+            ("رقم الدليل (evidence_id)", tx(res, "evidence_id") or "—"),
+            ("رقم التدقيق (audit_id)", tx(res, "audit_id") or "—"),
+            ("نزاهة النتيجة", "نعم — مبنية على قراءة فعلية" if res.get("honest") else "لا"),
+            ("عدد الملاحظات المرصودة", str(len(res.get("observations") or {}))),
+            ("حالة محول الشركة", str(res.get("vendor_adapter_status") or "—")),
+        ]
+        self._verify_table.setRowCount(0)
+        for name, val in rows:
+            r = self._verify_table.rowCount()
+            self._verify_table.insertRow(r)
+            self._verify_table.setItem(r, 0, QTableWidgetItem(name))
+            it = QTableWidgetItem(val)
+            if name == "نتيجة التحقق":
+                it.setForeground(self._status_color(val))
+            self._verify_table.setItem(r, 1, it)
 
     def _h_recover(self, res, err):
         self._busy_start("")
+        self._lock_sensitive(False)
+        self._last_recover = res if isinstance(res, dict) else {}
         self._rec_log.setPlainText(self._fmt_json(res))
         self._quick_status.setText("نتيجة الاسترداد معروضة")
+        if isinstance(res, dict):
+            self._set_flow("استرداد: " + REC_STATUS_AR.get(res.get("status", ""),
+                                                           res.get("status", "")))
         self._task("devices", self._snapshot)
 
     def _h_audit(self, res, err):
@@ -1299,11 +2000,48 @@ class App(QMainWindow):
         ok = sum(1 for d in devices if tx(d, "compliance_state") == "COMPLIANT")
         need = sum(1 for d in devices
                    if tx(d, "compliance_state") in ("NON_COMPLIANT", "PARTIAL"))
+        unknown = sum(1 for d in devices
+                      if tx(d, "compliance_state") in ("UNKNOWN", ""))
+        unknown_vendor = 0
+        for d in devices:
+            try:
+                dc = classify_device(
+                    tx(d, "manufacturer"), tx(d, "model"),
+                    int(float(tx(d, "android_version") or 0) or 0), 0,
+                    tx(d, "build_fingerprint"))
+                if dc.reference_tier == "UNKNOWN":
+                    unknown_vendor += 1
+            except Exception:  # noqa: BLE001 — classification must never break UI
+                pass
+        scanned = {tx(d, "serial") for d in devices
+                   if tx(d, "last_verification_at")}
+        unscanned = sum(1 for d in devices
+                        if tx(d, "serial") not in scanned)
         for card, val in ((self._card_attached[1], len(attached)),
                           (self._card_locked[1], locked),
                           (self._card_ok[1], ok),
-                          (self._card_need[1], need)):
+                          (self._card_need[1], need),
+                          (self._card_unknown[1], unknown),
+                          (self._card_unscanned[1], unscanned),
+                          (self._card_adb[1], f"{len(attached)} متصل")):
             card.setText(str(val))
+        last_bits = []
+        if self._last_apply is not None:
+            la = self._last_apply
+            if la.get("ok"):
+                last_bits.append(
+                    f"آخر تطبيق: {tx(la, 'policy_id')} — {VERDICT_AR.get(str(la.get('verification') or ''), la.get('verification'))}")
+            else:
+                last_bits.append(f"آخر تطبيق: فشل — {str(la.get('error', ''))[:60]}")
+        if self._last_recover is not None:
+            lr = self._last_recover
+            last_bits.append(f"آخر استرداد: {REC_STATUS_AR.get(str(lr.get('status') or ''), lr.get('status') or '—')}")
+        if not last_bits:
+            last_bits.append("لا توجد عمليات تطبيق/استرداد بعد في هذه الجلسة")
+        if unknown_vendor:
+            last_bits.append(f"شركات/طرز غير معروفة التصنيف: {unknown_vendor}")
+        self._card_lastop[1].setText("—" if not last_bits else last_bits[0])
+        self._dash_status.setText(" · ".join(last_bits))
 
     def _render_compliance(self, devices):
         q = self.ctl
@@ -1334,7 +2072,10 @@ class App(QMainWindow):
             self._apply_dev.addItem(
                 f"{tx(d, 'device_id')} [{tx(d, 'serial')}]", tx(d, "device_id"))
         self._apply_dev.blockSignals(False)
-        if cur and cur in ids:
+        target = (self._active or {}).get("device_id")
+        if target and target in ids:
+            self._apply_dev.setCurrentIndex(self._apply_dev.findData(target))
+        elif cur and cur in ids:
             self._apply_dev.setCurrentIndex(self._apply_dev.findData(cur))
         elif ids:
             self._apply_dev.setCurrentIndex(0)
@@ -1344,15 +2085,20 @@ class App(QMainWindow):
         for d in devices:
             self._rec_dev.addItem(tx(d, "device_id"), tx(d, "device_id"))
         self._rec_dev.blockSignals(False)
+        if target and self._rec_dev.findData(target) >= 0:
+            self._rec_dev.setCurrentIndex(self._rec_dev.findData(target))
         for cb in (self._apply_dev, self._rec_dev):
             if cb.count() and cb.currentData() is None:
                 cb.setCurrentIndex(0)
 
-        pols = []
-        try:
-            pols = self.ctl.policies()
-        except Exception:
-            pols = []
+        pols = getattr(self, "_pols_cache", None)
+        if not pols:
+            try:
+                pols = self.ctl.policies()
+                self._pols_cache = pols
+                self._pols_loaded = True
+            except Exception:
+                pols = []
         pol_ids = [f"{p['policy_id']} — {p['display_name']} ({tx(p, 'status')})"
                    for p in pols]
         curp = self._apply_pol.currentText()
@@ -1390,6 +2136,12 @@ class App(QMainWindow):
                  f"الطراز: {identity.get('model') or '؟'}",
                  f"إصدار أندرويد: {identity.get('android_version') or '؟'}",
                  f"مستوى API: {identity.get('api_level') or '؟'}",
+                 f"تصحيح الأمان (Security Patch): {identity.get('security_patch') or '؟'}",
+                 f"نواة النظام (Kernel): {identity.get('kernel_version') or '؟'}",
+                 f"محمل الإقلاع (Bootloader): {identity.get('bootloader') or '؟'}",
+                 f"التحقق من التمهيد (Verified Boot): {identity.get('verified_boot') or '؟'}",
+                 f"تشفير الجهاز: {identity.get('encryption') or '؟'}",
+                 f"النطاق الأساسي (Baseband): {identity.get('baseband') or '؟'}",
                  f"البصمة: {identity.get('build_fingerprint') or '؟'}",
                  f"مُدار كمالك جهاز (Device Owner): "
                  "نعم" if identity.get("device_owner") else "لا",
@@ -1435,6 +2187,10 @@ QMainWindow, QWidget#qt_centralwidget { background: #f2f4f8; }
 #app_title { color: #17324d; }
 #app_tag { color: #6a7a8c; font-size: 9pt; }
 #quick_status { color: #2f6fed; }
+#active_device { background: #e8f4ec; color: #14532d; border: 1px solid #bfe3cb;
+                 border-radius: 12px; padding: 3px 10px; font-weight: 600; }
+#detect_summary { padding: 4px 8px; }
+#flow { color: #2f6fed; font-weight: 600; padding: 4px 2px; }
 #session { color: #1d8a4c; font-weight: bold; }
 #nav { background: #17263b; color: #dbe6f2; border: none; outline: 0; }
 #nav::item { height: 38px; padding: 4px 14px; color: #c6d4e4; border-radius: 6px; }
@@ -1468,16 +2224,38 @@ QListWidget { outline: 0; }
 
 
 def main() -> int:
-    app = QApplication.instance() or QApplication(sys.argv)
-    app.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
-    app.setStyleSheet(STYLE)
-    win = App()
-    win.show()
-    win._task("policies", lambda: win.ctl.policies())
-    win._task("reports", win.ctl.reports_list, "")
-    win._render_settings()
-    win._task("audit", win.ctl.audit, 80)
-    return app.exec()
+    from . import logger
+    logger.log_event("app", "start", version=__version__)
+    app = None
+    try:
+        app = QApplication.instance() or QApplication(sys.argv)
+        app.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+        app.setStyleSheet(STYLE)
+        win = App()
+        win.show()
+        win._task("policies", lambda: win.ctl.policies())
+        win._task("reports", win.ctl.reports_list, "")
+        win._render_settings()
+        win._task("audit", win.ctl.audit, 80)
+        rc = app.exec()
+        logger.log_event("app", "exit")
+        return rc
+    except BaseException as ex:  # noqa: BLE001
+        import traceback
+        tb = traceback.format_exc()
+        logger.log_error("app", ex, "startup-crash")
+        logger.log_startup_error(ex, tb)
+        try:
+            if app is None or not app.thread().isRunning():
+                app = QApplication.instance() or QApplication(sys.argv)
+            QMessageBox.critical(
+                None, "خطأ عند بدء التشغيل",
+                "تعذّر بدء المنصة.\n\n"
+                f"{type(ex).__name__}: {ex}\n\n"
+                "التفاصيل الكاملة محفوظة في:\n" + logger.log_dir())
+        except Exception:  # noqa: BLE001
+            pass
+        return 1
 
 
 if __name__ == "__main__":

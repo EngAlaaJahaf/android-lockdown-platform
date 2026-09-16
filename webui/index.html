@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALP Manager — وحدة التحكم عبر الويب</title>
+<style>
+:root{
+  --bg:#0f172a; --panel:#1e293b; --panel2:#243349; --line:#334155;
+  --txt:#e2e8f0; --mut:#94a3b8; --acc:#38bdf8; --ok:#22c55e; --warn:#f59e0b;
+  --err:#ef4444; --radius:10px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:var(--bg); color:var(--txt); font-family:"Segoe UI",Tahoma,Arial,sans-serif; min-height:100vh;}
+.wrap{max-width:1100px; margin:0 auto; padding:18px;}
+header{display:flex; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap;}
+header h1{font-size:20px; font-weight:600;}
+header .sub{color:var(--mut); font-size:12px;}
+.badge{background:var(--panel2); border:1px solid var(--line); padding:4px 10px; border-radius:20px; font-size:12px; color:var(--mut);}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:14px;}
+.card h2{font-size:15px; margin-bottom:10px; color:var(--acc); display:flex; justify-content:space-between; align-items:center;}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
+.field{flex:1; min-width:200px;}
+label{display:block; font-size:12px; color:var(--mut); margin-bottom:4px;}
+input,select,textarea{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel2); color:var(--txt); font:inherit;}
+input:focus,select:focus{outline:1px solid var(--acc);}
+button{padding:8px 14px; border:0; border-radius:6px; cursor:pointer; font:inherit; font-weight:600;}
+.btn{background:var(--acc); color:#082f49;}
+.btn:hover{filter:brightness(1.1);}
+.btn.dark{background:var(--panel2); border:1px solid var(--line); color:var(--txt);}
+.btn.ok{background:var(--ok); color:#052e16;}
+.btn.warn{background:var(--warn); color:#3b2204;}
+.btn.err{background:var(--err); color:#fff;}
+.btn:disabled{opacity:.5; cursor:not-allowed;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th,td{padding:8px 10px; border-bottom:1px solid var(--line); text-align:right; vertical-align:top;}
+th{color:var(--mut); font-weight:500; font-size:12px;}
+tr:hover td{background:var(--panel2);}
+pre{background:#0b1220; border:1px solid var(--line); border-radius:6px; padding:10px; white-space:pre-wrap; font-size:12px; max-height:420px; overflow:auto; direction:ltr; text-align:left;}
+pre.rtl{direction:rtl; text-align:right;}
+.pill{display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600;}
+.p-ok{background:#052e16; color:var(--ok);} .p-part{background:#3b2204; color:var(--warn);}
+.p-bad{background:#450a0a; color:var(--err);} .p-mut{background:var(--panel2); color:var(--mut);}
+.statusline{font-size:12px; color:var(--mut); min-height:18px; margin-top:8px;}
+.tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; border-bottom:1px solid var(--line); padding-bottom:10px;}
+.tab{padding:7px 14px; border-radius:6px; cursor:pointer; background:var(--panel2); border:1px solid var(--line); color:var(--mut); font-size:13px;}
+.tab.active{background:var(--acc); color:#082f49; border-color:var(--acc);}
+.view{display:none;} .view.active{display:block;}
+.logo{font-size:13px; background:var(--panel2); border:1px solid var(--line); padding:6px 10px; border-radius:8px; color:var(--acc);}
+.mono{direction:ltr; display:inline-block; font-family:Consolas,monospace; font-size:12px;}
+@media (max-width:720px){.wrap{padding:10px}.field{min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">ALP</div>
+    <h1>وحدة التحكم — إدارة القفل الميداني</h1>
+    <span class="badge">ADB / USB محلي — محرك حقيقي</span>
+    <div style="flex:1"></div>
+    <span id="whoami" class="badge"></span>
+    <button class="btn dark" id="logoutBtn" style="display:none">خروج</button>
+  </header>
+
+  <!-- bootstrap -->
+  <div id="view-bootstrap" class="view">
+    <div class="card" style="max-width:460px;margin:40px auto">
+      <h2>الإعداد الأولي</h2>
+      <p style="color:var(--mut);font-size:13px;margin-bottom:12px">
+        لا يوجد مشرف بعد. أنشئ المشرف الأول وسيُعرض رمز TOTP لإضافته إلى تطبيق المصادقة.
+      </p>
+      <div class="row"><div class="field"><label>اسم المستخدم</label><input id="bUser"></div></div>
+      <div class="row"><div class="field"><label>كلمة المرور</label><input type="password" id="bPass"></div></div>
+      <button class="btn ok" onclick="doBootstrap()">إنشاء المشرف الأول</button>
+      <div id="bResult" class="card" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- login -->
+  <div id="view-login" class="view">
+    <div class="card" style="max-width:460px;margin:40px auto">
+      <h2>تسجيل الدخول</h2>
+      <div class="row"><div class="field"><label>اسم المستخدم</label><input id="lUser"></div></div>
+      <div class="row"><div class="field"><label>كلمة المرور</label><input type="password" id="lPass"></div></div>
+      <div class="row"><div class="field"><label>رمز TOTP</label><input id="lMfa"></div></div>
+      <button class="btn" onclick="doLogin()">دخول</button>
+      <div class="statusline" id="loginErr"></div>
+    </div>
+  </div>
+
+  <!-- main -->
+  <div id="view-main" class="view">
+    <div class="tabs">
+      <div class="tab active" data-v="dashboard" onclick="showView('dashboard')">لوحة التحكم</div>
+      <div class="tab" data-v="devices" onclick="showView('devices')">الأجهزة</div>
+      <div class="tab" data-v="apply" onclick="showView('apply')">الإنفاذ</div>
+      <div class="tab" data-v="recovery" onclick="showView('recovery')">الاسترجاع</div>
+      <div class="tab" data-v="audit" onclick="showView('audit')">التدقيق</div>
+      <div class="tab" data-v="reports" onclick="showView('reports')">التقارير</div>
+    </div>
+
+    <div id="sub-dashboard" class="view active">
+      <div class="card">
+        <h2>أجهزة ADB المُلتَقطة <span class="pill p-mut" id="detCount">0</span></h2>
+        <table id="detTable"><thead><tr><th>الرقم التسلسلي</th><th>الطراز</th><th>الحالة</th><th>جاهز</th><th>مسجّل</th></tr></thead><tbody></tbody></table>
+        <div class="statusline" id="detStatus"></div>
+      </div>
+      <div class="card">
+        <h2>الأجهزة المسجّلة <span class="pill p-mut" id="devCount">0</span></h2>
+        <table id="devTable"><thead><tr><th>device_id</th><th>الطراز</th><th>الحالة</th><th>المالك</th><th>الامتثال</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h2>حالة ADB</h2>
+        <pre id="adbStatus" class="rtl"></pre>
+      </div>
+    </div>
+
+    <div id="sub-devices" class="view">
+      <div class="card">
+        <h2>تفاصيل الجهاز</h2>
+        <div class="row">
+          <div class="field"><label>الجهاز device_id</label>
+            <select id="devSel"><option value="">— اختر جهازاً —</option></select>
+          </div>
+          <button class="btn dark" onclick="loadDeviceDetail()">عرض البيانات</button>
+        </div>
+        <pre id="devDetail" class="rtl"></pre>
+      </div>
+    </div>
+
+    <div id="sub-apply" class="view">
+      <div class="card">
+        <h2>تنفيذ سياسة (AD-4)</h2>
+        <div class="row">
+          <div class="field"><label>الجهاز device_id</label><select id="apDev"></select></div>
+          <div class="field"><label>السياسة</label><select id="apPol"></select></div>
+          <div class="field"><label>الرقم التسلسلي (ADB)</label><input id="apSerial" placeholder="LT8110260130351"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>رمز TOTP</label><input id="apMfa"></div>
+          <div class="field"><label>معاينة الحظر (preflight)</label>
+            <button class="btn dark" onclick="preflight()">معاينة</button>
+          </div>
+        </div>
+        <label style="color:var(--mut);font-size:13px"><input type="checkbox" id="apReal" checked> تنفيذ حقيقي عبر ADB على الجهاز المرفق</label>
+        <div style="margin-top:10px"><button class="btn ok" onclick="doApply()">تنفيذ الإنفاذ</button></div>
+        <div class="statusline" id="apStatus"></div>
+        <pre id="apDetail" class="rtl" style="display:none"></pre>
+      </div>
+    </div>
+
+    <div id="sub-recovery" class="view">
+      <div class="card">
+        <h2>مصفوفة الاسترجاع R0–R4 <span class="pill p-part">يلزم TOTP + موافقة</span></h2>
+        <div class="row">
+          <div class="field"><label>الجهاز device_id</label><select id="rcDev"></select></div>
+          <div class="field"><label>النمط</label>
+            <select id="rcMode">
+              <option value="R0_WITHDRAW">R0 — سحب DeviceOwner</option>
+              <option value="R1_RESTORE_POINT">R1 — نقطة الاستعادة (مسح القيود)</option>
+              <option value="R2_REPROVISION">R2 — إعادة التزويد كمالك</option>
+              <option value="R3_LAB_FLASH">R3 — فلاش مخبري (مرفوض دائماً)</option>
+              <option value="R4_DIAGNOSTIC">R4 — تشخيص للقراءة فقط</option>
+            </select>
+          </div>
+          <div class="field"><label>الرقم التسلسلي (ADB)</label><input id="rcSerial" placeholder="LT8110260130351"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>الموافِق الأول</label><input id="rcA1"></div>
+          <div class="field"><label>الموافِق الثاني (قاعدة ثنائية — لأسلوب R1/R2)</label><input id="rcA2"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>سبب الاسترجاع</label><input id="rcReason" placeholder="سبب العملية"></div>
+          <div class="field"><label>رمز TOTP</label><input id="rcMfa"></div>
+          <div class="field"><label>تنفيذ حقيقي exec</label>
+            <select id="rcExec"><option value="true">نعم</option><option value="false">لا (خطة فقط)</option></select>
+          </div>
+        </div>
+        <label style="color:var(--mut);font-size:12px"><input type="checkbox" id="rcSkip"> تخطّي طلب الموافقة التفاعلية (أنا الموجِه الثاني باسمه أعلى)</label>
+        <div style="margin-top:10px"><button class="btn err" onclick="doRecovery()">تنفيذ الاسترجاع</button></div>
+        <div class="statusline" id="rcStatus"></div>
+        <pre id="rcDetail" class="rtl" style="display:none"></pre>
+      </div>
+      <div class="card">
+        <h2>قبو الاسترجاع (RecoveryVault)</h2>
+        <button class="btn dark" onclick="vaultSummary()">تحديث</button>
+        <pre id="vaultTxt" class="rtl"></pre>
+        <div class="row" style="margin-top:10px">
+          <div class="field"><label>device_id للقبو</label><input id="vaultDev"></div>
+          <button class="btn dark" onclick="vaultAction('issue')">إصدار</button>
+          <button class="btn dark" onclick="vaultAction('rotate')">تدوير</button>
+          <button class="btn dark" onclick="vaultAction('revoke')">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sub-audit" class="view">
+      <div class="card">
+        <h2>سجل التدقيق <button class="btn dark" onclick="tamper()">تحقق من السلاسل</button></h2>
+        <div class="statusline" id="auditStatus"></div>
+        <pre id="auditTxt" class="rtl"></pre>
+        <div style="margin-top:8px"><button class="btn dark" onclick="auditTail()">تحديث</button></div>
+      </div>
+    </div>
+
+    <div id="sub-reports" class="view">
+      <div class="card">
+        <h2>تقارير الأجهزة</h2>
+        <div class="row">
+          <div class="field"><label>device_id</label><input id="repDev"></div>
+          <button class="btn dark" onclick="reportOne()">توليد التقرير</button>
+          <button class="btn dark" onclick="reportList()">القائمة</button>
+        </div>
+        <pre id="repTxt" class="rtl" style="direction:ltr"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API="/api/v1";
+let TOKEN=sessionStorage.getItem("alp_token")||"";
+const hdr=()=>({Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"});
+async function api(m,p,b,raw){
+  const opts={method:m,headers:hdr()};
+  if(b!==undefined)opts.body=JSON.stringify(b);
+  const r=await fetch(API+p,opts);
+  const j=await r.json().catch(()=>({ok:false,error:await r.text()}));
+  if(r.status===401&&!p.startsWith("/auth")){sessionStorage.removeItem("alp_token");load();}
+  return j;
+}
+const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+async function boot(){return await api("/bootstrap","GET");}
+
+async function load(){
+  const b=await boot();
+  document.getElementById("logoutBtn").style.display=TOKEN?"":"none";
+  if(b.ok&&b.data&&b.data.needs_bootstrap){show("view-bootstrap");return;}
+  if(!TOKEN){show("view-login");return;}
+  const w=await api("/auth/whoami","GET");
+  document.getElementById("whoami").textContent=w.ok?("مشغّل: "+w.data.username+" — "+w.data.role_code):"";
+  show("view-main");
+  refreshAll();
+}
+function show(id){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(id).classList.add("active");if(id==="view-main")refreshAll();}
+function showView(v){document.querySelectorAll(".sub").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));document.getElementById("sub-"+v).classList.add("active");document.querySelector('.tab[data-v="'+v+'"]').classList.add("active");if(v==="dashboard")dashboard();if(v==="devices")populateDevices();if(v==="apply")populateCombos();if(v==="recovery"){populateCombos();vaultSummary();}if(v==="audit")auditTail();if(v==="reports")reportList();}
+
+/* ---------- bootstrap / login ---------- */
+async function doBootstrap(){
+  const u=document.getElementById("bUser").value.trim(),p=document.getElementById("bPass").value;
+  if(!u||p.length<6){alert("أدخل اسماً وكلمة مرور (6 أحرف على الأقل)");return;}
+  const r=await api("/bootstrap","POST",{username:u,password:p});
+  const el=document.getElementById("bResult");el.style.display="block";
+  if(r.ok){el.innerHTML='<p style="color:var(--ok)">تم إنشاء المشرف. أضف الرمز إلى تطبيق <b>Google Authenticator</b>:</p><pre class="mono">'+esc(r.data.secret)+'</pre><p class="mono" style="font-size:10px;color:var(--mut)">'+esc(r.data.totp_uri)+'</p>';}
+  else el.innerHTML='<p style="color:var(--err)">'+esc(r.error)+'</p>';
+}
+async function doLogin(){
+  const u=document.getElementById("lUser").value,p=document.getElementById("lPass").value,m=document.getElementById("lMfa").value;
+  const r=await api("/auth/login","POST",{username:u,password:p,mfa:m});
+  if(r.ok){TOKEN=r.data.token;sessionStorage.setItem("alp_token",TOKEN);document.getElementById("loginErr").textContent="";load();}
+  else document.getElementById("loginErr").textContent="فشل الدخول: "+(r.error||"خطأ");
+}
+document.getElementById("logoutBtn").onclick=()=>{api("/auth/logout","POST");TOKEN="";sessionStorage.removeItem("alp_token");load();};
+
+/* ---------- dashboard ---------- */
+async function dashboard(){
+  const d=await api("/devices/detected","GET");
+  const tb=document.querySelector("#detTable tbody");tb.innerHTML="";
+  if(d.ok&&d.data){
+    document.getElementById("detCount").textContent=d.data.length;
+    d.data.forEach(x=>tb.insertAdjacentHTML("beforeend",
+      "<tr><td class='mono'>"+esc(x.serial)+"</td><td>"+esc(x.model)+"</td><td>"+esc(x.state)+"</td>"+
+      "<td>"+(x.ready?"<span class='pill p-ok'>جاهز</span>":"<span class='pill p-bad'>لا</span>")+"</td>"+
+      "<td>"+(x.registered?"<span class='pill p-part'>مسجّل</span>":"<span class='pill p-mut'>جديد</span>")+"</td></tr>");
+  }
+  const dv=await api("/devices","GET");
+  const tb2=document.querySelector("#devTable tbody");tb2.innerHTML="";
+  if(dv.ok){
+    document.getElementById("devCount").textContent=dv.data.length;
+    dv.data.forEach(x=>tb2.insertAdjacentHTML("beforeend",
+      "<tr><td class='mono'>"+esc(x.device_id)+"</td><td>"+esc(x.model||x.manufacturer||"")+"</td>"+
+      "<td>"+esc(x.enrollment_state)+"</td><td>"+esc(x.device_owner_state||"-")+"</td>"+
+      "<td>"+esc(x.compliance_state||"-")+"</td></tr>"));
+  }
+  const a=await api("/adb/status","GET");
+  document.getElementById("adbStatus").textContent=a.ok?JSON.stringify(a.data,null,2):a.error;
+}
+
+/* ---------- devices ---------- */
+async function populateDevices(){
+  const r=await api("/devices","GET");const d=await api("/devices/detected","GET");
+  const sels=["devSel","apDev","rcDev"];
+  const serials=d.ok&&d.data?d.data.map(x=>x.serial):[];
+  sels.forEach(id=>{const el=document.getElementById(id);el.innerHTML='<option value="">— اختر جهازاً —</option>';});
+  if(r.ok)r.data.forEach(x=>{
+    const label=x.device_id+(serials.includes(x.serial)?(" ("+x.serial+")"):"");
+    sels.forEach(id=>document.getElementById(id).insertAdjacentHTML("beforeend",'<option value="'+esc(x.device_id)+'">'+esc(label)+'</option>'));
+  });
+  if(serials.length&&!document.getElementById("apSerial").value)document.getElementById("apSerial").value=serials[0];
+}
+async function loadDeviceDetail(){
+  const did=document.getElementById("devSel").value;
+  if(!did)return;
+  const c=await api("/devices/capabilities?device_id="+encodeURIComponent(did),"GET");
+  const r=await api("/recovery?device_id="+encodeURIComponent(did),"GET");
+  document.getElementById("devDetail").textContent=
+    "القدرات:\n"+(c.ok?JSON.stringify(c.data,null,2):c.error)+
+    "\n\nقبو الاسترجاع:\n"+(r.ok?JSON.stringify(r.data,null,2):r.error);
+}
+
+/* ---------- apply ---------- */
+async function populateCombos(){
+  const d=await api("/devices","GET"),p=await api("/policies","GET");
+  const dsel=document.getElementById("apDev");dsel.innerHTML="";
+  if(d.ok)d.data.forEach(x=>dsel.insertAdjacentHTML("beforeend",'<option value="'+esc(x.device_id)+'">'+esc(x.device_id)+"</option>"));
+  const psel=document.getElementById("apPol");psel.innerHTML="";
+  if(p.ok)p.data.forEach(x=>psel.insertAdjacentHTML("beforeend",'<option value="'+esc(x.policy_id)+'">'+esc(x.display_name+" ("+x.policy_id+")")+"</option>"));
+}
+async function preflight(){
+  const did=document.getElementById("apDev").value,pol=document.getElementById("apPol").value;
+  const r=await api("/devices/preflight?device_id="+encodeURIComponent(did)+"&policy="+encodeURIComponent(pol),"GET");
+  document.getElementById("apDetail").style.display="block";
+  document.getElementById("apDetail").textContent=r.ok?JSON.stringify(r.data,null,2):r.error;
+}
+async function doApply(){
+  const did=document.getElementById("apDev").value,pol=document.getElementById("apPol").value;
+  const serial=document.getElementById("apSerial").value.trim(),mfa=document.getElementById("apMfa").value;
+  if(!did||!pol){alert("اختر الجهاز والسياسة");return;}
+  document.getElementById("apStatus").textContent="جارٍ التنفيذ عبر ADB…";
+  const real=document.getElementById("apReal").checked;
+  const r=await api("/apply","POST",{device_id:did,policy:pol,serial,mfa,real});
+  const el=document.getElementById("apDetail");el.style.display="block";
+  el.textContent=JSON.stringify(r,null,2);
+  document.getElementById("apStatus").textContent=r.ok?"اكتمل — أنظر التفاصيل":"فشل: "+(r.error||"");
+}
+
+/* ---------- recovery ---------- */
+async function vaultSummary(){
+  const r=await api("/recovery/vault","GET");
+  document.getElementById("vaultTxt").textContent=r.ok?JSON.stringify(r.data,null,2):r.error;
+}
+async function vaultAction(action){
+  const dev=document.getElementById("vaultDev").value.trim();
+  if(!dev){alert("device_id مطلوب");return;}
+  const mfa=prompt("رمز TOTP لإجراءات القبو:","");
+  if(!mfa)return;
+  const r=await api("/recovery/vault","POST",{action,device_id:dev,mfa});
+  alert(r.ok?JSON.stringify(r.data):r.error);
+  vaultSummary();
+}
+async function doRecovery(){
+  const did=document.getElementById("rcDev").value,mode=document.getElementById("rcMode").value;
+  const serial=document.getElementById("rcSerial").value.trim();
+  const a1=document.getElementById("rcA1").value.trim(),a2=document.getElementById("rcA2").value.trim();
+  const reason=document.getElementById("rcReason").value.trim(),mfa=document.getElementById("rcMfa").value;
+  const exec=document.getElementById("rcExec").value==="true";
+  const skip=document.getElementById("rcSkip").checked;
+  if(!did){alert("اختر الجهاز");return;}
+  document.getElementById("rcStatus").textContent="جارٍ تنفيذ "+mode+" عبر ADB…";
+  const r=await api("/recovery","POST",{device_id:did,mode,mfa,approver1:a1,approver2:a2,reason,serial,exec,skip_approval:skip});
+  const el=document.getElementById("rcDetail");el.style.display="block";
+  el.textContent=JSON.stringify(r,null,2);
+  document.getElementById("rcStatus").textContent=r.ok?"تم — أنظر التفاصيل":"فشل: "+(r.error||"");
+}
+
+/* ---------- audit ---------- */
+async function auditTail(){
+  const r=await api("/audit?tail=100","GET");
+  document.getElementById("auditTxt").textContent=r.ok?JSON.stringify(r.data,null,2):r.error;
+}
+async function tamper(){
+  const r=await api("/audit/tamper","GET");
+  document.getElementById("auditStatus").textContent=r.ok?("الروابط: "+r.data.links+" — التلف: "+r.data.broken):r.error;
+}
+
+/* ---------- reports ---------- */
+async function reportList(){
+  const r=await api("/reports","GET");
+  document.getElementById("repTxt").textContent=r.ok?JSON.stringify(r.data,null,2):r.error;
+}
+async function reportOne(){
+  const dev=document.getElementById("repDev").value.trim();
+  if(!dev){alert("device_id مطلوب");return;}
+  const r=await api("/reports/"+encodeURIComponent(dev),"GET");
+  const el=document.getElementById("repTxt");
+  if(r.ok&&r.data){
+    const report=r.data.report||r.data.markdown||r.data.text||JSON.stringify(r.data,null,2);
+    el.textContent=typeof report==="string"?report:JSON.stringify(report,null,2);
+  } else el.textContent="خطأ: "+(r.error||JSON.stringify(r));
+}
+
+/* ---------- init + polling ---------- */
+function refreshAll(){const v=document.querySelector("#view-main .view.active")?.id;if(v==="sub-dashboard")dashboard();if(v==="sub-devices")populateDevices();if(v==="sub-apply")populateCombos();if(v==="sub-recovery"){populateCombos();}}
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&document.getElementById("view-login").classList.contains("active"))doLogin();});
+load();
+setInterval(()=>{if(TOKEN){const v=document.getElementById("sub-dashboard").classList.contains("active");if(v)dashboard();}},4000);
+</script>
+</body>
+</html>

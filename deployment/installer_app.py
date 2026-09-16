@@ -19,6 +19,9 @@ import subprocess
 import sys
 import time
 
+_NO_WINDOW = (getattr(subprocess, "CREATE_NO_WINDOW", 0)
+              if sys.platform == "win32" else 0)
+
 
 APP_NAME = "AndroidLockdownManager"
 DISPLAY_NAME = "ALP Manager — نظام إدارة تقييد أجهزة Android"
@@ -79,7 +82,8 @@ def _make_shortcut(lnk: str, target: str, wd: str, args: str = "",
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive",
                             "-Command", ps],
-                           capture_output=True, timeout=30)
+                           capture_output=True, timeout=30,
+                           creationflags=_NO_WINDOW or 0)
         return r.returncode == 0 and os.path.exists(lnk)
     except Exception:  # noqa: BLE001
         if try_raise:

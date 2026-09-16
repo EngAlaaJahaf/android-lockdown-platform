@@ -1,0 +1,1 @@
+{"cmd_id":"E2E-APPLY-20260916-1800","job_execution_id":0,"device_id":"AVD-LT8110260130351","action":"APPLY_POLICY","body":{"snapshot":[{"feature":"WIFI","desired":"BLOCK"}]}}

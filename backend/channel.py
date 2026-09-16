@@ -10,15 +10,20 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import time
 
 from .workflows import adb
+
+_NO_WINDOW = (getattr(subprocess, "CREATE_NO_WINDOW", 0)
+              if sys.platform == "win32" else 0)
 
 # action -> remote envelope file the DPC expects
 REMOTE_FILES = {
     "APPLY_POLICY": "/data/local/tmp/alp_envelope.json",
     "CLEAR_POLICY": "/data/local/tmp/alp_rollback.json",
     "GET_STATE": "/data/local/tmp/alp_req_state.json",
+    "WITHDRAW_DO": "/data/local/tmp/alp_withdraw.json",
 }
 
 
@@ -43,7 +48,8 @@ def adb_channel(serial: str, out_dir: str = ""):
 
         def sh(*args):
             return subprocess.run([adb(), "-s", serial, *args],
-                                  capture_output=True, text=True, timeout=60)
+                                  capture_output=True, text=True, timeout=60,
+                                  creationflags=_NO_WINDOW or 0)
 
         r = sh("push", local or _tmp_write(envelope), remote)
         if r.returncode != 0:

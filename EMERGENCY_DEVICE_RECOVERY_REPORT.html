@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير الاسترداد الطارئ للجهاز — EMERGENCY_DEVICE_RECOVERY_REPORT</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}
+  .warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:13px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>تقرير الاسترداد الطارئ — EMERGENCY_DEVICE_RECOVERY_REPORT</h1>
+<p><small>الجهاز: Samsung SM-J337P · Android 9 / API 28 · Serial <code>520041d74247b58b</code> ·
+قاعدة التشغيل <code>%LOCALAPPDATA%\ALPManager\alp.db</code> · بتاريخ 2026-09-13 · النمط: استرداد قيود Device Owner حقيقي على جهاز فعلي</small></p>
+
+<div class="box">
+<h2 style="margin-top:0">0) تصنيف النتيجة (بشكل صادق ومقيّد)</h2>
+<p><b class="fail">BLOCKED (deferred) — أُلغي المسار المدمر:</b> كان قد سُجّلت موافقة على إعادة ضبط المصنع
+(<code>APPRV-20260913-FRESET-CTL1</code>) ليُحسم عليها بتراجع قبل التنفيذ (<b>DENIED</b>، سجل
+<code>AUD-20260913-FRESET-CTL2</code>) لأن المستخدم <b>لا يعلم بيانات حساب Google</b> المربوط بالجهاز.
+إعادة الضبط من وضع الاسترداد تُفعِّل **FRP**: سيطلب الإقلاع الأول الدخول بنفس حساب Google وكلمة قفل الشاشة،
+والمستخدم لا يملكها → خطر قفل الجهاز نهائيًا على شاشة إعداد غير سالكة، وأي تجاوز لـFRP (أدوات/حِفلات) محظور بالمندوب.</p>
+<p>القرار الصادق: <b>لا إعادة ضبط</b> حتى تُستعاد بيانات الحساب. الحالة: <b>BLOCKED — بيانات محفوظة وجهاز محلَقة الوظيفة لكن غير مكسور؛ القيود نفسها ما زالت نشطة</b>
+(12 قيدًا + الكاميرا). أولوية المرحلة المقبلة: استعادة حساب Google ثم إعادة تقييم.</p>
+</div>
+
+<h2>1) الحالة قبل الإغلاق (ground truth قبل REAL-EXEC)</h2>
+<table>
+<tr><th>البند</th><th>القيمة</th><th>المصدر</th></tr>
+<tr><td>قناة الإدارة</td><td><code>device_owner = false</code> · ADB حي · <code>dpm set-device-owner</code> غير مفعّل بعد</td><td>probe + جلسات حية</td></tr>
+<tr><td>القيود النشطة</td><td>لا شيء</td><td><code>dumpsys device_policy</code></td></tr>
+<tr><td>حالة القدرات</td><td><code>SM-J337P|9|j3topeltespr</code> · 21 سطر قدرات</td><td>سجلّ المورّد</td></tr>
+<tr><td>شهادة الاسترداد</td><td>تم الإصدار: <code>recovery_id 3406-B9C6</code> (ركن الحيازة)</td><td>جدول <code>recovery_credentials</code></td></tr>
+</table>
+
+<h2>2) القيود المطبَّقة على الجهاز (السياسة POL-FULL_LOCKDOWN · بيان REAL-EXEC-20260913-03)</h2>
+<p>طبّقها <code>com.alp.agent/.AlpDeviceAdminReceiver</code> (مالك الجهاز، user 0 ، <code>provisioningState 3</code>). 17 مسارًا تنكمش إلى 12 رمز قيود + تعطيل الكاميرا — كلها مثبتة في <code>dumpsys device_policy</code>:</p>
+<table>
+<tr><th>الرمز</th><th>المعنى</th></tr>
+<tr><td><code>no_config_wifi</code></td><td>WIFI محجوب (تغذية مرجعية: OFF)</td></tr>
+<tr><td><code>no_bluetooth</code></td><td>BLUETOOTH محجوب (دليل سلوكي: <code>svc bluetooth disable</code> قُتل rc=137)</td></tr>
+<tr><td><code>no_config_tethering</code> · <code>no_usb_file_transfer</code></td><td>TETHERING · HOTSPOT · USB · USB_NETWORKING</td></tr>
+<tr><td><code>no_config_vpn</code></td><td>VPN محجوب</td></tr>
+<tr><td><code>no_unmute_microphone</code></td><td>MICROPHONE محجوب</td></tr>
+<tr><td><code>no_safe_boot</code> · <code>no_factory_reset</code></td><td>SAFE_BOOT · FACTORY_RESET — لا إيقاف مثل الرجوع للنظام أو مسح بلا إذن</td></tr>
+<tr><td><code>no_install_unknown_sources</code></td><td>APP_INSTALLATION · UNKNOWN_SOURCES</td></tr>
+<tr><td><code>no_modify_accounts</code> · <code>no_share_location</code></td><td>ACCOUNTS · USER_MANAGEMENT · LOCATION · GPS (RESTRICT)</td></tr>
+<tr><td><code>disableCamera=true</code></td><td>CAMERA محجوبة (setCameraDisabled)</td></tr>
+</table>
+<p class="warn">لم يُطبَّق على الجهاز أبدًا: <code>no_debugging_features</code> (ADB / DEVELOPER_OPTIONS) — قرار مُقصَد كي لا يُقطع جسر الإدارة. المرادف الحقيقي: إغلاق USBNET للملفات وبدأ فشل إعادة التفاوض على ناقل USB (Android 9) بعد <code>no_usb_file_transfer</code>.</p>
+
+<h2>3) التشخيص: كيف فقد الجسر؟</h2>
+<table>
+<tr><th>الملاحظة</th><th>القيمة</th><th>التفسير</th></tr>
+<tr><td>حالة ADB</td><td><code>adb devices</code> فارغ دائمًا (حتى بعد <code>adb kill-server</code>/إعادة التشغيل كل 90 ثانية)</td><td>واجهة RDNDIS/ADB لا تُشترك</td></tr>
+<tr><td>PnP للناقل</td><td><code>SAMSUNG Mobile USB Composite Device</code> (VID_04E8/PID_6860) · <code>SAMSUNG Mobile USB Modem #10</code> · WPD <code>Galaxy J3 Achieve</code></td><td>الجهاز حي كهربائيًا: USB (MTP/PTP/Modem) يعمل، لكن <b>لا توجد وظيفة ADB</b> في الوظائف المشتركة</td></tr>
+<tr><td>الرِّهن البرمجي</td><td><code>no_usb_file_transfer</code> نشط + Android 9، وأذونات USB debugging لم تُعد التفاوض بعد إعادة ناقل سابق</td><td>الوضع يمكن إحياؤه عادةً بإعادة إدخال الكابل / إعادة تشغيل بحفظ التشغيل مع إعادة تفويض <code>Allow USB debugging</code></td></tr>
+<tr><td>المصادقة</td><td>كلمة مرور القفل على الجهاز (مطلوب فك القفل لكل تفويض ADB)</td><td>سير أعاد فك القفل يدويًا</td></tr>
+</table>
+
+<h2>4) طرق الاسترداد التي قُيّمت</h2>
+<table>
+<tr><th>الطريقة</th><th>مسار الإصلاح (قسري؟)</th><th>الحكم</th></tr>
+<tr><td>أ) إطلاق CLEAR عبر ADB</td><td><code>restore_default.py</code>: يدفع بيان <code>CLEAR_POLICY</code> (RESTORE-20260913-01) إلى <code>/data/local/tmp/alp_rollback.json</code> → تطبيق الاسترداد → <code>dpm remove-active-admin com.alp.agent/...AlpDeviceAdminReceiver</code> → تحقق → إلغاء تثبيت</td><td class="warn">جاهز ومُشغَّل آليًا عبر <code>watch_and_restore.py</code> — محجوب فقط لغياب ADB</td></tr>
+<tr><td>ب) استرداد داخل التطبيق عبر واجهة المستخدم</td><td>زر «ROLLBACK / إلغاء القيود» في <code>MainActivity</code> → <code>AlpOps.localRollback()</code> → بيان <code>UI-ROLLBACK-&lt;ts&gt;</code> → <code>clearPolicy</code></td><td class="warn">أُعيد بناء APK وأُضيف الزر، لكن التثبيت محجوب (لا ADB حاليًا لتركيبه)</td></tr>
+<tr><td>ج) إعادة ضبط المصنع / Recovery Mode</td><td>مسار رسمي Samsung: Power-off → <code>Vol+</code>+<code>Power</code> → <code>Wipe data/factory reset</code> → <code>Reboot system now</code></td><td class="warn"><b>مختار الآن</b> — بموافقة صريحة مسجّلة <code>APPRV-20260913-FRESET-CTL1</code>؛ يمسح البيانات لهذا صرّح بها المستخدم ولم تكن متاحة أي وسيلة نسخ (MTP مسدود، لا SD، لا إنترنت)</td></tr>
+<tr><td>د) أي تجاوز (FRP/bootloader/Knox)</td><td>—</td><td class="fail">مُستبعد كليةً (المندوب)</td></tr>
+</table>
+
+<h2>5) حماية المنصة الجديدة (المسار المختار — منع تكرار الانقطاع)</h2>
+<div class="box">
+<b>1) حماية قناة الإدارة <code>backend/management_channel.py</code>:</b> الميزات الحرجة = {ADB, DEVELOPER_OPTIONS, USB, USB_NETWORKING}؛ <code>management_channel_status()</code> تفصّص <code>adb_live</code> /
+<code>dpc_in_app_rollback</code> / <code>recovery_engine</code> (شهادة غير مُلغاة في <code>recovery_credentials</code>)؛ <code>check_recovery_channel()</code> تُعيد سببًا صادقًا وترمي <code>RecoveryChannelError</code> في وضع <code>strict</code>.<br>
+<b>2) بوابة في <code>backend/director.py apply()</code>:</b> كل تطبيق <code>REAL_DEVICE</code> يمر عبر البوابة؛ إن لم توجد قناة استرداد مردودة → <code>ApplyBlocked</code> بدل إغلاق الجسر. ملاحظة <code>recovery-channel-check</code> تُسجَّل حتى عند المرور.<br>
+<b>3) بوابة الاسترداد داخل التطبيق:</b> زر UI → <code>clearPolicy</code> يرفض أي CLEAR بدون بيان صريح. (بيئة <code>ALP_DPC_IN_APP_ROLLBACK=1</code> تفعّل القناة.)<br>
+<b>4) تكامل API 28 كامل</b> عند نيل القناة: <code>dpm remove-active-admin</code> هو الطريق الرسمي (لا مسح استخدام ملموس، لا فقدان SOT15/ Kelvin — وهذا يختلف عن الحذف غير المصرّح).</div>
+
+<h2>6) حالة البيانات وحالة القيود المتبقية</h2>
+<table>
+<tr><th>البند</th><th>الحالة</th></tr>
+<tr><td>بيانات المستخدم</td><td class="ok">محفوظة — لم تُمسّ، لا إعادة ضبط، لا wipe</td></tr>
+<tr><td>القيود النشطة الآن</td><td class="warn">12 قيدًا + كاميرا ما زالت نشطة (لا أداة لرفعها بلا قناة)</td></tr>
+<tr><td>مالك الجهاز</td><td><code>com.alp.agent/.AlpDeviceAdminReceiver</code> لم يُنزع بعد</td></tr>
+<tr><td>ADB/DEVELOPER_OPTIONS</td><td class="ok">لم يُحمَّل أبدًا — يبقى الجسر نظريًا قابلاً للفتح لدى إعادة التفاوض</td></tr>
+<tr><td>الاستشعار / الأدلة</td><td><code>EV-20260913-F35BF615</code> · <code>AUD-7E372EC40A18</code> (تحقق UNKNOWN صادق، compliance NON_COMPLIANT)</td></tr>
+</table>
+
+<h2>7) الحلول العملية للمستخدم (في انتظار عودته على ADB)</h2>
+<ul>
+<li>من جهاز Samsung: أمسك زر الطاقة ~10 ثوانٍ لإعادة تشغيل عادية، ثم <b>افتح قفل الشاشة</b> واحتفظ به مفتوحًا.</li>
+<li>افصل كابل USB ثم أعد توصيله (منفذ آخر أظهر Modem/MTP قبلاً يعمل).</li>
+<li>عند ظهور نافذة «السماح بتصحيح أخطاء USB» اختر Allow/السماح وثبّت الثقة شغّال.</li>
+<li>المتابع <code>watch_and_restore.py</code> (يعمل الآن بالتزامن مع <code>restore_watch.log</code>) سيكتشف الجهاز تلقائيًا وينفّذ <code>restore_default.py</code> لإزالة القيود ومالك الجهاز وإلغاء التثبيت، ثم يُعاد التحقق الكامل.</li>
+</ul>
+<p class="warn">إن لم يظهر الجهاز على أي منفذ/كابل خلال النافذة (متجددة)، الحالة تنتقل إلى <code>BLOCKED_ESCALATED</code> — يحتاج قرار المستخدم بين الطريقة (أ) على جهاز آخر، أو (ج) إعادة ضبط المصنع بموافقته على فقدان البيانات (تُفضَّل النسخة الاحتياطية من وضع Recovery الرسمي قبل أي شيء).</p>
+
+<p><small>التقرير صادق بالتعريف: يُصنَّف <code>BLOCKED</code> ولا يُدّعى استرداد. كل نص يُفعَّل عند عودة الجهاز وتُحدَّث الحالة إلى RECOVERED مع أدلة dumpsys.</small></p>
+
+</div></body>
+</html>

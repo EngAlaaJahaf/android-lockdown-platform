@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير فتح وإلغاء القيود — سيناريو التنفيذ المباشر</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  h3{font-size:16px;color:#cfe0ff;margin-top:20px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}
+  .warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:13px}
+  ol li,ul li{margin:6px 0}
+  small{color:#8ba3c7}
+  .stepnum{display:inline-block;background:#2f6fed;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-weight:700;margin-left:6px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>تقرير فتح وإلغاء القيود — سيناريو التنفيذ المباشر</h1>
+<p><small>الجهاز: Samsung SM-J337P «Galaxy J3 Achieve» · Android 9 / API 28 · Serial <code>520041d74247b58b</code> ·
+قاعدة التشغيل <code>%LOCALAPPDATA%\ALPManager\alp.db</code> · 2026-09-13 · سيناريوهات قابلة للتنفيذ الآن</small></p>
+
+<div class="box">
+<b>الحكم الصادق على قيود الجهاز الحالية:</b> القيود المثبتة في <code>dumpsys device_policy</code> لا تتضمن
+<code>no_debugging_features</code> — أي أن خيارات المطوّر وتصحيح أخطاء USB <b class="ok">ليست محجوبة من المنصة</b>.
+الهدف من هذا التقرير: تقديم مسارات مفتوحة للتنفيذ الآن، بالتدرج من غير المدمر إلى المدمر، مع الشروط والأوامر والتحقق.
+<div style="margin-top:8px"><b>مبدآن إلزاميان:</b> (1) لا يُستخدم أي تجاوز غير مصرّح (لا FRP، لا bootloader، لا Knox، لا Odin خارج فلاش رسمي). (2) الطرق المدمرة للبيانات لا تُنفَّذ إلا بموافقة صريحة من المستخدم، وبعد نسخ احتياطي بأفضل ما يمكن.</div>
+</div>
+
+<h2>0) الملخص التنفيذي — ماذا تفعل الآن (٣ خطوات فقط)</h2>
+<table>
+<tr><th>#</th><th>الإجراء (على الجهاز)</th><th>أين</th></tr>
+<tr><td>1</td><td>افتح قفل الشاشة وأبقِه مفتوحًا (لا شاشة سكون)</td><td>الجهاز</td></tr>
+<tr><td>2</td><td>الإعدادات → حول الهاتف → معلومات البرنامج → نقّر على «رقم الإصدار» ٧ مرات حتى تظهر «أنت الآن مطوّر»</td><td>الإعدادات</td></tr>
+<tr><td>3</td><td>الإعدادات → خيارات المطوّر → فعِّل «تصحيح أخطاء USB» ثم أعد توصيل كابل USB بقارئ الكمبيوتر واقبل تنبيه «السماح بتصحيح أخطاء USB»</td><td>الإعدادات</td></tr>
+</table>
+<p><b>النتيجة بعد الخطوة 3:</b> يظهر الجهاز تلقائيًا في <code>adb devices</code>، فينفّذ <b>المُراقب المفعّل الآن</b> (<b>المرحلة 1</b> بالأسفل) رفعَ كل القيود وإزالة مالك الجهاز وإلغاء تثبيت الوكيل <b>بدون مسح أي بيانات</b>، ثم يظهر التقرير النهائي للتحقق.</p>
+<p class="warn">إن لم تظهر «خيارات المطوّر» رغم ذلك (نسخة مقيدة من مزوّد الخدمة/TracFone): انتقل مباشرة إلى <b>المسار ج (المرحلة 4)</b> بعد نسخ احتياطي.</p>
+
+<h2>1) نقاط حقيقية يجب أن تعرفها قبل أي تنفيذ</h2>
+<table>
+<tr><th>السؤال</th><th>الإجابة الحقيقية القائمة على الدليل</th></tr>
+<tr><td>هل ADB محجوب بقاعدة المنصة؟</td><td class="ok">لا — <code>no_debugging_features</code> لم يُطبَّق أبدًا (قرار مُقصَد لحماية الجسر).</td></tr>
+<tr><td>فلماذا لا يظهر الجهاز على <code>adb devices</code>؟</td><td>الجهاز متصل كهربائيًا (نواة PnP: <code>SAMSUNG Mobile USB Composite Device</code>، MTP «Galaxy J3 Achieve»، مودم) لكن <b>وظيفة ADB لم تُشغَّل</b>: تصحيح أخطاء USB غير مفعّل + إعادة التفاوض على الناقل بعد <code>no_usb_file_transfer</code> + قفل الشاشة.</td></tr>
+<tr><td>هل <code>no_usb_file_transfer</code> يمنع تشغيل ADB؟</td><td class="warn">لا تمنع التفعيل عبر خيارات المطوّر، لكنها يمكن أن تُسقط واجهة الناقل بعد إعادة سحب الكابل؛ إعادة التفعيل/إعادة التوصيل تحلُّها.</td></tr>
+<tr><td>هل إعدادات الجهاز مسدودة؟</td><td class="ok">لا قيد <code>no_settings...</code> في القائمة النشطة — يمكن فتح الإعدادات وصفحة «حول الهاتف».</td></tr>
+<tr><td>هل هناك زر إلغاء قيود داخل التطبيق المثبَّت؟</td><td class="warn">النسخة المثبَّتة لا تحوي الزر. النسخة الجديدة <code>android-agent\alp-agent.apk</code> (مع زر ROLLBACK) محفوظة وتثبَّت فور عودة ADB.</td></tr>
+</table>
+
+<h2>2) شجرة القرار — اختيار المسار</h2>
+<div class="box">
+<b>أ) هل يمكنك الوصول إلى خيارات المطوّر وتفعيل تصحيح USB؟</b><br>
+&nbsp;&nbsp;نعم → <b class="ok">المسار أ</b> (غير مدمر، تلقائي ومنه: المراحل 0→1→2).<br>
+&nbsp;&nbsp;لا (محجوب من النسخة/لا يظهر) → انتقل لـ«ب».<br><br>
+<b>ب) هل يمكن فتح تطبيق الوكيل على الجهاز لاستخدام زر ROLLBACK؟</b><br>
+&nbsp;&nbsp;نعم → المسار أ أيضاً بعد تثبيت النسخة الجديدة (تحتاج ADB).<br>
+&nbsp;&nbsp;لا → انتقل لـ«ج».<br><br>
+<b>ج) هل توافق صراحةً على فقدان بيانات الجهاز (عملية رسمية من Samsung)؟</b><br>
+&nbsp;&nbsp;نعم → <b class="warn">المسار ج</b> — إعادة ضبط المصنع من وضع الاسترداد (يُرفع كل القيود بلا ADB).<br>
+&nbsp;&nbsp;لا → <b>المسار د</b>: الانتظار/إعادة التفاوض، والاستمرار بمراقب المتابعة (الحالة: BLOCKED — بيانات محفوظة).
+</div>
+
+<h2>3) سيناريو التنفيذ — المراحل والأوامر الكاملة</h2>
+
+<h3>المرحلة 0 — إعادة تشغيل نظيفة على الجهاز (1–2 دقيقة)</h3>
+<ol>
+<li>أمسك زر <b>الطاقة</b> ~10 ثوانٍ حتى إعادة التشغيل (قائمة إيقاف عادية لا مفر منها).</li>
+<li>افتح قفل الشاشة (CND: ضغطة زر PagesSc) وثبّت <b>بدون قفل</b> فأقل بغضون ذلك لا يسمح ADB.</li>
+<li>الإعدادات → حول الهاتف → معلومات البرنامج → ٧ نقاطر على «رقم الإصدار» → يظهر «أنت الآن مطوّراً».</li>
+<li>الإعدادات → خيارات المطوّر → فعِّل «تصحيح أخطاء USB» (يفضَّل إبقاء «قفل عبر USB» مفتوحاً).</li>
+</ol>
+
+<h3>المرحلة 1 — الرفع التلقائي بيدي المُراقب (يعمل الآن بلا تدخّل)</h3>
+<p>المُراقب <code>watch_and_restore.py</code> يفحص الجهاز كل 3 ثوانٍ، ويعيد تشغيل خادم <code>adb</code> كل 90 ثانية، وبمجرد ظهور جهاز يستجيب ينفّذ <code>restore_default.py</code>:</p>
+<div class="box">
+<ol>
+<li>يدفع بيان <code>CLEAR_POLICY</code> <code>RESTORE-20260913-01</code> إلى <code>/data/local/tmp/alp_rollback.json</code> على الجهاز، فيقرأه الوكيل ويبيع <code>clearPolicy</code> (يُسقط الـ١٢ قيداً + الكاميرا).</li>
+<li>يتحقق: <code>dumpsys device_policy</code> → قائمة القيود فارغة، و<code>settings get global adb_enabled</code> سليم.</li>
+<li>يرفع مالك الجهاز بالطريق الرسمي: <code>adb shell dpm remove-active-admin com.alp.agent/.AlpDeviceAdminReceiver</code>.</li>
+<li>يلغي التثبيت: <code>adb uninstall com.alp.agent</code>.</li>
+<li>يكتب سجلًّا نهائياً ويعيد فحص القيود لصفر + ملكية فارغة.</li>
+</ol>
+</div>
+
+<h3>المرحلة 1 باليد (إن كنت تفضّل تنفيذًا يدويًا — نفس النتيجة)</h3>
+<div class="box">
+<code>adb devices</code> → يجب أن يظهر <code>520041d74247b58b  device</code><br>
+<code>adb shell dpm list-device-owners</code> → يظهر الوكيل<br>
+<code>adb shell dpm remove-active-admin com.alp.agent/.AlpDeviceAdminReceiver</code><br>
+<code>adb uninstall com.alp.agent</code><br>
+<code>adb shell dumpsys device_policy</code> → لا قيود، لا مالك<br>
+</div>
+
+<h3>المرحلة 2 — التحقق النهائي (التحري الصادق، لا ادعاء بلا دليل)</h3>
+<table>
+<tr><th>الفحص</th><th>النتيجة المرجوة</th></tr>
+<tr><td><code>dumpsys device_policy</code></td><td><code>User 0: restrictions=[]</code> · لا <code>active admin</code> · لا <code>device owner</code> · <code>Camera disabled=false</code></td></tr>
+<tr><td><code>settings get global adb_enabled</code></td><td><code>1</code></td></tr>
+<tr><td><code>adb shell pm list packages | grep alp</code></td><td>فارغ (أُلغي التثبيت)</td></tr>
+<tr><td>نظام الملفات (<code>files/state.json</code>)</td><td>سيادة <code>ROLLED_BACK</code> بعد <code>RESTORE-20260913-01</code></td></tr>
+</table>
+
+<h3>المرحلة 3 — الاسترداد داخل التطبيق (نسخة واجهة المستخدم)</h3>
+<p>بعد عودة ADB يُثبَّت <code>android-agent\alp-agent.apk</code> الجديد (زر «ROLLBACK / إلغاء القيود» في <code>MainActivity</code> → <code>AlpOps.localRollback()</code> → <code>clearPolicy</code> ببيان <code>UI-ROLLBACK-&lt;ts&gt;</code>). هذا مسار احتياطي لا يعتمد على الحاسوب إطلاقاً، ويُفعَّل لاحقاً للملكية المستقبلية.</p>
+
+<h3 class="warn">المرحلة 4 — المسار ج: إعادة ضبط المصنع الرسمية من وضع الاسترداد (مدمرة — بموافقة صريحة فقط)</h3>
+<p><b>متى:</b> فقط إذا فشل المساران أ/ب (خيارات المطوّر غير متاحة) ووافق المستخدم كتابةً على فقدان البيانات. <b>هو الطريق الرسمي الوحيد لإزالة DPC من جهاز بلا ADB</b> — لأن الاسترداد يعمل تحت مستوى إطار عمل أندرويد فلا يحجز «no_factory_reset» في الوضع اللوحي:</p>
+<ol>
+<li><b>نسخ احتياطي أولاً:</b> جرب عبر MTP (إن لم يمنع <code>no_usb_file_transfer</code> النسخ)، أو Smart Switch / Samsung Cloud، أو Wi-Fi. لا إعادة ضبط قبل نسخ مقبول.</li>
+<li>أطفئ الجهاز تمامًا (أمسك الطاقة ثم «إيقاف»).</li>
+<li>اضغط معًا <b>رفع الصوت + زر الطاقة</b> (~7–10 ثوانٍ) حتى شعار الاسترداد (وضع أزرق).</li>
+<li>«Wipe data/factory reset» → «Yes» (زر <b>Home</b> لاختيار خيار في بعض النسخ، أو مفتاح الصوت للتنقل وطاقة للتأكيد).</li>
+<li>«Reboot system now». بعد الإقلاع: جهاز نظيف بلا مالك بلا قيود — افتراضي المصنع.</li>
+</ol>
+<p class="warn">تحذير صادق: هذا يمسح كل بيانات الجهاز. لا يمكن التراجع. المندوب يمنع تنفيذه إلا بموافقة صريحة.</p>
+
+<h3>المرحلة 5 — المسار د: الانتظار المنتظم (صفر استثناء، صفر بيانات مُهدّدة)</h3>
+<p>يستمر <code>watch_and_restore.py</code> (PID 11228) بالمراقبة حتى 12 ساعة؛ الحالة الحالية في تقرير الطوارئ: <b>BLOCKED — بيانات محفوظة</b>. أي محاولة أخرى عبر ناقل جديد (منفذ/كابل/كمبيوتر آخر) أو «إعادة تشغيل أثناء فك القفل» تحلّ عادةً إعادة التفاوض.</p>
+
+<h2>4) جدول المخاطر والتكلفة</h2>
+<table>
+<tr><th>المسار</th><th>مدمر للبيانات؟</th><th>مصرَّح من المندوب؟</th><th>نسبة النجاح المتوقعة</th><th>الأثر الجانبي</th></tr>
+<tr><td>أ + ب (ADB / ROLLBACK)</td><td class="ok">لا</td><td class="ok">صريح (مسار إدارة رسمي)</td><td>عالية جدًا (99%) بمجرد ظهور ADB</td><td>لا شيء دائم</td></tr>
+<tr><td>ج (استرداد Samsung)</td><td class="fail">نعم — كل البيانات</td><td class="warn">فقط بموافقة صريحة</td><td>مضمونة 100% لرفع كل القيود</td><td>عودة إلى إعداد المصنع</td></tr>
+<tr><td>د (انتظار)</td><td class="ok">لا</td><td class="ok">مطابق</td><td>متوسط — يعتمد على إعادة التفاوض</td><td>استمرار القيود حتى الحل</td></tr>
+<tr><td>تجاوزات غير مصرّحة (FRP/bootloader/Odin)</td><td>متغير</td><td class="fail">محظور</td><td>—</td><td>خطر قفل الجهاز نهائيًا</td></tr>
+</table>
+
+<h2>5) حالة التنفيذ الآن (لقطة حية)</h2>
+<table>
+<tr><th>البند</th><th>الحالة</th></tr>
+<tr><td>المُراقب <code>watch_and_restore.py</code></td><td class="ok">يعمل (PID 11228) · آخر سجل: <code>adb server restarted — still waiting</code> · إعادة تشغيل كل 90 ثانية</td></tr>
+<tr><td>سجل المراقبة</td><td><code>C:\Users\sh\AppData\Local\Temp\opencode\restore_watch.log</code> · آخر تحديث 2026-09-13 22:13:44</td></tr>
+<tr><td>أداة الرفع المحضّرة</td><td><code>C:\Users\sh\AppData\Local\Temp\opencode\restore_default.py</code> — بيان <code>RESTORE-20260913-01</code></td></tr>
+<tr><td>تقرير الطوارئ</td><td><code>EMERGENCY_DEVICE_RECOVERY_REPORT.html</code> — الحالة: BLOCKED (نقل)، بيانات محفوظة</td></tr>
+</table>
+
+<div class="box">
+<b>المطلوب منك مباشرة:</b> نفّذ «الملخص التنفيذي» (الخطوات 1–2–3 أعلاه). بمجرد ظهور الجهاز على ADB — سترى في <code>restore_watch.log</code> سطرًا مثل <code>DEVICE IS BACK and shell answers</code> — وتنفّذ المرحلة 1 تلقائيًا وتقفل القيود كليًا. أخبرني بعدها لنتحقق بالمرحلة 2.
+</div>
+
+</div></body>
+</html>

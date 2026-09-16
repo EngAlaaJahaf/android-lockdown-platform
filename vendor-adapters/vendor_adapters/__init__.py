@@ -11,7 +11,6 @@ it lives here and only here.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class VendorAdapter(ABC):
@@ -77,11 +76,3 @@ class SamsungAdapter(VendorAdapter):
         if self._knox_sdk_present:
             return "READY (Knox SDK detected)"
         return "GATED (Knox SDK not detected on device — base DPM only)"
-
-
-class AdapterFactory:
-    @staticmethod
-    def for_vendor(vendor: Optional[str]) -> VendorAdapter:
-        if vendor and vendor.lower() in ("samsung", "sm"):
-            return SamsungAdapter()
-        return GenericAdapter()

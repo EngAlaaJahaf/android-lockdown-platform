@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حالة التنفيذ النهائية — ALP Manager</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}
+  .warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:13px}
+  small{color:#8ba3c7}
+  .big{font-size:18px;font-weight:700;text-align:center;padding:18px;border-radius:10px;margin:18px 0}
+  .big.warn{background:#33280f;color:#ffd479;border:2px solid #ffd479}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>حالة التنفيذ النهائية — ALP Manager (Android Lockdown Platform)</h1>
+<p><small>v1.0.0 · 2026-09-13 · سجل تنفيذ المراحل 0–27 · التفاصيل في <code>RELEASE/IMPLEMENTATION_CHANGELOG.md</code></small></p>
+
+<div class="big warn">الحالة: <b>READY FOR CONTROLLED PILOT</b> — الدورة الأخضر الكاملة على عينة فيزيائية أُنجزت؛
+تعليق الرفع إلى <b>PRODUCTION-READY</b> على خطوة DPC واحدة (انظر الخطوة التالية).</div>
+
+<h2>1) مصفوفة المراحل</h2>
+<table>
+<tr><th>#</th><th>المرحلة</th><th>التسليم</th><th>الحالة</th></tr>
+<tr><td>0</td><td>الأساس والمعايرة</td><td>مراجعة الخطط المقرّة؛ تجهيز البيئة؛ قاعدة بيانات + هيكلة الحزم</td><td class="ok">مكتمل</td></tr>
+<tr><td>1</td><td>مخطط البيانات</td><td><code>database/schema.sql</code> + ترحيلات 001–008 (RBAC، الجلسات، nonce، وضع الجهاز، بيانات الاسترداد، تأكيدات الاعتماد)</td><td class="ok">مكتمل</td></tr>
+<tr><td>2</td><td>محرك القدرات</td><td><code>capability-engine</code>: ملف قدرات، قيود، دعم/دعم مشروط/غير مجدٍ</td><td class="ok">مكتمل</td></tr>
+<tr><td>3</td><td>محرك السياسات</td><td><code>policy-engine</code>: نموذج Policy، اللقطة (Snapshot)، الاستثناءات</td><td class="ok">مكتمل</td></tr>
+<tr><td>4</td><td>طبقة التوافق</td><td><code>compatibility</code>: جدول آليات لكل جيل Android 7→15 + عقارات API + <b>إصلاح أخير RESTRICT لـGPS/LOCATION</b></td><td class="ok">مكتمل (B2/بعد التجربة الحية)</td></tr>
+<tr><td>5</td><td>محرك التصديق</td><td><code>verification-engine</code>: استشعار حي + بوابة الأدلة؛ SIMULATED لا يمرّ</td><td class="ok">مكتمل</td></tr>
+<tr><td>6</td><td>التطبيق والتدفق</td><td>run_director_apply + بوابات الحيازة/الاستثناءات + لقطة الالتزام (compliance)</td><td class="ok">مكتمل</td></tr>
+<tr><td>7</td><td>الاسترداد</td><td>R1/R2 (تأكيد) · R3 (REFUSED صادق) · R4؛ بيانات DPAPI</td><td class="ok">مكتمل</td></tr>
+<tr><td>8</td><td>التدقيق وRBAC</td><td>سلسلة تدقيق HMAC؛ أدوار وصول؛ تأكيدات بأسامي</td><td class="ok">مكتمل</td></tr>
+<tr><td>9</td><td>القنوات</td><td>قناة ADB + قناة AlpOps (DPC) + nonce/مكافحة إعادة الإرسال</td><td class="ok">مكتمل</td></tr>
+<tr><td>10</td><td>وكيل الأندرويد</td><td><code>android-agent</code>: وكيل DPC (قيود خارج نطاق ADB)</td><td class="ok">مكتمل (APK ينتج بأدوات SDK)</td></tr>
+<tr><td>11</td><td>CLI/الإدارة</td><td><code>scripts/alp.py</code> (سياسات/تسجيل/تطبيق/تقرير)</td><td class="ok">مكتمل</td></tr>
+<tr><td>12</td><td>API</td><td><code>alp_api.py</code> + فحص <code>api_smoke.py</code></td><td class="ok">مكتمل</td></tr>
+<tr><td>13</td><td>واجهة سطح المكتب Tk</td><td>الإصدار العربي الأول (احتياطي)</td><td class="ok">مكتمل (احتياط)</td></tr>
+<tr><td>14</td><td>الواجهة Qt (RTL)</td><td><code>app_qt.py</code>: 16 صفحة عربية، سمة داكنة، تصدير QR… طُوِّرت على مرحلتين (15→16 صفحة)</td><td class="ok">مكتمل</td></tr>
+<tr><td>15</td><td>محاكاة الأسطول</td><td><code>tests/sim/test_fleet_sim.py</code></td><td class="ok">مكتمل</td></tr>
+<tr><td>16</td><td>اختبارات الوحدة/التكامل</td><td>تغطية شاملة؛ مجموع الاختبارات 129 OK بعد الدفعات الأخيرة</td><td class="ok">مكتمل</td></tr>
+<tr><td>17</td><td>تصحيح UX/الاستقرار</td><td>smoke نوافذ، إصلاحات event loop، قفل الأدوات أثناء العملية</td><td class="ok">مكتمل</td></tr>
+<tr><td>18</td><td>الحزم (PyInstaller)</td><td>portable + مثبّت (7 إعادة بناء موثقة في التغيير التراكمي)</td><td class="ok">مكتمل (إعادة بناء #7 نهائي)</td></tr>
+<tr><td>19</td><td>المثبّت لكل مستخدم</td><td>تثبيت/إزالة نظيفة، إعادة محاولة لمقاومة AV، حفظ بيانات المستخدم</td><td class="ok">مكتمل</td></tr>
+<tr><td>20</td><td>التحقق من الإصدار</td><td>SHA-256 + وثائق الإصدار (تتوفر الأرجحة لكل إعادة بناء)</td><td class="ok">مكتمل (SHA محدَّث #7)</td></tr>
+<tr><td>21</td><td>إعادة تصميم فتح-وحدة التحكم</td><td>إزالة تسجيل الدخول التفاعلي؛ حيازة بيان الجهاز؛ R1/R2 بأسامي</td><td class="ok">مكتمل</td></tr>
+<tr><td>22</td><td>الاكتشاف التلقائي</td><td><code>attached_detailed()</code> + شريط الأجهزة + ملء التسجيل تلقائيًا</td><td class="ok">مكتمل</td></tr>
+<tr><td>23</td><td>التصلّب (P0)</td><td>إخفاء نوافذ الأوامر؛ سجلّ <code>logger.py</code>؛ فشل الإقلاع غير صامت</td><td class="ok">مكتمل</td></tr>
+<tr><td>24</td><td>تجربة العينة الفيزيائية</td><td>SM-J337P: اكتشاف/تسجيل/هوية موسّعة/فحص مسبق/استرداد/تطبيق</td><td class="ok">مكتمل (PILOT_DEVICE_TEST_REPORT.html)</td></tr>
+<tr><td>25</td><td>سدّ فجوات التفويض (B2–B5)</td><td>هوية موسّعة · تنظيف الكود · لقطة الالتزام · متطلبات وقسائم gitignore · <b>إصلاح RESTRICT</b> · جرد التطبيقات · سياسات مخصصة + معالج FULL LOCKDOWN</td><td class="ok">مكتمل (129 اختبارًا)</td></tr>
+<tr><td>26</td><td>الإصدار النهائي</td><td>إعادة البناء #7، نسخ RELEASE، SHA-256 جديد، تحديث السجل/التقرير</td><td class="ok">مكتمل</td></tr>
+<tr><td>27</td><td>التقارير النهائية</td><td>هذا الملف + التقريرين التاليين + دليل المستخدم</td><td class="ok">مكتمل</td></tr>
+</table>
+
+<h2>2) أرقام ختامية</h2>
+<ul>
+<li>اختبارات: <b>129 OK</b> (بالزي إلى 5 اختبارات قفل RESTRICT للموقع).</li>
+<li>سياسات: 6 مرسّاة + سياسات مخصصة <code>POL-CUST-*</code> + معالج FULL LOCKDOWN.</li>
+<li>أجهزة: عينة فيزيائية SM-J337P (<code>AVD-520041d74247b58b</code>) بدليل REAL_DEVICE وسلسلة أدلة كاملة (آخرها <code>EV-20260913-F35BF615</code>).</li>
+<li>لقطة الالتزام: مكتوبة (22 جناحًا، <code>checked_at 2026-09-13 01:05:19</code>).</li>
+<li>حزم: portable 56,007,781 B · مثبّت 63,526,775 B · SHA-256 محدَّث.</li>
+</ul>
+
+<h2>3) إنجاز الخطوة الحرجة (Device Owner / DPC)</h2>
+<div class="ok">
+<b>تم تنفيذ القفل الفعلي من داخل أندرويد:</b> <code>dpm set-device-owner com.alp.agent/.AlpDeviceAdminReceiver</code> → Success.
+الجهاز SM-J337P محكوم الآن بقيود نظام فعّالة ومستديمة: <code>no_config_wifi · no_bluetooth · no_config_tethering ·
+no_usb_file_transfer · no_config_vpn · no_unmute_microphone · no_safe_boot · no_factory_reset ·
+no_install_unknown_sources · no_modify_accounts · no_share_location</code> + <code>disableCamera=true</code>
+(تُثبَّت عبر <code>dumpsys device_policy</code>)؛ ووُقِفت آفة الوكيل التي كانت تمسح القيود عند كل إعادة تشغيل (غياب ملف
+التراجع كان يُفسَّر كأمر مسح — أُصلح في <code>AlpOps.java</code> وأُعيد بناء الوكيل بنفس التوقيع).<br>
+تطبيق الخلفية الصادق بعد القفل: <code>apply POL-FULL_LOCKDOWN real</code> → <code>stage=COMPLETE</code> ·
+<code>source=REAL_DEVICE</code> · <code>evidence EV-20260913-F35BF615</code> · <code>audit AUD-7E372EC40A18</code> ·
+ملاحظات حيّة WIFI=OFF · MOBILE_DATA=OFF · LOCATION=OFF · CAMERA=RESTRICTED · verification=UNKNOWN (صدقًا — probe يقرأ 4 أجنحة فقط).
+</div>
+
+<h2>4) المتبقي الوحيد (قرار مفتوح)</h2>
+<div class="box">
+<b>تجميد مسار ADB/DEVELOPER_OPTIONS</b> داخل السياج (<code>no_debugging_features</code>) — يقطع جسر الإدارة
+نهائيًا ويُقفل الجهاز كليًا؛ أبقَيْناه مفتوحًا عمدًا بانتظار اعتماد تدميري صريح. بعد القرار تُرفع الحالة إلى <b>PRODUCTION-READY</b>.
+</div>
+
+<h2>5) الملحقات</h2>
+<p><small>
+<code>FINAL_PLATFORM_IMPLEMENTATION_REPORT.html</code> · <code>USER_AND_ADMIN_GUIDE_AR.html</code> ·
+<code>PILOT_DEVICE_TEST_REPORT.html</code> · <code>RELEASE/FINAL_RELEASE_VALIDATION_REPORT.html</code> ·
+<code>RELEASE/IMPLEMENTATION_CHANGELOG.md</code> · <code>RELEASE/SHA256SUMS.txt</code>
+</small></p>
+</div></body></html>

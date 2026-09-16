@@ -24,13 +24,14 @@ from . import VendorAdapter, GenericAdapter, SamsungAdapter
 # Known product families (name-based; additive, never exhaustive)
 # ---------------------------------------------------------------------------
 _SAMSUNG_FAMILIES = [
-    {"family": "J3 (2018+)", "pattern": r"SM-J33",
-     "notes": "J337P = Android 9 / Knox 3.3 target of record"},
-    {"family": "J3 (2017)", "pattern": r"SM-J3[0-9]",
-     "notes": "Android 7 floor reference (SM-J320FN)"},
+    {"family": "J3 (2018+)", "pattern": r"SM-J33", "lab_versions": [9],
+     "notes": "Family reference member SM-J337P = Android 9 / Knox 3.3 targeted lab pilot"},
+    {"family": "J3 (2017)", "pattern": r"SM-J32", "lab_versions": [7],
+     "notes": "Android 7 floor reference member SM-J320FN"},
     {"family": "J5", "pattern": r"SM-J5", "notes": ""},
     {"family": "J7", "pattern": r"SM-J7", "notes": ""},
-    {"family": "A", "pattern": r"SM-A[0-9]", "notes": "SM-A145P dual-OS (14/15) lab reference"},
+    {"family": "A", "pattern": r"SM-A[0-9]", "lab_versions": [14, 15],
+     "notes": "Lab reference member SM-A145P dual-OS (14/15)"},
     {"family": "M", "pattern": r"SM-M[0-9]", "notes": ""},
     {"family": "S", "pattern": r"SM-S[0-9]", "notes": ""},
     {"family": "Note", "pattern": r"SM-N[0-9]", "notes": ""},
@@ -105,11 +106,14 @@ def classify(manufacturer: str = "", model: str = "", android_version: int = 0,
             cls.notes = fam["notes"]
         cls.product_line = "Galaxy"
         cls.reference_tier = "GENERAL"
-        if re.match(r"SM-J3[0-9]", m) and cls.android_version in (7, 9):
+        # LAB_REFERENCE is FAMILY-based, not model-based: an identical crew member
+        # of a family whose lab evidence exists (on the same Android version)
+        # inherits the family's reference tier. Never a single-device hardcode.
+        if fam and cls.android_version in (fam.get("lab_versions") or []):
             cls.reference_tier = "LAB_REFERENCE"
-        if m == "SM-J337P" or m == "SM-J337P":
-            cls.reference_tier = "LAB_REFERENCE"
-            cls.notes = (cls.notes + " — Android 9 / Knox 3.3 pilot device of record").strip()
+            cls.notes = (cls.notes +
+                         " — lab-reference family/version (evidence exists for a "
+                         "device of this class on the same Android version)").strip()
     elif _is_google_aosp(model, manufacturer, build_fingerprint):
         cls.vendor_id = "generic"
         cls.vendor_label = "AOSP / Google"

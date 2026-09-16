@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير الإصدار النهائي — حارس الموبايل (RC)</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}.warn{color:#ffd479;font-weight:600}.fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12.5px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>تقرير الإصدار النهائي — Release Candidate</h1>
+<p><small>2026-09-13 · v1.0.0 (ALP — إعادة التسمية «حارس الموبايل» مجدولة) · قائمة القبول §57 موسومة بالدليل لا بالادعاء.</small></p>
+
+<h2>1) المخرجات المُتحقق منها اليوم</h2>
+<table>
+<tr><th>المخرج</th><th>التحقق</th></tr>
+<tr><td>المحمول + المثبت</td><td class="ok">SHA256 سليم لكليهما (أُعيد الفحص اليوم)</td></tr>
+<tr><td>السويتّة</td><td class="ok">129 OK (أُعيد التشغيل اليوم)</td></tr>
+<tr><td>الوثائق §48</td><td class="ok">10 ملفات MD + 12 تقرير HTML</td></tr>
+<tr><td>التقارير §49</td><td class="ok">الجدوى + التنفيذ +･ الجهاز + الطوارئ + الفكّ + هذا التقرير (الأمن الخارجي: مؤجل)</td></tr>
+</table>
+
+<h2>2) قائمة القبول §57</h2>
+<table>
+<tr><th>البند</th><th>الحكم</th><th>الدليل</th></tr>
+<tr><td>EXE يعمل / يفتح بلا Crash</td><td class="ok">PASS</td><td>تشغيل دخاني موثّق + SHA سليم</td></tr>
+<tr><td>Installer يعمل</td><td class="ok">PASS</td><td>مبني + تقرير التحقق</td></tr>
+<tr><td>الواجهة عربية</td><td class="ok">PASS</td><td>9083 مطابقة عربية (Qt)</td></tr>
+<tr><td>Responsive لكل الشاشات</td><td class="warn">NOT_VERIFIED</td><td>لم يُختبر تعدد الدقات — مجدول QA لاحق</td></tr>
+<tr><td>Discovery / معلومات / قدرات</td><td class="ok">PASS</td><td>مُثبت على J3 (21 سطرًا)</td></tr>
+<tr><td>Policy Engine / Preview / Preflight</td><td class="ok">PASS</td><td>6 سياسات + 8 فحوص + اختبارات</td></tr>
+<tr><td>Real Device Verification / Evidence</td><td class="ok">PASS (آلية) — PARTIAL (تغطية 4/17)</td><td>مسبار حي + EV-/AUD-</td></tr>
+<tr><td>Agent / Management</td><td class="ok">PASS</td><td>DO + تطبيق dumpsys-مُثبت</td></tr>
+<tr><td>Recovery</td><td class="warn">PARTIAL</td><td>الآليات + الاختبارات PASS؛ الدورة الحية الكاملة مؤجلة بقرار المستخدم</td></tr>
+<tr><td>Audit / Errors / Logging</td><td class="ok">PASS</td><td>سلسلة + tamper_check + رسائل عربية</td></tr>
+<tr><td>Tests ناجحة</td><td class="ok">PASS</td><td>129 OK</td></tr>
+<tr><td>Pilot Device مختبَر</td><td class="warn">PARTIAL</td><td>الإغلاق مُثبت؛ دورة الاسترداد مؤجلة بقرار المستخدم (§13 ملغاة)</td></tr>
+<tr><td>بلا وظائف وهمية/أزرار ميتة/صفحات ناقصة</td><td class="ok">PASS</td><td>مسح desktop: مطابقة حميدة واحدة</td></tr>
+<tr><td>بلا تبعيات مفقودة / بناء ومثبت نظيفان</td><td class="ok">PASS</td><td>requirements + بناء + SHA</td></tr>
+<tr><td>Documentation مكتملة</td><td class="ok">PASS</td><td>10 MD + 12 HTML</td></tr>
+<tr><td>تدقيق أمني خارجي / حمل 1000+ / Knox</td><td class="fail">NOT_VERIFIED</td><td>مجدولة ما بعد RC — لا ادعاء</td></tr>
+</table>
+
+<h2>3) الحكم النهائي</h2>
+<div class="box">
+<b class="warn">Release Candidate مشروط — صالح للإصدار الداخلي/التجريبي، لا للإنتاج الواسع.</b>
+الشروط المعلّقة (بقرارات موثقة لا بتجاوز): دورة الاسترداد الحية (§13 — بقرار المستخدم)،
+تدقيق خارجي، إثبات حمل، Knox، إعادة التسمية (خطة ترحيل معتمدة).
+كل ما وُسم PASS أعلاه مثبت بدليل؛ كل ما وُسم غير ذلك موسوم صراحة — التزامًا بـ§50/§56.
+</div>
+
+</div></body>
+</html>

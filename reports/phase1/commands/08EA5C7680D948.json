@@ -1,0 +1,25 @@
+{
+  "cmd_id": "08EA5C7680D948",
+  "job_execution_id": 0,
+  "device_id": "AVD-LT8110260130351",
+  "action": "APPLY_POLICY",
+  "nonce": "ff48c1d26e044791afb77308e5e620e6",
+  "issued_at": 1789564364,
+  "expires_at": 1789564664,
+  "body": {
+    "policy_id": "POL-CUST-20260916-151737",
+    "version": 1,
+    "snapshot": [
+      {
+        "feature": "WIFI",
+        "desired": "BLOCK",
+        "method": "user_restriction_disable_wifi",
+        "supported": "ANDROID_VERSION_DEPENDENT",
+        "risk": "MEDIUM",
+        "fallback": "generic restrictions",
+        "exception": false
+      }
+    ]
+  },
+  "signature": "60caa764323fa7fbc452b8199cbd3a2f5e6fb1cff6b27970761f056437ab5f40"
+}

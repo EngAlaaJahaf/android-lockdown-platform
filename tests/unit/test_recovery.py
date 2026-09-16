@@ -1,4 +1,4 @@
-"""Tests for the RecoveryEngine (backend.recovery) R1..R4 + honesty invariants."""
+"""Tests for the RecoveryEngine (backend.recovery) R0..R4 + honesty invariants."""
 from __future__ import annotations
 
 import os
@@ -29,7 +29,7 @@ class RecoveryFlows(unittest.TestCase):
                 "INSERT OR IGNORE INTO devices (device_id, serial, model, android_version, "
                 "api_level, enrollment_state, device_owner_state, control_channel) "
                 "VALUES ('DEV-1','emulator-5554','sdk_gphone64_x86_64',16,36,"
-                "'PHONE_ONLY','ACTIVE','LOCAL_ADB')")
+                "'UNMANAGED','ACTIVE','LOCAL_ADB')")
 
     def tearDown(self):
         if self._prev_env is None:
@@ -38,9 +38,77 @@ class RecoveryFlows(unittest.TestCase):
             os.environ["ALP_DB"] = self._prev_env
 
     def test_modes_vocabulary(self):
-        self.assertEqual(len(RECOVERY_MODES), 4)
-        for m in ("R1_RESTORE_POINT", "R2_REPROVISION", "R3_LAB_FLASH", "R4_DIAGNOSTIC"):
+        self.assertEqual(len(RECOVERY_MODES), 5)
+        for m in ("R0_WITHDRAW", "R1_RESTORE_POINT", "R2_REPROVISION",
+                  "R3_LAB_FLASH", "R4_DIAGNOSTIC"):
             self.assertIn(m, RECOVERY_MODES)
+
+    def test_r0_blocked_without_approval(self):
+        eng = RecoveryEngine(db_path=self.db, signing_key="test-key-0001")
+        with self.assertRaises(RecoveryBlocked):
+            eng.recover("DEV-1", "R0_WITHDRAW", "SUPER_ADMIN", admin_id=1,
+                        mfa_ok=False, approval={}, serial="")
+
+    def test_r0_plan_only_not_executed(self):
+        eng = RecoveryEngine(db_path=self.db, signing_key="test-key-0001")
+        res = eng.recover("DEV-1", "R0_WITHDRAW", "SUPER_ADMIN", admin_id=1,
+                          mfa_ok=True, approval={"approved": True}, serial="")
+        self.assertEqual(res.mode, "R0_WITHDRAW")
+        self.assertEqual(res.status, "PLAN_ONLY")
+        self.assertTrue(res.details["plan"])
+        self.assertNotIn("executed", res.details)
+
+    def test_r0_exec_complete_when_owner_absent(self):
+        import unittest.mock as mock
+        from types import SimpleNamespace
+
+        def fake_run(args, timeout=40):
+            cmd = " ".join(args)
+            if "list-owners" in cmd:
+                return SimpleNamespace(returncode=0, stdout="OWNERS:\n", stderr="")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        fake_channel = lambda e, a: {"ok": True}
+        eng = RecoveryEngine(db_path=self.db, signing_key="test-key-0001",
+                             channel_send=fake_channel)
+        with mock.patch.object(rec, "_run", side_effect=fake_run):
+            res = eng.recover("DEV-1", "R0_WITHDRAW", "SUPER_ADMIN", admin_id=1,
+                              mfa_ok=True, approval={"approved": True},
+                              serial="emulator-5554", exec_=True)
+        self.assertEqual(res.status, "COMPLETE")
+        self.assertEqual(res.source, "REAL_DEVICE")
+        self.assertEqual(res.details["owners"], "OWNERS:\n")
+        with connect() as c:
+            row = c.execute("SELECT device_owner_state FROM devices "
+                            "WHERE device_id='DEV-1'").fetchone()
+            self.assertEqual(row["device_owner_state"], "NONE")
+
+    def test_r0_exec_partial_when_owner_remains(self):
+        import unittest.mock as mock
+        from types import SimpleNamespace
+
+        def fake_run(args, timeout=40):
+            cmd = " ".join(args)
+            if "list-owners" in cmd:
+                return SimpleNamespace(returncode=0,
+                                       stdout="User 0: admin=com.alp.agent/."
+                                              "AlpDeviceAdminReceiver\n",
+                                       stderr="")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        fake_channel = lambda e, a: {"ok": True}
+        eng = RecoveryEngine(db_path=self.db, signing_key="test-key-0001",
+                             channel_send=fake_channel)
+        with mock.patch.object(rec, "_run", side_effect=fake_run):
+            res = eng.recover("DEV-1", "R0_WITHDRAW", "SUPER_ADMIN", admin_id=1,
+                              mfa_ok=True, approval={"approved": True},
+                              serial="emulator-5554", exec_=True)
+        self.assertEqual(res.status, "PARTIAL")
+        self.assertIn("still present", res.reason)
+        with connect() as c:
+            row = c.execute("SELECT device_owner_state FROM devices "
+                            "WHERE device_id='DEV-1'").fetchone()
+            self.assertNotEqual(row["device_owner_state"], "NONE")
 
     def test_r1_blocked_without_approval(self):
         eng = RecoveryEngine(db_path=self.db, channel_send=lambda e, a: {"ok": True},

@@ -153,6 +153,231 @@ verify action failed at runtime.
   ALPManager.exe unchanged): first-attempt remove/overwrite of the 55 MB exe
   could fail on a transient real-time AV lock; `uninstall()` / `install()` now
   retry with backoff and report a clear error instead of failing silently.
-  **Verified live: install → immediate uninstall cleans dir/exe/shortcuts/
-  uninstall-entry on the first attempt; user data in `%LOCALAPPDATA%\ALPManager`
-  is preserved.** Setup SHA256→`82AC…61948`; portable unchanged `5533A…D9DD`.
+**Verified live: install → immediate uninstall cleans dir/exe/shortcuts/
+   uninstall-entry on the first attempt; user data in `%LOCALAPPDATA%\ALPManager`
+   is preserved.** Setup SHA256→`82AC…61948`; portable unchanged `5533A…D9DD`.
+
+## 10) Hardening pass + real-device pilot — v1.0.0 rebuild #4 (2026-09-13)
+> Rebuilt artifacts: portable 55,991,946 B, setup 63,511,653 B. New SHA256 in
+> `SHA256SUMS.txt`. Full suite now **118 tests OK**. First controlled pilot run
+> on a **real SM-J337P** device (attached via ADB).
+
+Console-window suppression (P0): every runtime subprocess (`adb`, `dumpsys`,
+`powershell`) is now launched with `CREATE_NO_WINDOW` (`backend/workflows.py`,
+`backend/channel.py`, `backend/recovery.py`,
+`verification-engine/verification_engine/probe.py`,
+`capability-engine/capability_engine/scanner.py`,
+`deployment/installer_app.py`) — no command windows ever flash on screen.
+
+Startup crash is never silent:
+- New `desktop/alp_manager/logger.py` — structured runtime logger to
+  `%LOCALAPPDATA%\ALPManager\logs\alp.log` (+ `startup-error.log`); never logs
+  secrets.
+- `desktop/run_app.py` and both UIs move the full startup into `main() -> int`,
+  catch any startup failure, write the traceback, and show the log dir instead
+  of closing invisibly.
+
+Device selection & context everywhere:
+- Devices page shows a live 5-column discovery table (الجهاز/الرقم التسلسلي/
+  الحالة/الاتصال/التسجيل) + «فتح الجهاز (تحديد)» + «إعادة البحث (ADB)».
+- An active-device banner (الجهاز المحدد) is persisted via
+  `set_active_device()/active_device()` (plain `active.json`, metadata only) and
+  mirrored into Apply/Recovery combos; probe/capability scans use the active
+  context first.
+
+Apply flow is now gated honestly:
+- New `Controller.preflight(device_id, policy)` returns a real checklist
+  (registration, policy known, ADB attach/authorization, device-policy
+  readability, Device-Owner/DPM channel warning, per-device recovery credential,
+  capability scope) with verdict PASS | CONDITIONAL | FAIL and `can_apply`.
+- The Apply page runs preflight first, locks all sensitive widgets during the
+  operation, asks for confirmation, then applies; on success the Verification
+  page shows a structured summary table (device/policy/phase/evidence source/
+  verdict/compliance/evidence_id/audit_id/chain integrity) plus the audit trail
+  with HMAC tamper check. Recovery page is similarly locked and flow-tracked.
+
+Per-device recovery credential is **auto-issued at first registration** on this
+console (`RecoveryVault.ensure_for` inside `Controller.enroll`; new
+`Controller.issue_recovery` for repair) — ownership of the issuing console is the
+possession factor; credentials stay DPAPI-encrypted and never displayed.
+
+Robustness:
+- `backend/config.signing_key()` reads the env at call time — eliminates an
+  import-order flake that froze an empty signing key and broke 3
+  `test_security.py` tests in full-suite runs only.
+- Fixed `_sync_active()` `'NoneType' has no attribute 'get'` crash on a fresh
+  database (no active device yet) — found by the packaged-EXE smoke, not by unit
+  tests.
+- Model normalization `SM_J337P` → `SM-J337P` (adb `-l` spelling) in
+  `workflows` + `Controller.detected()`.
+
+Real-device pilot results (SM-J337P, serial 520041d74247b58b):
+- ADB attach detected; UI-ready device; enrolled as `AVD-520041d74247b58b`
+  (auto ID, never hardcoded); active-device context persists across restarts.
+- `preflight POL-PHONE_ONLY` on the fresh console: PASS registration/ADB/
+  policy-read/capability checks; WARN no Device-Owner DPC (plan-only →
+  conditional lane); latest run blocks only on the missing credential in an
+  un-issued state, and auto-issuance at enrollment now clears it — honest
+  CONDITIONAL, never fabricated PASS.
+
+## 11) Error-handling hardening — v1.0.0 rebuild #5 (2026-09-13)
+> Rebuilt artifacts: portable 55,991,945 B, setup 63,509,487 B. New SHA256 in
+> `SHA256SUMS.txt`. Full suite now **119 tests OK**.
+
+Real pilot APPLY on the physical SM-J337P exposed a masking bug:
+- `Controller.apply`/`recover` passed `device_id=`/`policy=` keywords to
+  `logger.log_error()`, whose signature had no `**data` — so any real engine
+  failure raised `TypeError: log_error() got an unexpected keyword argument
+  'device_id'` and the true cause was hidden. `log_error` now forwards `**data`
+  (same contract as `log_event`); regression test
+  `test_apply_internal_error_not_masked_by_logger` ensures the real error
+  surfaces.
+- `apply`/`recover` also passed the import-frozen `config.SIGNING_KEY`; switched
+  to call-time `config.signing_key()` so a stale frozen value can never silently
+  fail signing.
+
+Pilot outcome (real device, real evidence `EV-20260913-1300D9CD`,
+`AUD-58CE3956FF20`, `stage=COMPLETE`, `source=REAL_DEVICE`): verification grades
+itself honestly — `verification=PARTIAL`, `compliance=NON_COMPLIANT`,
+`honest=false`, WIFI still `ON` — the system reports the gap instead of
+fabricating a PASS. `staged: []` is a display artifact of the injected live
+channel (chan_state not populated on that path) and does not affect evidence.
+
+## 12) Mandate gap-close: extended identity, compliance persistence, UI gaps,
+      FULL LOCKDOWN wizard, live apply green-path — v1.0.0 rebuild #6/#7
+> Rebuilt artifacts (final): portable 56,007,781 B, setup 63,526,775 B. New
+> SHA256 in `SHA256SUMS.txt`. Full suite now **129 tests OK** (124 → 129).
+> Final controlled pilot on the same physical SM-J337P.
+
+Accurate on-device identity (B2): the REAL probe now reads and stores 6 more
+evidence fields — `security_patch` (e.g. `2021-10-01`), `kernel_version`
+(`uname -r`), `bootloader`, `verified_boot` (`green`/`orange`…), `encryption`,
+`baseband`. All shown in the device page probe summary; absent values are
+honestly `""` (never guessed).
+(`verification-engine/verification_engine/probe.py`)
+
+Dead-code hygiene (B3): removed the `_not_used()` director stub and its comment
+block, the vestigial `AdapterFactory` (vendor-adapters) and unused `Optional`
+import, and the back-compat `Layer` alias (compatibility); deleted the orphan
+`backend/verification_support.py`.
+
+Compliance snapshot persistence (B4): `apply()` now writes the per-feature
+**expected vs actual** snapshot into the `compliance` table (truthfully
+`UNKNOWN` until a Device Owner proves enforcement) with FK-safe policy lookup.
+Regressions in `tests/unit/test_custom_policies.py::ComplianceSnapshotTests`.
+
+Repository hygiene (B5): `requirements.txt` (PySide6==6.11.1,
+pyinstaller==6.20.0, pytest==9.1.1), `.gitignore` covers `database/alp.db*`,
+tracked DB removed from the index (`git rm --cached`). The runtime DB stays
+`%LOCALAPPDATA%\ALPManager\alp.db`.
+
+Honest apps inventory: new `workflows.apps(serial)` + `Controller.apps()` read the
+real `pm list packages`/`-3` list (third-party vs system) — presented as a
+read-only inventory with the honest caveat that uninstall blocking only becomes
+possible after Device Owner via the DPC agent (page «التطبيقات»).
+
+Custom-policy builder + FULL LOCKDOWN wizard:
+- `workflows.create_custom_policy(name, category, features, risk)` persists
+  `POL-CUST-YYYYMMDD-HHMMSS` policies (requirements JSON) that
+  `resolve_policy()` rehydrates; validated against `FEATURES`/categories.
+- Policies page gains a checked builder grid over 27 blockable features
+  (category «عامة/تقييد/اتصالات…») and a **Full Lockdown wizard**
+  (`FullLockdownWizard`): 25 features pre-checked, creates a
+  FULL_LOCKDOWN/CRITICAL custom policy in one step.
+
+Real live apply green-path (the run that matters):
+- `POL-PARTIAL` (corporate-derived) had `GPS`/`LOCATION: RESTRICT` lanes, but the
+  compatibility layer only mapped BLOCK for them → every REAL apply on the
+  attached SM-J337P stopped at the honest gate
+  `ApplyBlocked: ... 2 unresolved exceptions: ['GPS','LOCATION']`.
+- Root cause fixed: `GPS`/`LOCATION` now map `RESTRICT` → the same
+  `user_restriction_disable_location_services` mechanism as BLOCK (parity rule,
+  exactly like `MOBILE_DATA`). New `tests/unit/test_restrict_location.py` (5
+  tests) locks the parity and the API≥23 floor. **Deployment PIPELINE first
+  real end-to-end run on the physical device completed**:
+  `stage=COMPLETE`, `ok=True`, `source=REAL_DEVICE`, evidence
+  `EV-20260913-947AA082`, audit `AUD-2B48F422A6F7`, compliance row persisted
+  (`result=UNKNOWN`, honest — DPC not yet provisioned). Earlier blocked run and
+  full debug chain preserved in the internal session notes.
+
+Full suite: **129 tests OK** (`python scripts/run_tests.py`). Both artifacts
+rebuilt (portable + installer), smoke-launched offscreen (clean), copied to
+`RELEASE/`, SHA256 regenerated.
+
+## 13) On-device DPC lockdown — Device Owner installed on the physical SM-J337P
+> Post-release live step. No desktop EXE rebuild (no desktop code changed);
+> the Android agent was rebuilt (same signature) and reinstalled over its DPC.
+
+- **Device Owner provisioned for real**: `adb shell dpm set-device-owner
+  com.alp.agent/.AlpDeviceAdminReceiver` → Success (user 0,
+  `provisioningState: 3`). Do-owner survives the update reinstall (same keystore
+  `alp`, `apksigner` cert match).
+- **Critical agent bug fixed (`android-agent/app/src/com/alp/agent/AlpOps.java`)**:
+  `processPending` treated the **absence** of a CLEAR/GET/APPLY envelope file as a
+  pending request — so any app resume with no `alp_rollback.json` present ran
+  `clearPolicy("{}")` and wiped every just-applied restriction seconds later
+  (observed in logcat: APPLY applied 17 lanes at `04:45:25`, CLEAR wiped at
+  `04:45:47`). Now every command requires its file to physically exist, and
+  `clearPolicy` refuses to run without an explicit CLEAR envelope
+  (`clear_rejected_no_envelope`). Envelope `cmd_id` dedup via
+  `shared_prefs/alp_processed` still holds.
+- **Applied on the device** via envelope `REAL-EXEC-20260913-03` (17 BLOCK lanes
+  collapsing to 12 distinct OS tokens). Ground-truth `dumpsys device_policy`
+  on `520041d74247b58b` now shows active:
+  `no_config_wifi · no_bluetooth · no_config_tethering · no_usb_file_transfer ·
+  no_config_vpn · no_unmute_microphone · no_safe_boot · no_factory_reset ·
+  no_install_unknown_sources · no_modify_accounts · no_share_location` +
+  `disableCamera=true` (`setCameraDisabled`). Behavioral proof: `svc bluetooth
+  disable` now killed (rc=137) by the DO restriction.
+- **Honest backend run after lockdown**: `apply POL-FULL_LOCKDOWN real` via the
+  real ADB channel → `stage=COMPLETE`, `source=REAL_DEVICE`, evidence
+  `EV-20260913-F35BF615`, audit `AUD-7E372EC40A18`. Live observations
+  WIFI=OFF · MOBILE_DATA=OFF · LOCATION=OFF · CAMERA=RESTRICTED.
+  `verification=UNKNOWN` honestly: the platform probe reads 4 lanes; the other 13
+  are proven by the dumpsys evidence above. Compliance `NON_COMPLIANT` (missing
+  unreadable lanes) — no fabricated PASS.
+- **Deliberately left open**: ADB / DEVELOPER_OPTIONS
+  (`no_debugging_features`) is NOT in the envelope — blocking it cuts the
+  management bridge permanently; awaiting explicit destructive authorization.
+
+## 14) Emergency recovery architecture - management-channel protection (DO NOT cut the bridge)
+> Response to the EMERGENCY_DEVICE_RECOVERY mandate: after the SM-J337P physically
+> kept its USB-cable but lost its ADB interface, no future policy is allowed to
+> sever the only management channel without a demonstrated recovery channel.
+
+- **Management Channel Protection (`backend/management_channel.py`)**: new layer
+  defining CRITICAL_FEATURES = {ADB, DEVELOPER_OPTIONS, USB, USB_NETWORKING}.
+  `management_channel_status()` reports the trio `adb_live`,
+  `dpc_in_app_rollback`, `recovery_engine` (credential issued to the device in
+  `recovery_credentials`). `check_recovery_channel()` returns a dict; in `strict`
+  mode it raises `RecoveryChannelError` when a REAL delivery targets a critical
+  lane and no channel is usable.
+- **Gate wired into `backend/director.py apply()`**: every apply with
+  `evidence_src == "REAL_DEVICE"` runs the gate; on `RecoveryChannelError` the
+  apply is blocked (`ApplyBlocked`) instead of severing the bridge. Gate note is
+  appended to the apply even when it passes (`recovery-channel-check: ...`).
+  Env `ALP_DPC_IN_APP_ROLLBACK=1` enables the in-app channel (miroir of the
+  rebuilt agent).
+- **In-app rollback added to the agent** (`MainActivity` ROLLBACK /
+  "إلغاء القيود" button ->
+  `AlpOps.localRollback()`): builds a `UI-ROLLBACK-<ts>` CLEAR envelope and calls
+  `clearPolicy` from on-device UI - a non-ADB recovery path independent of the
+  host channel. Agent rebuilt (25,039 B, same signature); install blocked by the
+  very transport loss it mitigates.
+- **Device restore tooling** (host side, not signed as a bypass - plain
+  `adb shell dpm remove-active-admin`, the official path): `restore_default.py`
+  pushes CLEAR_POLICY envelope `RESTORE-20260913-01` as
+  `/data/local/tmp/alp_rollback.json`, verifies restrictions cleared, removes the
+  device owner, uninstalls `com.alp.agent`. Triggered automatically by
+  `watch_and_restore.py` (polling + `adb-server` restart every 90 s) the moment a
+  shell answers.
+- **Tests**: 9 new offline tests for the gate (`tests/unit/test_management_channel.py`
+  - lacks, strict/non-strict, adb-live, in-app, credential-engine paths); fixed a
+  real Windows resource bug found by them: `backend.db.connect()` `with`-block
+  only scopes a transaction, the handle stayed open and locked temp DBs (now
+  closed explicitly). `test_director` REAL_DEVICE cases now require an issued
+  recovery credential (real-world behavior). Full suite: **129 tests OK**.
+- **Never applied by either tool**: ADB/DEVELOPER_OPTIONS blocking, factory
+  reset, FRP/Knox bypass. The device keeps its restrictions (device physically
+  alive via PnP, MTP, RNDIS) until it reappears on ADB; classify recovery
+  status: BLOCKED (transport), data preserved.

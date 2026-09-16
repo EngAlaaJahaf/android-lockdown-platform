@@ -78,6 +78,18 @@ class TestDirector(unittest.TestCase):
             cap.states[f] = "SUPPORTED"
         return cap
 
+    def _grant_recovery(self, device_id="LAB-0001"):
+        """Real REAL deliveries on critical lanes need a recovery channel (mandate)."""
+        from backend.db import connect
+        with connect() as c:
+            c.execute("INSERT OR IGNORE INTO devices (device_id, manufacturer, model, "
+                      "android_version, api_level) VALUES (?,?,?,?,?)",
+                      (device_id, "Samsung", "SM-A145P", 15, 35))
+            c.execute("INSERT OR REPLACE INTO recovery_credentials "
+                      "(device_id, recovery_id, credential_ciphertext, nonce) "
+                      "VALUES (?,?,X'0102030405060708090a0b0c',X'01020304050a0b0c0d010203')",
+                      (device_id, "AAAA-AAAA"))
+
     def test_pipeline_happy_path(self):
         from capability_engine import CapabilityProfile, CapabilityState
         cap = CapabilityProfile(device_id="LAB-0001", android_version=15, api_level=35,
@@ -97,6 +109,7 @@ class TestDirector(unittest.TestCase):
                     for r in snap.resolved}
         d = director.Director(resolve_fn=resolve, verify_fn=VerificationEngine(_observe).verify,
                               channel_send=FakeChannel().send, signing_key="director-test-key")
+        self._grant_recovery()
         res = d.apply("LAB-0001", pol, cap,
                       compat_layer=AndroidCompatibilityLayer(35), evidence_src="REAL_DEVICE")
         self.assertEqual(res.stage, "COMPLETE")
@@ -150,6 +163,7 @@ class TestDirector(unittest.TestCase):
             return obs
         d = director.Director(resolve_fn=resolve, verify_fn=VerificationEngine(_observe).verify,
                               channel_send=FakeChannel().send, signing_key="k")
+        self._grant_recovery()
         res = d.apply("LAB-0001", pol, cap, compat_layer=AndroidCompatibilityLayer(35),
                       evidence_src="REAL_DEVICE")
         self.assertEqual(res.verification.result, "PARTIAL")

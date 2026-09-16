@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>معمارية الاسترداد — حارس الموبايل (PHASE 5)</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}.warn{color:#ffd479;font-weight:600}.fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12.5px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>معمارية الاسترداد — PHASE 5</h1>
+<p><small>2026-09-13 · الاسترداد جزء أساسي من المعمارية (§20)، لا ميزة ثانوية — كل مسار أدناه منفَّذ ومُختبَر.</small></p>
+
+<h2>1) القاعدة الذهبية: إثبات قناة الاسترداد قبل أي إغلاق (§20, §40)</h2>
+<div class="box">
+<code>backend/management_channel.py</code> — قبل أي تسليم <code>REAL_DEVICE</code> يمسّ المسارات الحرجة
+(<code>ADB, DEVELOPER_OPTIONS, USB, USB_NETWORKING</code>)، يجب إثبات قناة بديلة:
+(a) وصلة <code>adb</code> حية قابلة للاختبار، أو (b) زر استرداد داخل الوكيل، أو (c) شهادة استرداد صادرة
+والمحرك قادر على العمل مستقلًا عن المسار المعطَّل. بلا قناة → <code>ApplyBlocked</code> قبل أي إرسال —
+مبرمج في <code>backend/director.py:122-135</code> ومغطى بـ9 اختبارات.
+</div>
+
+<h2>2) أوضاع محرك الاسترداد (§21 — <code>backend/recovery.py</code>)</h2>
+<table>
+<tr><th>الوضع</th><th>السلوك</th><th>التفويض</th><th>التحقق</th></tr>
+<tr><td><b>R1_RESTORE_POINT</b></td><td>يبني بيان <code>CLEAR_POLICY</code> موقّعًا ويرسله عبر <code>channel_send</code>؛ يقرأ المسبار بعده: بلا قيود → <code>COMPLETE</code>، بقايا → <code>PARTIAL</code>، بلا قراءة → <code>PLAN_ONLY</code> الصادق (لا ادعاء)</td><td><code>RECOVER</code> + شهادة الحيازة</td><td>مسبار حي + <code>REC-/AUD-</code></td></tr>
+<tr><td><b>R2_REPROVISION</b></td><td>خطة من 3 خطوات (<code>user_setup_complete=0 → set-device-owner → =1</code>) + مسار QR؛ التنفيذ فقط بـ<code>exec=True</code> وموافقة</td><td><code>RECOVER</code> + شهادة</td><td>نتائج الخطوات</td></tr>
+<tr><td><b>R3_LAB_FLASH</b></td><td class="fail">مرفوض حكمًا دائمًا — <code>REFUSED_GOVERNANCE_LAB_ONLY</code> (مختبر فقط: مراجعة ثنائية + ملفات فريمور)؛ غير قابل للوصول من التطبيق تصميمًا</td><td><code>FIRMWARE</code> + مزدوجة</td><td>حدث الرفض نفسه مُدوَّن</td></tr>
+<tr><td><b>R4_DIAGNOSTIC</b></td><td>قراءة فقط: <code>getprop</code> + <code>dumpsys device_policy</code> + <code>state.json</code> → تقرير JSON</td><td><code>VIEW</code></td><td>لا تغيير أصلًا</td></tr>
+</table>
+<p>ثوابت الصدق: PASS مستحيل بلا <code>evidence_id</code> وقراءة <code>REAL_DEVICE</code>؛ كل نتيجة — حتى الرفض — مربوطة بسلسلة التدقيق.</p>
+
+<h2>3) مسارا الاسترداد على الجهاز (الوكيل)</h2>
+<table>
+<tr><th>المسار</th><th>الآلية</th></tr>
+<tr><td>بيان <code>CLEAR_POLICY</code> عبر ADB</td><td>يُدفع <code>/data/local/tmp/alp_rollback.json</code> → إيقاظ (بث <code>CLEAR_POLICY</code> أو <code>am start MainActivity</code>) → <code>AlpOps.clearPolicy</code> يمسح القيود النشطة فعلًا + الكاميرا → <code>files/state.json</code> دليلًا</td></tr>
+<tr><td>زر ROLLBACK داخل التطبيق</td><td><code>MainActivity</code> → <code>AlpOps.localRollback()</code> → نفس مسار <code>clearPolicy</code> ببيان <code>UI-ROLLBACK-&lt;ts&gt;</code> — يعمل بلا حاسوب/ADB/USB (مُعاد بناؤه في <code>alp-agent.apk</code>)</td></tr>
+<tr><td>قفل الأمان</td><td><code>clearPolicy</code> يرفض العمل بلا بيان صريح — الغياب لا يُفسَّر كمسح (إغلاق ثغرة المسح-عند-الاستئناف)</td></tr>
+</table>
+
+<h2>4) اختبار الاسترداد الإلزامي (§41)</h2>
+<div class="box">
+قبل اعتبار أي جهاز <code>COMPLIANT</code>: تطبيق → تحقق → استرداد → تحقق من الاسترداد.
+الدورة مغطاة اختباريًا (سويتّة الاسترداد + بوابة القناة)؛ الدورة الحية الكاملة على النموذج معلّقة على عودة الجهاز
+(<code>BLOCKED</code> صادق، بلا ادعاء — <code>EMERGENCY_DEVICE_RECOVERY_REPORT.html</code>).
+</div>
+
+</div></body>
+</html>

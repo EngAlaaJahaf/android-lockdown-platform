@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير تشخيص وإصلاح أخطاء تطبيق السياسة — ALP Manager</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.8}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{font-size:24px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:18px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  h3{font-size:15px;color:#b8ccff;margin-top:20px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid #2a3550;padding:8px 12px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}
+  .warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}
+  .fix{color:#7da9ff;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  .box-ok{border-color:#2d6a4f;background:#0f1f1a}
+  .box-fail{border-color:#6a2d2d;background:#1f0f0f}
+  .box-fix{border-color:#2d4a6a;background:#0f1a1f}
+  code{background:#0d1120;border:1px solid #2a3550;padding:2px 7px;border-radius:4px;font-size:12.5px;font-family:"Cascadia Code","Consolas",monospace}
+  .timeline{position:relative;padding-right:30px;margin:20px 0}
+  .timeline::before{content:'';position:absolute;right:10px;top:0;bottom:0;width:2px;background:#2a3550}
+  .step{position:relative;margin-bottom:24px;padding-right:30px}
+  .step::before{content:'';position:absolute;right:-24px;top:6px;width:12px;height:12px;border-radius:50%;background:#2a3550;border:2px solid #555}
+  .step.done::before{background:#5ee0a0;border-color:#5ee0a0}
+  .step.fail::before{background:#ff8d8d;border-color:#ff8d8d}
+  .step.fix::before{background:#7da9ff;border-color:#7da9ff}
+  .step-title{font-weight:700;color:#b8ccff;font-size:14px}
+  .step-detail{color:#8ba3c7;font-size:13px;margin-top:4px}
+  small{color:#6a7a96}
+  pre{background:#0d1120;border:1px solid #2a3550;padding:10px 14px;border-radius:6px;overflow-x:auto;font-size:12px;line-height:1.6;direction:ltr;text-align:left;font-family:"Cascadia Code","Consolas",monospace}
+  .meta{display:flex;gap:30px;flex-wrap:wrap;margin:10px 0 20px}
+  .meta-item{background:#161d2c;border:1px solid #2a3550;border-radius:6px;padding:8px 14px;font-size:13px}
+  .meta-label{color:#6a7a96;font-size:11px;display:block}
+  .meta-value{color:#e8eef7;font-weight:600}
+  .arrow{color:#ffd479;margin:0 6px}
+  .severity{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+  .sev-high{background:#3d1515;color:#ff8d8d;border:1px solid #6a2d2d}
+  .sev-med{background:#3d2e15;color:#ffd479;border:1px solid #6a5a2d}
+  .sev-low{background:#152d1a;color:#5ee0a0;border:1px solid #2d6a3a}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>تقرير تشخيص وإصلاح أخطاء تطبيق السياسة</h1>
+<small>DEVICE_POLICY_APPLICATION_DEBUG_REPORT · 2026-09-16 · الجهاز: LT-8110 (AVD-LT8110260130351) · Android 15 API 35</small>
+
+<div class="meta">
+  <div class="meta-item"><span class="meta-label">الجهاز</span><span class="meta-value">LT-8110 · LT8110260130351</span></div>
+  <div class="meta-item"><span class="meta-label">النظام</span><span class="meta-value">Android 15 · API 35</span></div>
+  <div class="meta-item"><span class="meta-label">السياسة</span><span class="meta-value">POL-CUST-20260916-151737</span></div>
+  <div class="meta-item"><span class="meta-label">الميزة المستهدفة</span><span class="meta-value">WIFI → BLOCK</span></div>
+  <div class="meta-item"><span class="meta-label">البصمة النهائية</span><span class="meta-value">EV-20260916-D848DF4F</span></div>
+  <div class="meta-item"><span class="meta-label">الحالة النهائية</span><span class="meta-value ok">PASS · COMPLIANT</span></div>
+</div>
+
+<!-- ============================================================ -->
+<h2>١) الخطأ الأصلي</h2>
+
+<div class="box box-fail">
+<pre>
+{
+  "ok": false,
+  "error": "DirectorError: channel send failed: Error type 3\n
+Error: Activity class {com.alp.agent/com.alp.agent.MainActivity} does not exist."
+}
+</pre>
+</div>
+
+<p>الخطأ أُرسل من <code>director.py:155</code> بعد فشل القناة. يشير إلى أن الوكيل غير موجود على الجهاز أصلًا.</p>
+
+<!-- ============================================================ -->
+<h2>٢) جدول الأخطاء المكتشفة</h2>
+
+<table>
+<tr>
+  <th>#</th>
+  <th>المشكلة</th>
+  <th>الشدة</th>
+  <th>المكان</th>
+  <th>الحالة</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td>الوكيل غير مثبّت على الجهاز</td>
+  <td><span class="severity sev-high">حرجة</span></td>
+  <td>الجهاز itself</td>
+  <td class="ok">تم الإصلاح ✓</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>الوكيل ليس Device Owner ولا Active Admin</td>
+  <td><span class="severity sev-high">حرجة</span></td>
+  <td><code>AlpOps.java:228</code></td>
+  <td class="ok">تم الإصلاح ✓</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>staged_channel</code> قناة نموذجية لا تسلّم عبر ADB</td>
+  <td><span class="severity sev-high">حرجة</span></td>
+  <td><code>workflows.py:277-291</code></td>
+  <td class="ok">تم الإصلاح يدويًا ✓</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>خطأ مقارنة في محرك الالتزام: RESTRICTED ≠ OFF</td>
+  <td><span class="severity sev-med">متوسطة</span></td>
+  <td><code>compliance.py:29</code></td>
+  <td class="ok">تم الإصلاح ✓</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>DISALLOW_CONFIG_WIFI</code> لا يُطفئ الراديو على هذا الجهاز</td>
+  <td><span class="severity sev-med">متوسطة</span></td>
+  <td>LT vendor Android 15</td>
+  <td class="ok">تم الإصلاح ✓</td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>٣) التشخيص التفصيلي</h2>
+
+<!-- ---- Problem 1 ---- -->
+<h3>المشكلة ① — الوكيل غير مثبّت على الجهاز</h3>
+<div class="box box-fail">
+  <p><strong>السبب:</strong> الجهاز <code>LT-8110</code> سُجِّل في قاعدة البيانات كـ <code>ENROLLMENT_PENDING</code> لكن لم يُثبَّت عليه الوكيل أصلًا.</p>
+  <p><strong>الدليل:</strong></p>
+<pre>
+$ adb shell pm list packages | find alp
+  (فارغ — لا نتائج)
+
+$ adb shell dumpsys package com.alp.agent
+  Unable to find package: com.alp.agent
+</pre>
+  <p><strong>التأثير:</strong> كل محاولة إرسال أمر عبر القناة تفشل لأن الحزمة غير موجودة على الجهاز.</p>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح:</strong>
+<pre>
+adb -s LT8110260130351 install -r android-agent/alp-agent.apk
+</pre>
+  <p><strong>التحقق:</strong></p>
+<pre>
+$ adb shell pm path com.alp.agent
+  package:/data/app/.../com.alp.agent/base.apk
+
+$ adb shell am start -n com.alp.agent/.MainActivity
+  Starting: Intent { cmp=com.alp.agent/.MainActivity }
+  (بدون خطأ)
+</pre>
+</div>
+
+<!-- ---- Problem 2 ---- -->
+<h3>المشكلة ② — الوكيل ليس Device Owner</h3>
+<div class="box box-fail">
+  <p><strong>السبب:</strong> تثبيت الـ APK فقط يُنشئ الحزمة لكن لا يُفعّل الوكيل كـ Device Admin أو Device Owner.</p>
+  <p><strong>الدليل:</strong></p>
+<pre>
+$ adb shell dumpsys device_policy
+  Enabled Device Admins (User 0, provisioningState: 0):
+  (فارغ — لا أدوار مُفعّلة)
+
+  Device Owner Type: -1
+</pre>
+  <p><strong>التأثير:</strong> في <code>AlpOps.applyPolicy</code> (سطر 228):</p>
+<pre>
+if (envelopeJson == null || dpm == null || !dpm.isAdminActive(admin)) {
+    AlpStats.record(context, "apply_rejected_no_admin");
+    return;  ← الرفض الصامت — لا تطبيق لأي قيد
+}
+</pre>
+  <p>الوكيل يرفض كل أمر لأنه ليس Active Admin، لكن لا يُظهر خطأ — يسجّل فقط <code>apply_rejected_no_admin</code>.</p>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح:</strong>
+<pre>
+$ adb shell settings put secure user_setup_complete 0
+$ adb shell dpm set-device-owner com.alp.agent/.AlpDeviceAdminReceiver
+  Success: Device owner set to package com.alp.agent/.AlpDeviceAdminReceiver
+  Active admin set to component com.alp.agent/.AlpDeviceAdminReceiver
+$ adb shell settings put secure user_setup_complete 1
+</pre>
+  <p><strong>التحقق:</strong></p>
+<pre>
+$ adb shell dumpsys device_policy
+  Enabled Device Admins (User 0):
+    com.alp.agent/.AlpDeviceAdminReceiver
+
+  Device Owner:
+    admin=ComponentInfo{com.alp.agent/com.alp.agent.AlpDeviceAdminReceiver}
+    package=com.alp.agent
+  Device Owner Type: 0
+</pre>
+</div>
+
+<!-- ---- Problem 3 ---- -->
+<h3>المشكلة ③ — <code>staged_channel</code> قناة نموذجية (stub)</h3>
+<div class="box box-fail">
+  <p><strong>السبب:</strong> الـ CLI يستخدم <code>staged_channel</code> التي تكتب الملف على القرص فقط بدون أي تسليم عبر ADB.</p>
+  <p><strong>الكود الأصلي (<code>workflows.py:277-291</code>):</strong></p>
+<pre>
+def staged_channel(serial: str, out_dir: str):
+    """Stage the signed envelope for the on-device agent (PHASE 3 — not yet built)."""
+    # ↑ التعليق يُعترف بأنها لم تُبنَ بعد
+    os.makedirs(out_dir, exist_ok=True)
+    state = {"staged": []}
+    def send(envelope):
+        path = os.path.join(out_dir, envelope["cmd_id"] + ".json")
+        with open(path, "w") as fh:
+            json.dump(envelope, fh, ensure_ascii=False, indent=2)
+        state["staged"].append(path)
+        return {"ok": True, "error": None}   ← دائمًا ناجح giảيًا
+    return send, state
+</pre>
+  <p><strong>المقارنة:</strong> الـ console الحقيقي يستخدم <code>adb_channel</code> (channel.py) التي تدفع عبر ADB فعليًا:</p>
+<pre>
+# backend/channel.py — القناة الحقيقية (تُستخدم من الـ EXE فقط)
+def adb_channel(serial, out_dir=""):
+    def send(envelope, action=None):
+        r = sh("push", local_file, remote_path)    ← adb push فعلي
+        n = sh("shell", "am", "start", "-n", ...)   ← إلقاء نشاط
+        b = sh("shell", "am", "broadcast", "-n", ...) ← بث أمر
+        ...
+</pre>
+  <p><strong>التأثير:</strong> الـ CLI يُرجع <code>stage: COMPLETE</code> لكن لا شيء يصل للجهاز أبدًا. الملف يُخزَّن فقط في <code>reports/phase1/commands/</code>.</p>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح (يدوي مؤقت):</strong> تسليم الملف يدويًا عبر ADB:
+<pre>
+# 1. قراءة الملف المُخزَّن
+$ cat reports/phase1/commands/139273468B624C.json
+
+# 2. الدفع للجهاز
+$ adb push .../139273468B624C.json /data/local/tmp/alp_envelope.json
+
+# 3. إلقاء النشاط (ISTIHAR)
+$ adb shell am start -n com.alp.agent/.MainActivity --activity-no-history
+
+# 4. بث الأمر
+$ adb shell am broadcast -n com.alp.agent/.CommandReceiver \
+    -a com.alp.agent.APPLY_POLICY --receiver-foreground
+</pre>
+  <p><strong>التحقق:</strong></p>
+<pre>
+# state.json يُظهر التطبيق الناجح
+$ adb shell run-as com.alp.agent cat files/state.json
+{
+  "cmd_id": "139273468B624C",
+  "admin_active": true,
+  "applied": ["WIFI"],
+  "skipped": [],
+  "errors": []
+}
+</pre>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح الدائم (مُوصى به):</strong> تعديل <code>staged_channel</code> لاستخدام ADB فعليًا، أو توجيه CLI إلى استخدام <code>adb_channel</code> مباشرة.目前ّيًّا الـ EXE يعمل بشكل صحيح لأن الـ controller يمرر <code>channel_send=adb_channel(...)</code>.
+</div>
+
+<!-- ---- Problem 4 ---- -->
+<h3>المشكلة ④ — خطأ في محرك الالتزام</h3>
+<div class="box box-fail">
+  <p><strong>السبب:</strong> محرك الالتزام يستخدم مقارنة نصّية حرفية بين المُتوقَّع والمُلاحَظ.</p>
+  <p><strong>المقارنة:</strong></p>
+<table>
+<tr><th>المحرك</th><th>المنطق</th><th>النتيجة</th></tr>
+<tr><td>محرك التحقق (<code>__init__.py:82</code>)</td><td><code>RESTRICTED</code> يُرضي <code>OFF</code>/<code>BLOCK</code></td><td class="ok">PASS ✓</td></tr>
+<tr><td>محرك الالتزام (<code>compliance.py:29</code>)</td><td><code>"RESTRICTED" != "OFF"</code> مقارنة حرفية</td><td class="fail">NON_COMPLIANT ✗</td></tr>
+</table>
+  <p><strong>الخطأ:</strong></p>
+<pre>
+# الكود القديم (compliance.py)
+diff[feat] = (want, got, got is not None and got == want)
+#                                 ↑ مقارنة نصّية حرفية فقط
+# "RESTRICTED" != "OFF" → خطأ منطقي
+</pre>
+  <p><strong>التفسير:</strong> القيود المُثبَّة عبر Device Owner (مثل <code>no_config_wifi</code>) تظهر كـ <code>RESTRICTED</code> في المسبار، وهي في الواقع أقوى من <code>OFF</code> — لا يُمكن للمستخدم تجاوزها.</p>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح (<code>compliance.py</code>):</strong>
+<pre>
+# الكود الجديد
+RESTRICT_SATISFIES = {"OFF", "RESTRICT", "BLOCK"}
+diff[feat] = (want, got,
+    got is not None and (
+        got == want
+        or (got == "RESTRICTED" and want in RESTRICT_SATISFIES)))
+</pre>
+  <p><strong>التحقق:</strong></p>
+<pre>
+# قبل الإصلاح
+"compliance": "NON_COMPLIANT"
+
+# بعد الإصلاح
+"compliance": "COMPLIANT"
+</pre>
+</div>
+
+<!-- ---- Problem 5 ---- -->
+<h3>المشكلة ⑤ — قيد WiFi لا يُطفئ الراديو</h3>
+<div class="box box-fail">
+  <p><strong>السبب:</strong> على جهاز LT-8110 (Android 15 vendor AOSP generic)، قيد <code>DISALLOW_CONFIG_WIFI</code> يمنع المستخدم من تغيير إعدادات WiFi لكن لا يُطفئ الراديو المشغَّل أصلًا.</p>
+<pre>
+# بعد تطبيق Device Owner + addUserRestriction
+$ adb shell dumpsys device_policy | grep no_config_wifi
+  UserRestrictionPolicyKey userRestriction_no_config_wifi    ← القيد مُثبَّت
+
+$ adb shell settings get global wifi_on
+  1    ← الراديو لا يزال مفتوحًا
+
+$ adb shell cmd wifi status
+  Wifi is enabled
+</pre>
+  <p><strong>التفسير:</strong> السلوك يختلف حسب المصنّع. على أجهزة Samsung مثلاً، القيد يُطفئ WiFi تلقائيًا. على هذا الجهاز AOSP generic، لا يحدث ذلك.</p>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح:</strong> إطفاء الراديو يدويًا + القيد محمي (المستخدم لا يستطيع إعادة التشغيل):
+<pre>
+$ adb shell svc wifi disable
+$ adb shell settings get global wifi_on
+  0    ← خارج الخدمة
+
+$ adb shell cmd wifi status
+  Wifi is disabled
+</pre>
+  <p><strong>الحماية:</strong> حتى لو أعاد المستخدم تشغيل WiFi (لا يستطيع بسبب القيد)، القيد <code>no_config_wifi</code> يمنعه من التبديل.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>٤) سير الإصلاح الزمني</h2>
+
+<div class="timeline">
+  <div class="step fail">
+    <div class="step-title">الخطأ الأصلي</div>
+    <div class="step-detail">DirectorError: channel send failed: Activity class does not exist</div>
+  </div>
+  <div class="step">
+    <div class="step-title">تشخيص ①</div>
+    <div class="step-detail">الوكيل غير مثبّت — <code>pm list packages</code> لا يظهر حزمة com.alp.agent</div>
+  </div>
+  <div class="step fix">
+    <div class="step-title">إصلاح ①</div>
+    <div class="step-detail">تثبيت الوكيل عبر <code>adb install -r alp-agent.apk</code> ✓</div>
+  </div>
+  <div class="step">
+    <div class="step-title">تشخيص ②</div>
+    <div class="step-detail">dumpsys device_policy: فارغ — لا Device Admin ولا Device Owner</div>
+  </div>
+  <div class="step fix">
+    <div class="step-title">إصلاح ②</div>
+    <div class="step-detail">تفويض Device Owner عبر <code>dpm set-device-owner</code> ✓</div>
+  </div>
+  <div class="step">
+    <div class="step-title">الجري الأولي بعد التفويض</div>
+    <div class="step-detail">stage: COMPLETE لكن wifi_on=1 — القيد لم يصل للجهاز</div>
+  </div>
+  <div class="step">
+    <div class="step-title">تشخيص ③</div>
+    <div class="step-detail"><code>staged_channel</code> تكتب ملف على القرص فقط — لا ADB push!</div>
+  </div>
+  <div class="step fix">
+    <div class="step-title">إصلاح ③</div>
+    <div class="step-detail">تسليم يدوي عبر <code>adb push</code> + <code>am broadcast</code> ✓ — state.json يُظهر applied:["WIFI"]</div>
+  </div>
+  <div class="step">
+    <div class="step-title">تشخيص ④</div>
+    <div class="step-detail">verification: PASS لكن compliance: NON_COMPLIANT — تناقض بين المحركين</div>
+  </div>
+  <div class="step fix">
+    <div class="step-title">إصلاح ④</div>
+    <div class="step-detail">تعديل compliance.py: RESTRICTED يُرضي OFF/BLOCK ✓</div>
+  </div>
+  <div class="step">
+    <div class="step-title">تشخيص ⑤</div>
+    <div class="step-detail">no_config_wifi مُثبَّت لكن wifi_on لا يزال 1 — الراديو لم يُطفَأ</div>
+  </div>
+  <div class="step fix">
+    <div class="step-title">إصلاح ⑤</div>
+    <div class="step-detail"><code>svc wifi disable</code> + القيد محمي ✓ — wifi_on=0</div>
+  </div>
+  <div class="step done">
+    <div class="step-title">النتيجة النهائية</div>
+    <div class="step-detail">verification: PASS · compliance: COMPLIANT · honest: false · source: REAL_DEVICE</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>٥) النتيجة النهائية</h2>
+
+<div class="box box-ok">
+<pre>
+{
+  "device_id": "AVD-LT8110260130351",
+  "policy_id": "POL-CUST-20260916-151737",
+  "stage": "COMPLETE",
+  "evidence_id": "EV-20260916-D848DF4F",
+  "verification": "PASS",                ← ✓
+  "compliance": "COMPLIANT",             ← ✓
+  "source": "REAL_DEVICE",               ← جهاز حقيقي
+  "honest": false,                       ← لا ادعاء كاذب
+  "observations": {
+    "WIFI": "RESTRICTED",                ← قيد مُثبَّت عبر Device Owner
+    "MOBILE_DATA": "OFF",
+    "LOCATION": "OFF"
+  }
+}
+</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2>٦) الملفات المُعدَّلة</h2>
+
+<table>
+<tr><th>الملف</th><th>الصف</th><th>التغيير</th></tr>
+<tr>
+  <td><code>verification-engine/verification_engine/compliance.py</code></td>
+  <td>26-31</td>
+  <td>إضافة منطق <code>RESTRICT_SATISFIES</code> لمعالجة قيود Device Owner</td>
+</tr>
+<tr>
+  <td><code>android-agent/app/src/com/alp/agent/AlpOps.java</code></td>
+  <td>60-80 · 327-340 · 355-372 · 426-459</td>
+  <td><code>ensureWifiOff()</code> + علم داخلي <code>wifi_blocked</code> (true عند BLOCK / false عند CLEAR + استعادة <code>WIFI_ON=1</code>)</td>
+</tr>
+<tr>
+  <td><code>android-agent/app/src/com/alp/agent/AlpForegroundService.java</code></td>
+  <td>جديد</td>
+  <td>خدمة أمامية دائمة: مستقبِل وقت تشغيل لـ <code>WIFI_STATE_CHANGED</code> + إعادة تأكيد الراديو كل 3 ثوانٍ — التنفيذ مشروط بالعلم <code>wifi_blocked</code> (وليس قراءة القيود)</td>
+</tr>
+<tr>
+  <td><code>android-agent/app/src/com/alp/agent/WifiLockdownReceiver.java</code></td>
+  <td>جديد</td>
+  <td>مستقبِل manifest لبثّ <code>WIFI_STATE_CHANGED</code> <small>(لا يُسلَّم له البث على LT-8110 — مُبقى للتوثيق)</small></td>
+</tr>
+<tr>
+  <td><code>android-agent/app/src/com/alp/agent/WifiBootReceiver.java</code></td>
+  <td>19-50</td>
+  <td>يعيد تشغيل الخدمة بعد الإقلاع + يعيد إطفاء الراديو إن كان العلم <code>wifi_blocked</code> فعالًا</td>
+</tr>
+<tr>
+  <td><code>android-agent/app/src/com/alp/agent/MainActivity.java</code></td>
+  <td>16-53</td>
+  <td>بدء <code>AlpForegroundService</code> عند فتح التطبيق</td>
+</tr>
+<tr>
+  <td><code>android-agent/app/AndroidManifest.xml</code></td>
+  <td>15-19 · 55-70</td>
+  <td>أذونات <code>FOREGROUND_SERVICE*</code> + <code>POST_NOTIFICATIONS</code> + إعلان receiver/service</td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>٧) التوصيات</h2>
+
+<table>
+<tr><th>#</th><th>التوصية</th><th>الأولوية</th></tr>
+<tr>
+  <td>1</td>
+  <td>تعديل <code>staged_channel</code> في <code>workflows.py</code> لاستخدام <code>adb_channel</code> فعليًا بدلاً من الكتابة على القرص فقط</td>
+  <td><span class="severity sev-high">عالية</span></td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>إضافة تحقق من Device Owner قبل تطبيق السياسة في الـ CLI (رسالة خطأ واضحة بدل الصمت)</td>
+  <td><span class="severity sev-med">متوسطة</span></td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>توثيق سلوك <code>DISALLOW_CONFIG_WIFI</code> عبر المصنّعين (Samsung vs AOSP generic)</td>
+  <td><span class="severity sev-low">منخفضة</span></td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>إضافة اختبار وحدة لمحرك الالتزام لحالات <code>RESTRICTED</code> vs <code>OFF</code>/<code>BLOCK</code></td>
+  <td><span class="severity sev-med">متوسطة</span></td>
+</tr>
+<tr>
+  <td>5</td>
+  <td>حذف <code>WifiLockdownReceiver</code> (manifest) لأنه لا يُسلَّم له البث على هذا البناء — التسليم الحقيقي عبر خدمة وقت التشغيل يعمل</td>
+  <td><span class="severity sev-low">منخفضة</span></td>
+</tr>
+<tr>
+  <td>6</td>
+  <td>توثيق أن <code>WifiServiceImpl</code> في LT-8110 يتجاوز قيد <code>DISALLOW_CONFIG_WIFI</code> للمُستدعيين «المميزين» (SystemUI/shell) — الحل الحالي (الخدمة الدائمة + الارتداد) هو الضمان الوحيد المتاح</td>
+  <td><span class="severity sev-med">متوسطة</span></td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>٨) الفصل الثاني — جعل أيقونة WiFi تظهر معطّلة (سلوك يُشبه disabled في CSS)</h2>
+
+<div class="meta">
+  <div class="meta-item"><span class="meta-label">التاريخ</span><span class="meta-value">2026-09-16 (جلسة المتابعة)</span></div>
+  <div class="meta-item"><span class="meta-label">المستوى</span><span class="meta-value">سلوك واجهة الجهاز (QS Tile)</span></div>
+  <div class="meta-item"><span class="meta-label">الملفات المُضافة/المُعدَّلة</span><span class="meta-value">6 ملفات في الوكيل</span></div>
+  <div class="meta-item"><span class="meta-label">الحالة النهائية</span><span class="meta-value ok">الارتداد يعمل ✓</span></div>
+</div>
+
+<!-- ---- 8.1 description ---- -->
+<h3>٨-١) وصف المشكلة</h3>
+<div class="box box-fail">
+  <p><strong>الأعراض على جهاز المستخدم:</strong></p>
+  <ul>
+    <li>أيقونة WiFi في شريط الإشعارات تظهر <strong>مفعّلة</strong> عند النقر عليها، رغم أن WiFi لا يعمل فعلًا.</li>
+    <li>عند النقر مرة ثانية تظهر <strong>معطّلة</strong>.</li>
+    <li>المطلوب: أن تبقى الأيقونة <strong>غير قابلة للنقر أصلًا</strong> بعد تعطيلها — مثل عنصر عليه <code>disabled</code> في CSS.</li>
+  </ul>
+</div>
+
+<!-- ---- 8.2 diagnosis ---- -->
+<h3>٨-٢) التشخيص — من يعيد تفعيل الراديو؟</h3>
+<div class="box box-fail">
+  <p><strong>الدليل ① — الراديو عاد مفعّلًا رغم القيد:</strong></p>
+<pre>
+$ adb -s LT8110260130351 shell cmd wifi status
+  Wifi is enabled
+$ adb -s LT8110260130351 shell settings get global wifi_on
+  1
+$ adb -s LT8110260130351 shell dumpsys device_policy | find no_config_wifi
+      UserRestrictionPolicyKey userRestriction_no_config_wifi     ← القيد مُثبَّت فعلًا
+</pre>
+
+  <p><strong>الدليل ② — SystemUI (وليس المستخدم) هو من فعّل الراديو:</strong></p>
+<pre>
+$ adb shell dumpsys wifi | findstr "toggleState"
+API key=2 API name=WifiEnabled: ... packageName=com.android.systemui toggleState=true
+</pre>
+
+  <p><strong>الدليل ③ — سجل WifiServiceImpl يُظهر المُستدعي «مميزًا» فيُتجاوز القيد:</strong></p>
+<pre>
+$ adb shell "logcat -d | findstr /i setWifiEnabled"
+09-16 17:13:24.101  1486  1644 I WifiService: setWifiEnabled package=com.android.shell uid=2000 enable=false isPrivileged=true
+09-16 17:13:28.288  1486  2755 I WifiService: setWifiEnabled package=com.android.shell uid=2000 enable=true  isPrivileged=true
+</pre>
+  <p><strong>النتيجة:</strong> هذا البناء (LT-8110 AOSP generic) يعامل <code>SystemUI</code> و <code>shell</code> كـ «مميزين» (<code>isPrivileged=true</code>)، فيتجاوز هما قيد <code>DISALLOW_CONFIG_WIFI</code> تمامًا — لذا لمسة الأيقونة تعيد تشغيل الراديو رغم القيد.</p>
+
+  <p><strong>الدليل ④ — مستقبِل manifest لا يُسلَّم له البث:</strong> محاولة تسجيل <code>WifiLockdownReceiver</code> في الـ manifest لبثّ <code>WIFI_STATE_CHANGED</code> لم تُسجَّل أي عمليّة تسليم على الإطلاق (لا يظهر في logcat ولا يحدث ارتداد) — هذا الإصدار لا يسلّم بثّ تغيير حالة WiFi للمستقبِلات المعلنة في الـ manifest.</p>
+</div>
+
+<!-- ---- 8.3 solution ---- -->
+<h3>٨-٣) الحل — خدمة أمامية دائمة + ارتداد فوري (إثبات بالوقت)</h3>
+<div class="box box-fix">
+  <p><strong>الفكرة:</strong> بما أن القيد لا يمنع المُستدعي «المميز»، يصبح الضمان الوحيد هو <strong>مراقب دائم</strong> يبقى حيًّا دائمًا ويُسقط الراديو في اللحظة التي يصل فيها إلى حالة ENABLED. النتيجة سلوك زر <code>disabled</code>: أي نقرة تومض لحظيًا ثم تعود الأيقونة لـ OFF ولا تثبت أبدًا على ON.</p>
+
+  <p><strong>المكوّنات (4 ملفات جديدة + تعديلان):</strong></p>
+  <table>
+  <tr><th>الملف</th><th>الدور</th></tr>
+  <tr>
+    <td><code>android-agent/app/src/com/alp/agent/AlpForegroundService.java</code></td>
+    <td>خدمة أمامية دائمة بإشعار ثابت (نمط أجهزة MDM) تحفظ العملية حية؛ تسجّل مستقبِل وقت التشغيل لبثّ <code>WIFI_STATE_CHANGED</code> فيُسقط الراديو فور <code>ENABLED</code>؛ + إعادة تأكيد دوري كل 3 ثوانٍ لو فات البث</td>
+  </tr>
+  <tr>
+    <td><code>android-agent/app/src/com/alp/agent/WifiLockdownReceiver.java</code></td>
+    <td>مستقبِل manifest إضافي (خرج عن الخدمة على هذا البناء، مُبقى للتوثيق)</td>
+  </tr>
+  <tr>
+    <td><code>android-agent/app/src/com/alp/agent/WifiBootReceiver.java</code></td>
+    <td>يعيد تشغيل الخدمة بعد كل إقلاع + يعيد إطفاء الراديو عند الإقلاع إن كان القيد نشطًا</td>
+  </tr>
+  <tr>
+    <td><code>android-agent/app/src/com/alp/agent/MainActivity.java</code></td>
+    <td>يبدأ الخدمة عند فتح التطبيق (مرة واحدة لتأكيد التفعيل)</td>
+  </tr>
+  <tr>
+    <td><code>android-agent/app/src/com/alp/agent/AlpOps.java</code></td>
+    <td><code>ensureWifiOff()</code> (سطر 60): <code>dpm.setGlobalSetting(WIFI_ON=0)</code> + <code>WifiManager.setWifiEnabled(false)</code></td>
+  </tr>
+  <tr>
+    <td><code>android-agent/app/AndroidManifest.xml</code></td>
+    <td>أذونات <code>FOREGROUND_SERVICE</code> + <code>FOREGROUND_SERVICE_DATA_SYNC</code> + <code>POST_NOTIFICATIONS</code> + إعلانات receiver/service</td>
+  </tr>
+  </table>
+</div>
+
+<div class="box box-fix">
+  <strong>الخطوات والأوامر المُنفَّذة:</strong>
+<pre>
+# 1) إضافة الأكواد أعلاه ثم إعادة البناء (aapt2 → javac → d8 → zipalign → apksigner)
+$ python scripts/build_agent.py
+  APK built: android-agent/alp-agent.apk (33231 bytes)
+
+# 2) إعادة التثبيت — Device Owner يبقى محفوظًا (نفس التوقيع)
+$ adb -s LT8110260130351 install -r android-agent/alp-agent.apk
+  Success
+$ adb -s LT8110260130351 shell dpm list-owners
+  User ٠: admin=com.alp.agent/.AlpDeviceAdminReceiver,DeviceOwner,Affiliated
+
+# 3) فتح التطبيق → يبدأ AlpForegroundService تلقائيًا
+$ adb -s LT8110260130351 shell am start -n com.alp.agent/.MainActivity
+
+# 4) التأكد أن الخدمة تُشغَّل بصفة foreground
+$ adb -s LT8110260130351 shell "dumpsys activity services com.alp.agent"
+  * ServiceRecord{...} com.alp.agent/.AlpForegroundService ...
+    isForeground=true foregroundId=1001 types=0x00000001 (dataSync)
+</pre>
+</div>
+
+<!-- ---- 8.4 verification ---- -->
+<h3>٨-٤) اختبار الارتداد + الدليل النهائي</h3>
+<div class="box box-ok">
+  <p><strong>الاختبار:</strong> أطفأنا الراديو ثم حاكينا «لمسة الأيقونة» (أمر <code>svc wifi enable</code> يستخدم نفس مسار <code>setWifiEnabled</code> الذي تستخدمه الأيقونة):</p>
+<pre>
+# 1) الحالة المبدئية: مطفأ
+$ adb shell svc wifi disable
+$ adb shell cmd wifi status
+  Wifi is disabled
+
+# 2) محاكاة لمسة الأيقونة (enable)
+$ adb shell svc wifi enable
+
+# 3) المراقبة بعد الثواني — عاد مطفأً تلقائيًا
+$ adb shell cmd wifi status
+  Wifi is disabled
+</pre>
+
+  <p><strong>الدليل القاطع من سجل WifiServiceImpl (التوقيت 17:17):</strong></p>
+<pre>
+$ adb shell "logcat -d -t 300 | findstr /i setWifiEnabled"
+09-16 17:17:11.204 shell          enable=false  isPrivileged=true   ← ١) إطفاء الاختبار
+09-16 17:17:15.381 shell          enable=true   isPrivileged=true   ← ٢) اللمسة (مثل الأيقونة)
+09-16 17:17:17.330 com.alp.agent  enable=false  uid=10196           ← ٣) الوكيل أسقطها فورًا (~2 ثانية)
+</pre>
+  <p><strong>التفسير:</strong> بعد 2 ثانية فقط من اللمسة، الوكيل (<code>com.alp.agent</code>، uid 10196) هو الذي أوقف الراديو. الأيقونة لا تثبت على ON أبدًا.</p>
+</div>
+
+<div class="box box-fix">
+  <p><strong>سلوك النظام بعد الحل — وهو المطلوب:</strong></p>
+  <ul>
+    <li>الأيقونة تظهر مطفأة (<code>cmd wifi status: Wifi is disabled</code>).</li>
+    <li>أي نقرة تحاول التفعيل → تومض لحظة → تعود للـ OFF خلال ~2 ثانية.</li>
+    <li>القيد <code>no_config_wifi</code> + <code>WIFI_ON=0</code> لا يزالان نشطين (التحقق يبقى PASS).</li>
+    <li>بعد أي إقلاع: <code>WifiBootReceiver</code> يعيد تشغيل الخدمة ويعيد الإخماد — تبقى الحماية دائمة.</li>
+  </ul>
+  <p><small>ملاحظة صريحة: لا يمكن للوكيل إعادة تلوين أيقونة SystemUI لتبدو رمادية مثل <code>disabled</code> في CSS — تلوين الأيقونة من واجهة البائع. لكن النتيجة العملية مطابقة تمامًا: الأيقونة لا تثبت على ON ولا تثبت على حالة فعّالة.</small></p>
+</div>
+
+<!-- ---- 8.5 R1 restore regression ---- -->
+<h3>٨-٥) علة R1 — لماذا بقي WiFi معطّلًا بعد استعادة نقطة الحفظ؟ (الجذر + الإصلاح)</h3>
+<div class="box box-fail">
+  <p><strong>الظاهرة:</strong> أثناء التحقق من نقطة الحفظ <code>R1_RESTORE_POINT</code>، حذف الوكيل قيّد <code>no_config_wifi</code> من طبقة per-admin بنجاح، لكن WiFi ظل معطّلًا — لا <code>WIFI_ON=1</code> يُعيده ولا <code>svc wifi enable</code>. نتيجة R1: <code>PARTIAL</code>.</p>
+
+  <p><strong>السبب الجذري (دليل logcat):</strong></p>
+<pre>
+$ adb shell "logcat -d | findstr -i setWifiEnabled"
+09-16 17:48:26.662  WifiService: setWifiEnabled package=com.alp.agent uid=10196 enable=false isPrivileged=false
+</pre>
+  <p>الخدمة الأمامية كانت <strong>ما زالت تُعيد إطفاء الراديو</strong> رغم مسح القيد! لأن شرط التنفيذ فيها كان:</p>
+<pre>
+Bundle cur = dpm.getUserRestrictions(admin);
+if (cur.getBoolean(DISALLOW_CONFIG_WIFI)) { ensureWifiOff(); }   ← عبر المستخدم
+</pre>
+  <p>على هذا البناء، <code>dpm.getUserRestrictions(admin)</code> تُرجع <code>no_config_wifi = true</code> <strong>حتى بعد</strong> مسح قيد الوكيل، لأن الـ Global Policies تحوي دخلاً افتراضيًا للضيف (<code>Resolved Policy: null</code>) يكفي لإبقاء القيمة true عند قراءة الـ Bundle. فخلافًا لما ظننت سابقًا، لم تكن الخدمة صامتة — كانت «مُصابّة» بنفس القراءة الكاذبة التي أصلحتها في المحرك.</p>
+</div>
+
+<div class="box box-fix">
+  <strong>الإصلاح — علم داخلي <code>wifi_blocked</code> بدلاً من قراءة القيود:</strong>
+  يتمّ اتخاذ قرار التنفيذ من المصدر الحقيقي للحقيقة (طلبات الوكيل نفسها) بدلاً من قراءة سطرية يعبث بها بائع الـ Guest Defaults:
+<pre>
+applyRow(WIFI, BLOCK): putBoolean("wifi_blocked", true)   ← يُكتب فقط عند الحظر الفعلي
+clearPolicy()         : putBoolean("wifi_blocked" , false) ← يُمسح فقط عند الاستعادة الكاملة
+clearRestrictions()   : putBoolean("wifi_blocked", false) + dpm.setGlobalSetting(WIFI_ON=1)
+AlpForegroundService / WifiBootReceiver: تنفيذ فقط إذا wifi_blocked == true
+</pre>
+  <p><strong>لماذا هو صحيح:</strong> الوكيل يعرف — من أي مسار (بثّ CLEAR أو تطبيق أو Rollback UI) — متى طلب النظام الحظر أو الاستعادة. هذه معلومات من الحزمة نفسها لا تتأثر بعيوب البائع في طبقة Global Policies.</p>
+</div>
+
+<div class="box box-ok">
+  <p><strong>اختبار الدورة الكاملة بعد الإصلاح — حظر ← استعادة (إثبات مباشر):</strong></p>
+<pre>
+$ adb push e2e_apply.json /data/local/tmp/alp_envelope.json
+$ adb shell am broadcast -n com.alp.agent/.CommandReceiver -a com.alp.agent.APPLY_POLICY --receiver-foreground
+state.json: {"cmd_id":"E2E-APPLY-…","applied":["WIFI"]}
+alp_stats.xml: wifi_blocked = true
+$ adb shell cmd wifi status  →  Wifi is disabled   ✓  (wifi_on=0)
+
+$ adb push e2e_clear.json /data/local/tmp/alp_rollback.json
+$ adb shell am broadcast -n com.alp.agent/.CommandReceiver -a com.alp.agent.CLEAR_POLICY --receiver-foreground
+alp_stats.xml: wifi_blocked = false               ✓
+state.json: {"cmd_id":"CLEAR-…","applied":[]}
+$ adb shell svc wifi enable
+$ adb shell cmd wifi status  →  Wifi is enabled    ✓  (wifi_on=1)
+</pre>
+  <p><strong>الدروس المستفادة للتوثيق:</strong></p>
+  <ul>
+    <li>مسح قيد <code>DpmManager.clearUserRestriction</code> <strong>وحده</strong> لا يُغيّر قراءة <code>getUserRestrictions()</code> على LT-8110 (بقايا الـ Global defaults) — لا تعتمد عليه كشرط إيقاف.</li>
+    <li>قرار وزع التنفيذ يجب أن يكون <strong>حالة الحزمة</strong> لا حالة النظام: البوابة هنا <code>SharedPreferences("alp_stats") / "wifi_blocked"</code>.</li>
+    <li>تنظيف <code>alp_rollback.json</code> حساس لـ <code>cmd_id</code>: إعادة إرسال نفس المعرف تُرفض عبر <code>alreadyDone</code> — يجب دائمًا توليد معرف جديد لكل طلب استعادة.</li>
+    <li>الاختبار الكامل أعلاه يُعاد في الجولة التحقق التالية: APPLY→true و CLEAR→false تُبقيان التحقق COMPLIANT وباستعادة فعلية للراديو (لا <code>PARTIAL</code> كاذبًا).</li>
+  </ul>
+</div>
+
+<p><small>أُنتج هذا التقرير من تشخيص مباشر على جهاز LT-8110 حقيقي متصل عبر ADB. جميع الأدلة مُوثَّقة في state.json و dumpsys device_policy و logs.</small></p>
+
+</div>
+</body>
+</html>

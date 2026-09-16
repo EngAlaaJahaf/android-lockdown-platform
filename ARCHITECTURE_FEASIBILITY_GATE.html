@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوابة المعمارية والجدوى — حارس الموبايل (ARCHITECTURE_FEASIBILITY_GATE)</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}.warn{color:#ffd479;font-weight:600}
+  .fail{color:#ff8d8d;font-weight:600}.mut{color:#8ba3c7}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12.5px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>بوابة المعمارية والجدوى — «حارس الموبايل»</h1>
+<p><small>ARCHITECTURE_FEASIBILITY_GATE · 2026-09-13 · القاعدة: لا افتراض لصحة أي تصميم سابق (§62) · لا ادعاء بلا دليل (§50/56) ·
+المفردات الإلزامية (§2): SUPPORTED / PARTIALLY_SUPPORTED / UNSUPPORTED / REQUIRES_DEVICE_OWNER /
+REQUIRES_DPC / REQUIRES_OEM / REQUIRES_KNOX / REQUIRES_PROVISIONING / ADB_ONLY / NOT_VERIFIED</small></p>
+
+<h2>0) لقطة الجرد — PHASE 0 (أدلة، لا تخمين)</h2>
+<table>
+<tr><th>البند</th><th>النتيجة المقاسة</th></tr>
+<tr><td>هيكل المشروع</td><td>19 مجلدًا: <code>backend, policy-engine, capability-engine, verification-engine, compatibility, vendor-adapters, database, android-agent, desktop, deployment, dist, RELEASE, reports, docs, scripts, tests, assets, build, .alp</code></td></tr>
+<tr><td>حجم الكود</td><td>64 ملف Python · 6 ملفات Java · 14 تقرير HTML · 10 ملفات Markdown · 13 ملف اختبار</td></tr>
+<tr><td>السويتّة</td><td class="ok">129 اختبار — OK (آخر تشغيل 2026-09-13، بما فيها 9 اختبارات بوابة قناة الإدارة الجديدة)</td></tr>
+<tr><td>مخرجات Windows</td><td><code>dist/ALPManager.exe</code> (54.7MB) + <code>dist/AndroidLockdownManager_Setup.exe</code> (62MB) + نسختا <code>RELEASE</code> + <code>SHA256SUMS.txt</code></td></tr>
+<tr><td>مخرجات Android</td><td><code>android-agent/alp-agent.apk</code> (24.5KB، بتوقيع <code>alp</code>، يتضمن زر ROLLBACK داخل التطبيق) + <code>aligned.apk/base.apk</code> وسيطة</td></tr>
+<tr><td>التقارير الموجودة</td><td>8 HTML: تجربة النموذج، التنفيذ، التحقق، الاسترداد الطارئ، دليل الفكّ، التصميم الأمني، السيناريوهات، دليل المستخدم العربي</td></tr>
+<tr><td>قاعدة التشغيل</td><td><code>%LOCALAPPDATA%\ALPManager\alp.db</code> — جهاز مسجّل واحد <code>AVD-520041d74247b58b</code> (SM-J337P)</td></tr>
+</table>
+
+<h2>1) مطابقة البنود §1–§62 مع الواقع (PHASE 1)</h2>
+<table>
+<tr><th>الكتلة (§)</th><th>الموجود فعلًا</th><th>الحكم</th></tr>
+<tr><td>تطبيق Windows EXE عربي (§10–13)</td><td>EXE + Installer مبنيان وموقّعان بالهاش، شُغّلا دخانيًا بلا شاشة</td><td class="ok">SUPPORTED (على هذا المضيف؛ قابلية النقل لأجهزة أخرى: NOT_VERIFIED)</td></tr>
+<tr><td>وكيل Android / Device Owner DPC (§23–24)</td><td>وكيل مالك جهاز يعمل بمظاريف APPLY/CLEAR/GET_STATE + زر ROLLBACK + منع المسح عند الاستئناف</td><td class="ok">SUPPORTED على API 28؛ متعدد الإصدارات: PARTIALLY_SUPPORTED</td></tr>
+<tr><td>Policy Engine (§17)</td><td>محلل + مدقق + مخطط لقطات + استثناءات + 6 سياسات (FULL/PARTIAL/CORP/PHONE/MAINT/QUAR)</td><td class="ok">SUPPORTED</td></tr>
+<tr><td>Capability Engine (§8)</td><td>استشعار موسّع (21 سطرًا للـJ3) + ملف قدرات + مرجع مختبري</td><td class="ok">SUPPORTED (النموذج)؛ أجهزة أخرى: NOT_VERIFIED</td></tr>
+<tr><td>Device Engine (§5, §9, §12)</td><td>قناة ADB حقيقية + سجل أجهزة + حالات؛ محوّلات المورّدين موجودة هيكليًا</td><td class="warn">PARTIALLY_SUPPORTED (Knox/OEM: REQUIRES_OEM / REQUIRES_KNOX — لا Knox SDK)</td></tr>
+<tr><td>Security (§22, §29–30)</td><td>RBAC بخمسة أدوار + شهادة استرداد لكل جهاز (AES-GCM) + موافقات مسمّاة مزدوجة للعمليات المدمرة + سلسلة تدقيق</td><td class="ok">SUPPORTED (تصميمًا واختبارًا؛ تدقيق خارجي: NOT_VERIFIED)</td></tr>
+<tr><td>Recovery (§20–21, §40–41)</td><td>R1 استعادة + R2 إعادة تسجيل + R3 مرفوض حكمًا + R4 تشخيص + زر داخل التطبيق + بوابة قناة الإدارة + أدوات مراقبة</td><td class="ok">SUPPORTED (آليات)؛ اختبار الاسترداد الكامل على جهاز حي: معلّق (§13)</td></tr>
+<tr><td>Verification + Evidence (§18–19)</td><td>مسبار 4 مسارات حيّة + UNKNOWN الصادق + <code>EV-/AUD-</code> مربوطة</td><td class="warn">PARTIALLY_SUPPORTED (تغطية المسبار 4/17 مسارًا — الباقي عبر dumpsys)</td></tr>
+<tr><td>Provisioning (§10 في القائمة)</td><td>مسار <code>dpm set-device-owner</code> + R2؛ QR/NFC موثّق لا واجهة</td><td class="warn">PARTIALLY_SUPPORTED</td></tr>
+<tr><td>تعدد الأجهزة 1000+ (§11, §32–33)</td><td>سجل + تعيينات + إصدارات سياسات؛ طابور/إعادة/تزامن/خلفية إدارة</td><td class="fail">NOT_VERIFIED (تصميم موجود، إثبات حمل مفقود)</td></tr>
+<tr><td>تعدد الشركات (§16 في القائمة)</td><td>مدراء/أدوار/نطاقات جزئية</td><td class="warn">PARTIALLY_SUPPORTED</td></tr>
+<tr><td>التقارير والتشخيص (§12, §49)</td><td>8 تقارير + سجل تغييرات + هاشات</td><td class="ok">SUPPORTED</td></tr>
+<tr><td>التغليف/المثبّت (§13, §42)</td><td>محمول + مثبّت + إزالة تثبيت + تهيئة قاعدة</td><td class="ok">SUPPORTED (توقيع شهادة: NOT_VERIFIED — لا شهادة متاحة)</td></tr>
+<tr><td>الواجهات العربية (§14)</td><td>أدلة + تقارير + زر التطبيق عربية؛ واجهة سطح المكتب: حسب تقرير التحقق</td><td class="warn">PARTIALLY_SUPPORTED (مراجعة UI كاملة مطلوبة §7)</td></tr>
+<tr><td>الاختبارات (§37–39)</td><td>129 وحدة/تكامل/محاكاة خضراء؛ سيناريوهات الفشل مغطاة جزئيًا</td><td class="warn">PARTIALLY_SUPPORTED (اختبار جهاز حي ثانٍ + UI/Installer: مفقود)</td></tr>
+<tr><td>التوثيق (§48)</td><td>10 ملفات MD + تصميم الاسترداد؛ الـ10 المطلوبة غير مكتملة كلها</td><td class="warn">PARTIALLY_SUPPORTED</td></tr>
+</table>
+
+<h2>2) قرارات البوابة (§62 — لا إعادة كتابة عشوائية)</h2>
+<div class="box">
+<b>1) القرار المعماري: توسيع لا هدم.</b> المشروع القائم يحقق ~70% من البنود فعليًا بأدلة؛ أي إعادة كتابة تُفقد الأدلة والسويتّة الخضراء. المسار: <b>تثبيت + سد الفجوات + إعادة تسمية «حارس الموبايل»</b>.<br>
+<b>2) إعادة التسمية (EXE/APK/الحزمة):</b> الاسم الحالي <code>ALP/com.alp.agent</code> → <code>حارس الموبايل</code>. تغيير حزمة الوكيل = هوية جديدة (مالك الجهاز مرتبط بالحزمة) → يُنفَّذ <b>فقط على أجهزة نظيفة أو بعد إزالة المالك رسميًا</b>، ويُوثَّق كخطة ترحيل (§20 في خطة الإصدار).<br>
+<b>3) الجهاز التجريبي (§7, §13):</b> الـSM-J337P حاليًا <code>POL-FULL_LOCKDOWN</code> كاملة (تشمل <code>no_debugging_features</code>) بلا ADB — <b>ممنوع أي إجراء تدميري (§54/55)</b>؛ يبقى كما هو حتى يعود لقناة قابلة للإدارة. اختبار §13 و§41 معلّق على ذلك، ويُستكمل العمل الذي لا يحتاج الجهاز (المصفوفة، التوثيق، الاختبارات).<br>
+<b>4) Knox/OEM (§25):</b> بدون Knox SDK يبقى الوضع <code>GATED</code> — يُبنى المحوّل على التوثيق الرسمي فقط عند توفر الترخيص؛ لا ادعاء دعم.<br>
+<b>5) القناة الدائمة (§26, §33):</b> ADB يبقى للتجهيز/التشخيص/الاسترداد؛ الإدارة الدائمة المستقبلية عبر خلفية إدارة — تصميم فقط في هذه المرحلة.
+</div>
+
+<h2>3) مصفوفة التوافق الأولية Android 7 → 15 (PHASE 3 — تُستكمل بالتوثيق الرسمي)</h2>
+<table>
+<tr><th>الميزة</th><th>7 (24–25)</th><th>8 (26–27)</th><th>9 (28) ✓ مُثبت</th><th>10–11 (29–30)</th><th>12–13 (31–33)</th><th>14–15 (34–35)</th></tr>
+<tr><td>Device Owner / DPC</td><td colspan="2">SUPPORTED (DO منذ 5.0؛ قيود المستخدم منذ 5.0+)</td><td class="ok">SUPPORTED — مُثبت على الجهاز</td><td colspan="3">متوقع SUPPORTED — <span class="warn">NOT_VERIFIED على عتاد حي</span></td></tr>
+<tr><td><code>DISALLOW_DEBUGGING_FEATURES</code> (ADB/خيارات المطوّر)</td><td colspan="2">SUPPORTED منذ API 21 (موثّق رسميًا) — آلية DPM للتطبيق منذ API 24</td><td class="ok">SUPPORTED — مُثبت (سبب انقطاع ADB الحالي)</td><td colspan="3">متوقع SUPPORTED — NOT_VERIFIED</td></tr>
+<tr><td><code>DISALLOW_SAFE_BOOT</code></td><td>SUPPORTED منذ API 23 (موثّق رسميًا)</td><td class="ok">SUPPORTED — مُثبت</td><td colspan="4">متوقع SUPPORTED — NOT_VERIFIED</td></tr>
+<tr><td><code>setCameraDisabled</code></td><td colspan="6">SUPPORTED منذ DO المبكر — <span class="ok">مُثبت على 9</span>؛ الباقي NOT_VERIFIED</td></tr>
+<tr><td>بقية قيود <code>UserManager</code> (WiFi/BT/VPN/…) </td><td colspan="2">PARTIALLY (بعض المفاتيح أُضيفت في 6.0/8.0)</td><td class="ok">SUPPORTED — مُثبت (12 قيدًا)</td><td colspan="3">متوقع SUPPORTED — NOT_VERIFIED</td></tr>
+<tr><td>Lock Task / Kiosk</td><td colspan="6">REQUIRES_DEVICE_OWNER — <span class="warn">وكيلنا لا يطبّقه (skipped) → UNSUPPORTED حاليًا حتى يُنفَّذ</span></td></tr>
+<tr><td>Package allowlist (APPLICATIONS)</td><td colspan="6">REQUIRES_DEVICE_OWNER — <span class="warn">غير منفّذ في الوكيل → UNSUPPORTED حاليًا</span></td></tr>
+<tr><td>Knox الموسّع</td><td colspan="6">REQUIRES_KNOX — <span class="fail">GATED (لا SDK/ترخيص)</span></td></tr>
+<tr><td>إدارة خلفية 1000+ جهاز</td><td colspan="6"><span class="fail">NOT_VERIFIED — تصميم فقط</span></td></tr>
+</table>
+
+<h2>4) معايير الخروج من البوابة → الخطوة التالية</h2>
+<div class="box">
+<b class="ok">البوابة: PASS مشروط.</b> يُسمح بالانتقال إلى PHASE 3–5 (مصفوفة التوثيق + معماريتا الأمان والاسترداد — لا تحتاج الجهاز)،
+ويُمنع الانتقال إلى PHASE 13 (اختبار النموذج) حتى يعود الجهاز لقناة قابلة للإدارة، ويُمنع أي إجراء تدميري (§54/55).
+التسلسل المقترح: إكمال المصفوفة من التوثيق الرسمي → سدّ فجوات الوكيل (allowlist/lock-task أو إعلان UNSUPPORTED) →
+مراجعة UI العربية → توثيق الـ10 ملفات → إعادة التسمية → Release Candidate.
+</div>
+
+<p><small>أُنتج من فحص مباشر: هيكل المجلدات، عدّ الملفات، مخرجات dist/RELEASE، نتيجة السويتّة 129 OK، سجلات قاعدة التشغيل، وتعريفات السياسات — بلا افتراضات.</small></p>
+
+</div></body>
+</html>

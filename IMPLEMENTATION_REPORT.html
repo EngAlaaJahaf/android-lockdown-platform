@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير التنفيذ — حارس الموبايل (PHASE 6–12)</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}.warn{color:#ffd479;font-weight:600}.fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12.5px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>تقرير التنفيذ — PHASE 6–12</h1>
+<p><small>2026-09-13 · تقييم المكوّنات المبنية بالقراءة المباشرة (لا إعادة كتابة — §62).</small></p>
+
+<h2>PHASE 6 — النواة (Windows Core)</h2>
+<table>
+<tr><th>المكوّن</th><th>الحالة المُتحقق منها</th><th>الحكم</th></tr>
+<tr><td>المحركات الخلفية</td><td>17 وحدة: director, workflows, fleet, channel, command, db, state_machine, approval, auth, audit, rbac, recovery, recovery_credentials, management_channel, compliance_forge, config + خادم <code>backend/api/server.py</code></td><td class="ok">SUPPORTED</td></tr>
+<tr><td>خط البناء</td><td><code>scripts/build_agent.py</code> (وكيل) + <code>deployment/*.spec</code> (PyInstaller) + <code>scripts/run_tests.py</code> (اكتشاف كامل) — سلسلة Clean→Build→Test→Package→Smoke موثقة ومنفذة</td><td class="ok">SUPPORTED</td></tr>
+<tr><td>الأخطاء (§35–36)</td><td>أخطاء عربية مقروءة + سبب + إجراء مقترح في الواجهة والتقارير (مثال: <code>ApplyBlocked</code> برسائله)</td><td class="ok">SUPPORTED</td></tr>
+</table>
+
+<h2>PHASE 7 — واجهة Windows</h2>
+<table>
+<tr><th>البند (§10–13)</th><th>الدليل المقاس</th><th>الحكم</th></tr>
+<tr><td>العربية أولًا</td><td>9083 مطابقة عربية في <code>app_qt.py</code> (واجهة Qt) + أدلة عربية</td><td class="ok">SUPPORTED</td></tr>
+<tr><td>بلا أزرار وهمية</td><td>مسح <code>TODO/FIXME/Mock/placeholder/NotImplemented</code> في <code>desktop/</code> → نتيجة واحدة حميدة (<code>pass # window already closed</code>)</td><td class="ok">SUPPORTED</td></tr>
+<tr><td>ربط حقيقي لا Mock</td><td><code>controller.py</code> يستدعي <code>run_director_apply, RecoveryEngine, RecoveryVault, attached_serials, live_probe</code> فعليًا (24 موضع ربط)</td><td class="ok">SUPPORTED</td></tr>
+<tr><td>لوحة المعلومات</td><td>الأجهزة/المتصلة/المُدارة/المتوافقة/Recovery/العمليات/الأخطاء/حالة ADB/قناة الإدارة — موجودة في المتحكم</td><td class="ok">SUPPORTED</td></tr>
+</table>
+
+<h2>PHASE 8 — وكيل Android (6 ملفات Java، قُرئت كاملةً)</h2>
+<table>
+<tr><th>الملف</th><th>الدور المُتحقق</th></tr>
+<tr><td><code>AlpDeviceAdminReceiver</code></td><td>مستقبل مالك الجهاز (تفعيل/تعطيل + إحصاء)</td></tr>
+<tr><td><code>AlpOps</code> (424 سطرًا)</td><td>خريطة <code>MANAGED</code> الواحدة + APPLY/CLEAR/GET_STATE + زر ROLLBACK + قفل «لا بيان صريح = لا مسح»</td></tr>
+<tr><td><code>MainActivity</code></td><td>عرض الحالة + الزر + مسار activity-nudge (مكرر <code>cmd_id</code>)</td></tr>
+<tr><td><code>CommandReceiver</code></td><td>جسر البث الرفيع (4 إجراءات) — نفس <code>AlpOps</code> خلفه</td></tr>
+<tr><td><code>AlpStats</code></td><td><code>state.json</code> الصادق (applied/skipped/errors + زمن + admin_active)</td></tr>
+</table>
+<p><span class="warn">الفجوة المعلنة:</span> allowlist التطبيقات وLock-task غير منفّذين في الوكيل → <code>UNSUPPORTED</code> صراحةً حتى التنفيذ أو الإعلان.</p>
+
+<h2>PHASE 9 — إدارة الأجهزة (§9, §11–12)</h2>
+<p>اكتشاف تلقائي (<code>attached_serials/detailed</code>) + سجل + آلة حالات صارمة (11 حالة) + <code>fleet.py</code> —
+<span class="ok">SUPPORTED للجهاز الواحد</span>؛ الدفعات/الطوابير لـ1000+ تصميم فقط (<code>NOT_VERIFIED</code>).</p>
+
+<h2>PHASE 10 — محرك السياسات (§14–17)</h2>
+<p>محلل + مدقق + مطابِق قدرات + مخطط + منفّذ + مدقق + 6 سياسات مراجَعة + معاينة قبل التطبيق (الجهاز+السياسة+الحالية+المخاطر+الطريقة+المتطلبات+الاسترداد) + بوابة Preflight ثمانية الفحوص —
+<span class="ok">SUPPORTED</span>.</p>
+
+<h2>PHASE 11 — التحقق والأدلة (§18–19)</h2>
+<p>مسبار حي + <code>UNKNOWN</code> الصادق + <code>EV-/AUD-</code> مربوطة —
+<span class="warn">PARTIALLY_SUPPORTED</span> (تغطية المسبار 4/17؛ الباقي dumpsys).</p>
+
+<h2>PHASE 12 — الاسترداد</h2>
+<p>R1–R4 + زر داخل التطبيق + بوابة القناة + أدوات المراقبة (<code>scripts/watch_and_restore.py</code>, <code>restore_default.py</code> مُرقّاة داخل المستودع) —
+<span class="ok">SUPPORTED آليات</span>؛ الدورة الحية الكاملة مؤجلة بقرار المستخدم.</p>
+
+<h2>ملاحظة تنظيف (§51)</h2>
+<div class="box">
+<code>scripts/restore_watch.log</code> ملف سجل داخل المستودع → يُنقل لمجلد السجلات أو يُحذف قبل الإصدار.
+<code>__pycache__</code> مبعثرة — تُستبعد من الحزم (موجودة في <code>.gitignore</code> على الأرجح — تُتحقق).
+ازدواج <code>IMPLEMENTATION_*.md</code> بين <code>docs/</code> و<code>RELEASE/</code> → توحيد المصدر قبل RC.
+لا حذف لأي ملف مهم قبل التأكد — أعلاه مجرد نقل/توحيد، لا تدمير.
+</div>
+
+</div></body>
+</html>

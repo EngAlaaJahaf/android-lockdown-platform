@@ -3,8 +3,11 @@ package com.alp.agent;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.os.UserManager;
 
 import org.json.JSONArray;
@@ -38,8 +41,45 @@ final class AlpOps {
     static final String ENV_APPLY = "/data/local/tmp/alp_envelope.json";
     static final String ENV_CLEAR = "/data/local/tmp/alp_rollback.json";
     static final String ENV_STATE = "/data/local/tmp/alp_req_state.json";
+    static final String ENV_WITHDRAW = "/data/local/tmp/alp_withdraw.json";
 
     private static final String PREFS_LAST = "alp_processed";
+
+    // RFC 1984-style honest helpers: a restriction is proven only by lines the
+    // policy dump literally lists; the radio is only claimed off when the
+    // framework reports it off.
+    /**
+     * Turn the Wi-Fi radio off using every Device-Owner channel that exists.
+     *
+     * DISALLOW_CONFIG_WIFI alone does NOT power off the radio on several
+     * vendor builds (LT-8110 AOSP generic observed) — the user sees the icon
+     * still ON and only the toggle forbidden. On those builds we additionally
+     * (1) write Settings.Global.WIFI_ON=0 through the policy manager (the
+     * documented DO channel) and (2) call WifiManager.setWifiEnabled(false)
+     * as a best-effort radio-level disable. Success is never claimed until
+     * cmd wifi / WifiManager reports the radio actually off.
+     */
+    static void ensureWifiOff(Context context) {
+        DevicePolicyManager dpm =
+                (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName admin = new ComponentName(context, AlpDeviceAdminReceiver.class);
+        if (dpm != null && dpm.isDeviceOwnerApp(context.getPackageName())) {
+            try {
+                dpm.setGlobalSetting(admin, Settings.Global.WIFI_ON, "0");
+            } catch (Exception ignored) {
+            }
+        }
+        try {
+            WifiManager wm = (WifiManager) context.getApplicationContext()
+                    .getSystemService(Context.WIFI_SERVICE);
+            if (wm != null && wm.isWifiEnabled()) {
+                wm.setWifiEnabled(false);
+            }
+        } catch (Exception ignored) {
+            // SecurityException / no-op on strict builds — the restriction and
+            // the global setting still apply; the radio is re-checked later.
+        }
+    }
 
     // feature -> UserManager restriction key the ALP agent manages (single source).
     private static final Map<String, String> MANAGED = new LinkedHashMap<String, String>();
@@ -121,17 +161,28 @@ final class AlpOps {
      */
     static void processPending(Context context) {
         android.util.Log.d(TAG, "processPending enter");
-        if (!alreadyDone(context, ENV_APPLY)) {
+        // A command is pending only while its envelope file physically exists.
+        // A missing file must never be interpreted as a CLEAR request — that
+        // would wipe every applied restriction on the next app resume.
+        String applyEnv = readFile(ENV_APPLY);
+        String clearEnv = readFile(ENV_CLEAR);
+        String stateEnv = readFile(ENV_STATE);
+        if (applyEnv != null && !alreadyDone(context, ENV_APPLY)) {
             android.util.Log.d(TAG, "processPending APPLY file pending");
-            handle(context, CommandReceiver.ACTION_APPLY_POLICY, readFile(ENV_APPLY), ENV_APPLY);
+            handle(context, CommandReceiver.ACTION_APPLY_POLICY, applyEnv, ENV_APPLY);
         }
-        if (!alreadyDone(context, ENV_CLEAR)) {
+        if (clearEnv != null && !alreadyDone(context, ENV_CLEAR)) {
             android.util.Log.d(TAG, "processPending CLEAR file pending");
-            handle(context, CommandReceiver.ACTION_CLEAR_POLICY, readFile(ENV_CLEAR), ENV_CLEAR);
+            handle(context, CommandReceiver.ACTION_CLEAR_POLICY, clearEnv, ENV_CLEAR);
         }
-        if (!alreadyDone(context, ENV_STATE)) {
+        if (stateEnv != null && !alreadyDone(context, ENV_STATE)) {
             android.util.Log.d(TAG, "processPending GET_STATE file pending");
-            handle(context, CommandReceiver.ACTION_GET_STATE, readFile(ENV_STATE), ENV_STATE);
+            handle(context, CommandReceiver.ACTION_GET_STATE, stateEnv, ENV_STATE);
+        }
+        String withdrawEnv = readFile(ENV_WITHDRAW);
+        if (withdrawEnv != null && !alreadyDone(context, ENV_WITHDRAW)) {
+            android.util.Log.d(TAG, "processPending WITHDRAW file pending");
+            handle(context, CommandReceiver.ACTION_WITHDRAW_DO, withdrawEnv, ENV_WITHDRAW);
         }
         android.util.Log.d(TAG, "processPending exit");
     }
@@ -159,6 +210,8 @@ final class AlpOps {
                 getState(context, envelopeJson);
             } else if (CommandReceiver.ACTION_REPORT.equals(action)) {
                 AlpStats.record(context, "report_requested");
+            } else if (CommandReceiver.ACTION_WITHDRAW_DO.equals(action)) {
+                withdrawDeviceOwner(context, envelopeJson);
             }
             if (file != null) {
                 markDone(context, file, envelopeJson);
@@ -175,6 +228,9 @@ final class AlpOps {
         }
         if (CommandReceiver.ACTION_GET_STATE.equals(action)) {
             return ENV_STATE;
+        }
+        if (CommandReceiver.ACTION_WITHDRAW_DO.equals(action)) {
+            return ENV_WITHDRAW;
         }
         return null;
     }
@@ -280,6 +336,19 @@ final class AlpOps {
                     setCameraLock(context, dpm, admin, true);   // device-owner camera control
                     return true;
                 }
+                if ("WIFI".equals(feature)) {
+                    // Some builds don't power the radio off for the restriction;
+                    // force the radio off through DO channels while keeping the
+                    // config lock so the user cannot re-enable it.
+                    String key = MANAGED.get(feature);
+                    if (key != null) {
+                        dpm.addUserRestriction(admin, key);
+                    }
+                    ensureWifiOff(context);
+                    context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
+                            .edit().putBoolean("wifi_blocked", true).apply();
+                    return true;
+                }
                 String key = MANAGED.get(feature);
                 if (key == null) {
                     return false;
@@ -300,6 +369,19 @@ final class AlpOps {
             setCameraLock(context, dpm, admin, false);
             return;
         }
+        if ("WIFI".equals(feature)) {
+            String key = MANAGED.get(feature);
+            if (key != null) {
+                dpm.clearUserRestriction(admin, key);
+            }
+            try {
+                dpm.setGlobalSetting(admin, Settings.Global.WIFI_ON, "1");
+            } catch (Exception ignored) {
+            }
+            context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
+                    .edit().putBoolean("wifi_blocked", false).apply();
+            return;
+        }
         String key = MANAGED.get(feature);
         if (key != null) {
             dpm.clearUserRestriction(admin, key);
@@ -316,9 +398,29 @@ final class AlpOps {
     // treats presence of `UserRestrictionPolicyKey userRestriction_<key>` in
     // EITHER dumpsys block as active, so residual Global entries are surfaced.
     // ------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // LOCAL ROLLBACK — in-app admin recovery button. Lets an on-device
+    // operator clear every managed restriction WITHOUT adb/USB: the same
+    // clearPolicy path used by CLEAR_POLICY, driven from the launcher UI.
+    // ------------------------------------------------------------------
+    static void localRollback(Context context) {
+        android.util.Log.d(TAG, "localRollback requested from UI");
+        String cmdId = "UI-ROLLBACK-" + Long.toString(System.currentTimeMillis() / 1000L);
+        String envelope = "{\"cmd_id\":\"" + cmdId + "\"}";
+        clearPolicy(context, envelope);
+    }
+
+    // ------------------------------------------------------------------
     static void clearPolicy(Context context, String envelopeJson) {
         if (envelopeJson == null) {
             envelopeJson = readFile(ENV_CLEAR);
+        }
+        if (envelopeJson == null) {
+            // No CLEAR request actually exists on the device — never interpret
+            // absence as "clear everything". This closes the wipe-on-resume bug.
+            android.util.Log.d(TAG, "clearPolicy skipped: no CLEAR envelope present");
+            AlpStats.record(context, "clear_rejected_no_envelope");
+            return;
         }
         DevicePolicyManager dpm =
                 (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
@@ -349,6 +451,16 @@ final class AlpOps {
             }
             if (setCameraLock(context, dpm, admin, false)) {
                 cleared.add("CAMERA");
+            }
+            // Full rollback: unconditionally lift the agent-side wifi lockdown
+            // flag and restore the radio setting, regardless of whether the
+            // framework reports the restriction as active (vendor builds list a
+            // guest-default DISALLOW_CONFIG_WIFI that survives clearUserRestriction).
+            context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
+                    .edit().putBoolean("wifi_blocked", false).apply();
+            try {
+                dpm.setGlobalSetting(admin, Settings.Global.WIFI_ON, "1");
+            } catch (Exception ignored) {
             }
         } catch (JSONException e) {
             errors.add("json: " + e.getMessage());
@@ -394,5 +506,87 @@ final class AlpOps {
         AlpStats.writeState(context, cmdId, active, new ArrayList<String>(),
                             new ArrayList<String>(), utcNow(), adminActive);
         AlpStats.record(context, "state_delivered");
+    }
+
+    // ------------------------------------------------------------------
+    // WITHDRAW_DO — programmatic Device-Owner self-unenroll.
+    // The agent removes its own device-owner role via
+    // DevicePolicyManager.clearDeviceOwnerApp() — the documented DO unenroll
+    // API that does NOT require a test-only build and does NOT trip the
+    // "attempt to remove non-test admin" shell SecurityException seen with
+    // `dpm remove-active-admin` on several AOSP builds. Before withdrawing it
+    // clears every managed restriction and stops the enforcement service, so
+    // nothing re-asserts lockdown once the owner role is gone. Claims are
+    // honest: state.json only reports restrictions that were actually active.
+    // ------------------------------------------------------------------
+    static void withdrawDeviceOwner(Context context, String envelopeJson) {
+        if (envelopeJson == null) {
+            envelopeJson = readFile(ENV_WITHDRAW);
+        }
+        if (envelopeJson == null) {
+            android.util.Log.d(TAG, "withdraw skipped: no WITHDRAW envelope present");
+            AlpStats.record(context, "withdraw_rejected_no_envelope");
+            return;
+        }
+        DevicePolicyManager dpm =
+                (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName admin = new ComponentName(context, AlpDeviceAdminReceiver.class);
+        boolean adminActive = dpm != null && dpm.isAdminActive(admin);
+        if (dpm == null || !dpm.isDeviceOwnerApp(context.getPackageName())) {
+            android.util.Log.d(TAG, "withdraw skipped: not device owner (adminActive="
+                    + adminActive + ")");
+            AlpStats.record(context, "withdraw_rejected_not_owner");
+            return;
+        }
+        List<String> cleared = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        String cmdId = "?";
+        try {
+            JSONObject env = new JSONObject(envelopeJson);
+            cmdId = env.optString("cmd_id", "?");
+            Bundle cur = dpm.getUserRestrictions(admin);
+            for (Map.Entry<String, String> e : MANAGED.entrySet()) {
+                if (cur == null || !cur.getBoolean(e.getValue())) {
+                    continue;
+                }
+                try {
+                    dpm.clearUserRestriction(admin, e.getValue());
+                    if (!cleared.contains(e.getKey())) {
+                        cleared.add(e.getKey());
+                    }
+                } catch (Exception ex) {
+                    errors.add(e.getKey() + ": " + ex.getClass().getSimpleName());
+                }
+            }
+            if (setCameraLock(context, dpm, admin, false)) {
+                cleared.add("CAMERA");
+            }
+            // Lift the agent-side wifi lockdown and restore the radio setting.
+            context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
+                    .edit().putBoolean("wifi_blocked", false).apply();
+            try {
+                dpm.setGlobalSetting(admin, Settings.Global.WIFI_ON, "1");
+            } catch (Exception ignored) {
+            }
+        } catch (JSONException e) {
+            errors.add("json: " + e.getMessage());
+        }
+        // The enforcement service must not re-assert anything after owner drop.
+        try {
+            context.stopService(new Intent(context, AlpForegroundService.class));
+        } catch (Exception ignored) {
+        }
+        boolean withdrawn = false;
+        try {
+            dpm.clearDeviceOwnerApp(context.getPackageName());
+            withdrawn = true;
+        } catch (Exception ex) {
+            errors.add("owner: " + ex.getClass().getSimpleName());
+        }
+        AlpStats.writeState(context, cmdId, cleared, new ArrayList<String>(),
+                            errors, utcNow(),
+                            dpm != null && dpm.isAdminActive(admin));
+        AlpStats.record(context, withdrawn ? "owner_withdrawn:" + cleared.size()
+                                           : "owner_withdraw_failed");
     }
 }

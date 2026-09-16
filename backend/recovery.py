@@ -1,5 +1,9 @@
-"""RecoveryEngine — R1..R4 (approved §7 recovery matrix / EXECUTE §20).
+"""RecoveryEngine — R0..R4 (approved §7 recovery matrix / EXECUTE §20).
 
+  R0_WITHDRAW        withdraw the device-owner role (dpm remove-active-admin
+                     on the testOnly agent + dpm list-owners verification).
+                     Reversible via R2, MEDIUM impact -> RECOVER approval +
+                     the per-device recovery credential (possession factor).
   R1_RESTORE_POINT  rollback the applied policy on the device (CLEAR_POLICY).
                     Reversible, MEDIUM impact -> RECOVER approval + the
                     per-device recovery credential (possession factor).
@@ -26,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -35,8 +40,12 @@ from .audit import AuditLog
 from .command import new_command
 from . import rbac
 
+_NO_WINDOW = (getattr(subprocess, "CREATE_NO_WINDOW", 0)
+              if sys.platform == "win32" else 0)
 
-RECOVERY_MODES = ("R1_RESTORE_POINT", "R2_REPROVISION", "R3_LAB_FLASH", "R4_DIAGNOSTIC")
+
+RECOVERY_MODES = ("R0_WITHDRAW", "R1_RESTORE_POINT", "R2_REPROVISION",
+                  "R3_LAB_FLASH", "R4_DIAGNOSTIC")
 
 
 @dataclass
@@ -69,7 +78,8 @@ def adb() -> str:
 
 def _run(args: list[str], timeout: int = 40):
     try:
-        return subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        return subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                              creationflags=_NO_WINDOW or 0)
     except Exception as ex:
         class R:
             returncode = -1
@@ -106,6 +116,7 @@ class RecoveryEngine:
         if credential_ok is None:
             credential_ok = bool(mfa_ok)
         handler = {
+            "R0_WITHDRAW": self._r0,
             "R1_RESTORE_POINT": self._r1,
             "R2_REPROVISION": self._r2,
             "R3_LAB_FLASH": self._r3,
@@ -135,6 +146,78 @@ class RecoveryEngine:
 
     def _evidence_id(self) -> str:
         return "REC-" + time.strftime("%Y%m%d") + "-" + uuid.uuid4().hex[:8].upper()
+
+    # ------------------------------------------------------------------
+    # R0 — withdraw the Device Owner role from the ALP agent.
+    # ------------------------------------------------------------------
+    def _r0(self, device_id, op_role, admin_id, credential_ok, approval, serial,
+            exec_, reason) -> RecoveryResult:
+        """Withdraw the device-owner role (WITHDRAW_DO → clearDeviceOwnerApp).
+
+        dpm remove-active-admin only works on test-only builds and is refused on
+        several AOSP builds even then, so withdrawal is driven by the agent
+        itself: a signed WITHDRAW_DO envelope calls
+        DevicePolicyManager.clearDeviceOwnerApp (the documented DO self-unenroll
+        API). The engine never claims COMPLETE from the channel outcome alone:
+        on a real device it verifies with `dpm list-owners` that the agent is
+        genuinely absent, and only then updates the device bookkeeping to
+        device_owner_state=NONE. Same gates as R1/R2: RECOVER approval +
+        per-device recovery credential + real ADB serial.
+        """
+        res = RecoveryResult("R0_WITHDRAW", device_id)
+        self._authorize(op_role, "RECOVER", credential_ok, approval, "R0")
+        self._update_state(device_id, "RECOVERY")
+        plan = [
+            {"step": 1,
+             "cmd": "WITHDRAW_DO envelope → agent calls DPM.clearDeviceOwnerApp()",
+             "why": "remove the DeviceOwner role programmatically via the "
+                    "documented DO self-unenroll API — no testOnly requirement"},
+            {"step": 2,
+             "cmd": "adb shell dpm list-owners",
+             "why": "verify no device owner remains (honest gate: COMPLETE "
+                    "only when the list no longer names the agent)"},
+        ]
+        res.details["plan"] = plan
+        env = new_command(0, device_id, "WITHDRAW_DO",
+                          {"reason": reason or "operator-initiated owner withdrawal"},
+                          key=self.signing_key)
+        if self.channel_send is not None:
+            outcome = self.channel_send(env, "WITHDRAW_DO")
+            if not outcome.get("ok"):
+                res.status = "FAILED"
+                res.reason = f"channel send failed: {outcome.get('error')}"
+                self._finish(res, device_id, op_role, admin_id, "R0", result="FAILED")
+                return res
+        else:
+            res.details["prepared"] = {
+                "cmd_id": env["cmd_id"], "action": "WITHDRAW_DO",
+                "note": "no channel configured — withdrawal envelope prepared only"}
+        res.evidence_id = self._evidence_id()
+        self._stamp(res.evidence_id, device_id, "PENDING")
+        owner_gone = False
+        owners_dump = ""
+        if serial:
+            r = _run([adb(), "-s", serial, "shell", "dpm", "list-owners"])
+            owners_dump = (r.stdout or "")[:200]
+            owner_gone = r.returncode == 0 and "com.alp.agent" not in (r.stdout or "").lower()
+            res.details["owners"] = owners_dump
+        if owner_gone:
+            res.status = "COMPLETE"
+            res.reason = "device owner removed and verified absent"
+            res.source = "REAL_DEVICE"
+            self._update_owner_state(device_id, "NONE")
+        elif serial:
+            res.status = "PARTIAL"
+            res.reason = "device owner still present after WITHDRAW_DO"
+            res.source = "REAL_DEVICE"
+        else:
+            res.status = "PLAN_ONLY"
+            res.reason = "no serial — withdrawal prepared but not verified on device (honest)"
+            res.source = "SIMULATED"
+        self._stamp(res.evidence_id, device_id, res.status)
+        self._finish(res, device_id, op_role, admin_id, "R0", result=res.status,
+                     evidence_ref=res.evidence_id, extra={"verified": res.source})
+        return res
 
     # ------------------------------------------------------------------
     def _r1(self, device_id, op_role, admin_id, credential_ok, approval, serial,
@@ -299,6 +382,11 @@ class RecoveryEngine:
     def _update_state(self, device_id: str, state: str):
         with connect(self.db_path) as c:
             c.execute("UPDATE devices SET enrollment_state=? WHERE device_id=?",
+                      (state, device_id))
+
+    def _update_owner_state(self, device_id: str, state: str):
+        with connect(self.db_path) as c:
+            c.execute("UPDATE devices SET device_owner_state=? WHERE device_id=?",
                       (state, device_id))
 
     def _finish(self, res: RecoveryResult, device_id, op_role, admin_id,

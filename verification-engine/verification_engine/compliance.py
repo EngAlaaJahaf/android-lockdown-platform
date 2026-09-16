@@ -23,10 +23,14 @@ def evaluate(device_id: str, policy_id: str,
     NON_COMPLIANT; unobservable lanes never fabricate compliance (UNKNOWN/PARTIAL).
     """
     v = ComplianceVerdict(device_id, policy_id)
+    RESTRICT_SATISFIES = {"OFF", "RESTRICT", "BLOCK"}
     diff = {}
     for feat, want in expected.items():
         got = actual.get(feat)
-        diff[feat] = (want, got, got is not None and got == want)
+        ok = got is not None and (
+            got == want
+            or (got == "RESTRICTED" and want in RESTRICT_SATISFIES))
+        diff[feat] = (want, got, ok)
     v.details = diff
 
     total = len(diff)

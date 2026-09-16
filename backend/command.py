@@ -14,7 +14,7 @@ import time
 import uuid
 from typing import Optional
 
-from .config import SIGNING_KEY
+from .config import SIGNING_KEY, signing_key as _current_key
 from .db import connect
 
 
@@ -27,7 +27,7 @@ def _canonical(payload: dict) -> bytes:
 
 
 def sign_command(payload: dict, key: Optional[str] = None) -> str:
-    key = key or SIGNING_KEY
+    key = key or _current_key() or SIGNING_KEY
     if not key:
         raise CommandRejected("signing key not configured")
     return hmac.new(key.encode("utf-8"), _canonical(payload), hashlib.sha256).hexdigest()
@@ -57,7 +57,7 @@ def verify_envelope(envelope: dict, expected_device: str,
                     key: Optional[str] = None) -> None:
     """Validate authenticity, freshness, device binding, replay-avoidance."""
     env = dict(envelope)                      # never mutate the caller's object
-    key = key or SIGNING_KEY
+    key = key or _current_key() or SIGNING_KEY
     if not key:
         raise CommandRejected("signing key not configured")
     if env.get("device_id") != expected_device:

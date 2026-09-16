@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>معمارية الأمان — حارس الموبايل (PHASE 4)</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.7}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:600}.warn{color:#ffd479;font-weight:600}.fail{color:#ff8d8d;font-weight:600}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12.5px}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>معمارية الأمان — PHASE 4</h1>
+<p><small>2026-09-13 · كل بند أدناه مربوط بملف كود مقروء — لا تصميم ورقي بلا تنفيذ (§61: تنفيذ هندسي حقيقي).</small></p>
+
+<h2>1) المصادقة والتفويض (§29–30)</h2>
+<table>
+<tr><th>المكوّن</th><th>التنفيذ</th><th>الدليل</th></tr>
+<tr><td>RBAC خمسة أدوار</td><td><code>SUPER_ADMIN, DEVICE_ADMIN, POLICY_ADMIN, AUDITOR, READ_ONLY</code> — قرار لكل (دور، عملية): ALLOW / DENY / REQUIRES_APPROVAL</td><td><code>backend/rbac.py:decision_for/authorize</code> + جدول <code>permissions</code></td></tr>
+<tr><td>لا كلمة مرور رئيسية (§22)</td><td>عامل الحيازة = شهادة الاسترداد الخاصة بكل جهاز (<code>RecoveryVault.verify_for</code>)؛ كلمة المرور عامل إضافي فقط لا وحيد</td><td><code>backend/recovery_credentials.py:115-276</code> · <code>rbac.authorize(..., require_credential=True)</code></td></tr>
+<tr><td>العمليات الحساسة</td><td><code>UNLOCK, PARTIAL_UNLOCK, RECOVER, UNENROLL, RETIRE, FACTORY_RESET, FIRMWARE, KEY_MANAGEMENT, BULK_APPLY</code></td><td><code>backend/rbac.py:59-67</code></td></tr>
+<tr><td>القاعدة المزدوجة</td><td><code>FACTORY_RESET, RETIRE, FIRMWARE, UNENROLL</code> تتطلب تأكيدين مسمّيين متميزين</td><td><code>backend/approval.py:confirm</code> · <code>requires_dual_approval</code> — مُستخدم فعليًا في <code>APPRV-20260913-FRESET-CTL1</code></td></tr>
+</table>
+
+<h2>2) إدارة المفاتيح والتشفير</h2>
+<table>
+<tr><th>البند</th><th>التنفيذ</th></tr>
+<tr><td>شهادة كل جهاز</td><td>256 بت عشوائية، فريدة لكل جهاز، لا تُعرض للمستخدم (يُعرض <code>XXXX-XXXX</code> فقط)، لا تُخزَّن نصًا أبدًا</td></tr>
+<tr><td>التشفير في الراحة</td><td>AES-256-GCM؛ مفتاح كل جهاز = <code>HKDF(root_key, device_id)</code>؛ المفتاح الجذري ملفوف بـWindows DPAPI (<code>CryptProtectData</code>) بجانب القاعدة</td></tr>
+<tr><td>النطاق الصريح</td><td>ليست بابًا خلفيًا: تُصرّح إجراءات المنصة نفسها فقط (مالك الجهاز/DPC/التسجيل) — لا تتجاوز FRP/bootloader/Knox/OEM/Google</td></tr>
+</table>
+
+<h2>3) التدقيق المضاد للعبث (§31)</h2>
+<div class="box">
+سجل إلحاقي بسلسلة هاش SHA-256: كل إدخال يخزّن <code>prev_hash</code> (هاش سابقه) و<code>hash = sha256(prev + canonical + salt)</code>.
+<code>tamper_check()</code> يمشي السلسلة ويبلّغ عن أي رابط مكسور أو صف معدّل. حارس الأسرار: حقول
+(<code>password/secret/token/signing_key/credential/...</code>) تُحجب تلقائيًا <code>[REDACTED]</code> قبل الكتابة —
+<code>backend/audit.py</code>. كل عملية حساسة تسجّل: الفاعل، الدور، الجهاز، السابق/الجديد، السبب، الموافقة، النتيجة، <code>evidence_ref</code>.
+</div>
+
+<h2>4) آلة حالات الجهاز (§9)</h2>
+<p><code>backend/state_machine.py</code> — 11 حالة
+(<code>UNMANAGED → ENROLLMENT_PENDING → ENROLLED → CORPORATE_STANDARD/PARTIAL_LOCKDOWN/PHONE_ONLY/FULL_LOCKDOWN/MAINTENANCE → RECOVERY/QUARANTINE → RETIREMENT</code> الطرفية)
+بمصفوفة انتقالات صارمة؛ أي انتقال خارجها مرفوض ويُدوَّن كحدث <code>No-Transition</code>.</p>
+
+<h2>5) الفجوات الصادقة (§56)</h2>
+<table>
+<tr><th>البند (§)</th><th>الحالة</th></tr>
+<tr><td>تشفير أثناء النقل لقناة خلفية (§29)</td><td class="warn">PARTIALLY — القناة الحالية ADB/USB محلية؛ قناة الشبكة المستقبلية (§33) تصميم فقط</td></tr>
+<tr><td>مكافحة العبث في الوكيل (§47)</td><td class="warn">PARTIALLY — كشف العبث عبر التوقيع/الحالة؛ لا ادعاء «منع الهندسة العكسية 100%»</td></tr>
+<tr><td>إدارة الجلسات والرموز</td><td class="warn">PARTIALLY — الموافقات مُسمّاة ومؤقتة؛ جلسات واجهة كاملة: لاحقًا مع الخلفية</td></tr>
+<tr><td>تدقيق أمني خارجي (§49)</td><td class="fail">NOT_VERIFIED — لم يُجرَ بعد (مجدول PHASE 14)</td></tr>
+</table>
+
+</div></body>
+</html>

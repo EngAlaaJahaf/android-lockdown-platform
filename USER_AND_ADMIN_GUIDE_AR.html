@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دليل المستخدم والمشرف — ALP Manager</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:24px;line-height:1.8}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:26px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:19px;color:#9fc0ff;margin-top:32px;border-right:4px solid #2f6fed;padding-right:10px}
+  h3{font-size:16px;color:#bcd3ff}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:13px}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:12px 16px;margin:12px 0}
+  .warn{color:#ffd479;font-weight:600}
+  .ok{color:#5ee0a0;font-weight:600}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
+  th,td{border:1px solid #2a3550;padding:6px 9px;text-align:right}
+  th{background:#1b2333;color:#cfe0ff}
+  small{color:#8ba3c7}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>دليل المستخدم والمشرف — ALP Manager v1.0.0</h1>
+<p><small>بالعربية (RTL) · يشمل التثبيت، الاستخدام اليومي، إنشاء السياسات، التطبيق والتحقق، الاسترداد، الجرد، التشخيص، واستكشاف الأعطال</small></p>
+
+<h2>1) التثبيت</h2>
+<ul>
+<li><b>نسخة المثبّت</b>: شغّل <code>AndroidLockdownManager_Setup-v1.0.0.exe</code> — تثبيت لكل مستخدم (بلا صلاحيات إدارة)، إنشاء اختصارات قائمة ابدأ + سطح المكتب، وسجل إزالة مستقل. الإزالة من «الإعدادات ← التطبيقات ← ALP Manager ← إلغاء التثبيت» أو <code>... --uninstall</code>.</li>
+<li><b>النسخة المحمولة</b>: شغّل <code>AndroidLockdownManager-v1.0.0-windows-x64-portable.exe</code> مباشرة.</li>
+<li>تحقق من بصمة الملف: <code>Get-FileHash .\AndroidLockdownManager_Setup-v1.0.0.exe -Algorithm SHA256</code> مقابل <code>RELEASE/SHA256SUMS.txt</code>.</li>
+<li><b>البيانات</b> تُحفظ خارج الحزمة في <code>%LOCALAPPDATA%\ALPManager\</code> (قاعدة البيانات، مفاتيح DPAPI، سجلات، تقارير) — لا تتأثر بإعادة تثبيت النسخة المحمولة.</li>
+</ul>
+
+<h2>2) أول تشغيل</h2>
+<ol>
+<li>التطبيق يفتح مباشرةً بوضع «المشغّل المحلي» (لا تسجيل دخول).</li>
+<li>صفحة «الأجهزة» تُظهر حافلة ADB حيّة (تحديث كل 4 ثوانٍ): الأجهزة المكتشفة جاهزة/غير جاهزة (فعّل «تصحيح أخطاء USB» على الهاتف وأكّد الإذن).</li>
+<li>اضغط «تسجيل الجهاز» — يُنشأ <code>device_id</code> تلقائيًا (لا يُكتَب يدويًا)، ويُصدر تلقائيًا <b>بيان استرداد خاص بالجهاز</b> لهذه الوحدة (مشفّر DPAPI).</li>
+<li>اختر «فتح الجهاز (تحديد)»؛ يُحفَظ سياق الجهاز النشط ويعود بعد إعادة التشغيل.</li>
+</ol>
+
+<h2>3) السياسات</h2>
+<div class="box">
+<b>سياسات جاهزة:</b> هاتف فقط · القياسية · إغلاق كامل · تقليص جزئي · صيانة · عزل.<br>
+<b>سياسة مخصصة:</b> في صفحة السياسات، سمِّ السياسة واختر الفئة (6 فئات: عامة/تقييد/اتصالات/…) والخطورة، وحدِّد الأجنحة (27 ميزة قابلة للقفل) من الشبكة، ثم «إنشاء» → تُخزَّن بمعرّف <code>POL-CUST-*</code> وتظهر في قائمة التطبيق مباشرةً.<br>
+<b>إغلاق كامل بمعالج:</b> زر المعالج يفتح نافذة 25 ميزة محدّدة مسبقًا (اسم اختياري) → سياسة FULL_LOCKDOWN/CRITICAL.
+</div>
+<h3>الأجنحة المهمة</h3>
+<table>
+<tr><th>الجناح</th><th>المعنى</th><th>آلية الإثبات النموذجية</th></tr>
+<tr><td>WIFI / TETHERING / HOTSPOT</td><td>الشبكات</td><td>قيود UserManager (طبقة API)</td></tr>
+<tr><td>CALLS / SMS / CONTACTS</td><td>الاتصال (مسموح عادة)</td><td>تحقق فقط</td></tr>
+<tr><td>GPS / LOCATION</td><td>الموقع</td><td>قيد خدمات الموقع (يمكن تبنّي RESTRICT = نفس آلية BLOCK حفاظًا على التكامل)</td></tr>
+<tr><td>CAMERA / MICROPHONE / USB / ADB / DEVELOPER_OPTIONS</td><td>الأجهزة والتصحيح</td><td>قيود UserManager / DPM</td></tr>
+<tr><td>APP_INSTALLATION / UNKNOWN_SOURCES / PLAY_STORE / BROWSER</td><td>التطبيقات</td><td>قيود + قائمة مسموح</td></tr>
+<tr><td>FACTORY_RESET_RECOVERY / REFLAH_FIRMWARE</td><td>أجنحة الاسترداد الحرجة</td><td>WARN_AUDIT فقط (لا تُنفَّذ تلقائيًا)</td></tr>
+</table>
+
+<h2>4) التطبيق والتحقق</h2>
+<ol>
+<li>اختر الجهاز النشط والسياسة → «تطبيق مع المعاينة»: المعاينة تعرض المتطلّبات مقابل الحالة الحالية على الجهاز (<code>source: REAL_DEVICE | DEVICE_NOT_ATTACHED</code>).</li>
+<li>يعمل فحص مسبق (<code>preflight</code>): التسجيل، معرفة السياسة، اتصال ADB، قابلية قراءة قيود الجهاز، قناة Device-Owner، حيازة البيان، النطاق — PASS/CONDITIONAL/FAIL.</li>
+<li>طلب العملية الحساسة يتطلب <b>حيازة البيان</b>: تظهر شاشة تأكيد تعرض معرّف الاسترداد (<code>XXXX-XXXX</code>) للجهاز المطلوب.</li>
+<li>أثناء التنفيذ تُقفل الأدوات؛ النتيجة تُعرض بجدول: الجهاز/السياسة/المرحلة/مصدر الدليل/الحكم/الالتزام/<code>evidence_id</code>/<code>audit_id</code>/سلامة السلسلة.</li>
+</ol>
+<div class="box warn"><b>قراءة الحكم بصدق:</b> «متوافق» تُعرض فقط بدليل حقيقي. «غير معروف» (UNKNOWN) تعني: لا يوجد دليل إثبات بعد (غالبًا قبل تثبيت مالك الجهاز) — لا يُفسَّر غياب الإثبات نجاحًا.</div>
+
+<h2>5) حالة الالتزام (compliance)</h2>
+<p>بعد كل تطبيق تُكتب لقطة التزام لكل جناح: «المتوقَّع مقابل الفعلي» (خريطة JSON في جدول <code>compliance</code>) مع
+<code>checked_at</code>. لوحة «حالة الالتزام» تعرض: متوافق / متوافق جزئيًا / غير متوافق / غير معروف / غير مدعوم.</p>
+
+<h2>6) الاسترداد (المشرف)</h2>
+<ul>
+<li>بيانات الاسترداد تُحفظ <b>مشفَّرة</b> (DPAPI، هذه الوحدة فقط)، تُعرض بصورة <code>recovery_id</code> فقط.</li>
+<li>R1/R2 (إنعاش/استرداد) تتطلب تأكيدين باسْمَين مختلفَين + السبب؛ R3 (استعادة إعدادات المصنع عبر القنوات الحرجة) يُسجَّل REFUSED صادقًا ما لم تكن القناة مدعومة.</li>
+<li>إصدار/تدوير/إلغاء: صفحة «الاسترداد» — الأزرار متاحة فقط مع حيازة البيان الخاص بالجهاز المعني.</li>
+</ul>
+
+<h2>7) التطبيقات (جرد صادق)</h2>
+<p>صفحة «التطبيقات» تعرض جرد الحزم الفعلي من الجهاز (<code>pm list packages</code> / <code>-3</code>): حزم الجهات الخارجية
+والنظام، مع بحث وفلاتر. المنصة توضح بشفافية أن <b>حظر/إزالة التطبيقات</b> يصبح ممكنًا فقط بعد Device Owner عبر وكيل DPC؛
+العرض الحالي للقراءة فقط ولا يوحي بإمكانية غير متوفرة.</p>
+
+<h2>8) التشخيص والسجلات</h2>
+<ul>
+<li>صفحة «التشخيص»: قاعدة البيانات، ADB، الجلسة، سلامة سلسلة التدقيق، حالة التمهيد.</li>
+<li>السجلات: <code>%LOCALAPPDATA%\ALPManager\logs\alp.log</code> (+ <code>startup-error.log</code> عند فشل الإقلاع).</li>
+<li>نوافذ الأوامر لا تومض: كل أدوات <code>adb/dumpsys/powershell</code> تعمل مخفية.</li>
+</ul>
+
+<h2>9) استكشاف الأعطال</h2>
+<table>
+<tr><th>العرض</th><th>السبب</th><th>الإجراء</th></tr>
+<tr><td>«غير جاهز» في حافلة ADB</td><td>التصحيح معطّل أو الإذن غير مؤكَّد</td><td>فعّل «تصحيح أخطاء USB» ووافق على النافذة على الهاتف</td></tr>
+<tr><td>UNKNOWN بعد التطبيق</td><td>لا Device Owner بعد / قنوات غير قابل للرصد</td><td>ثبّت مالك الجهاز ثم أعد التحقق؛ النتيجة صادقة لا افتراض</td></tr>
+<tr><td>التطبيق مقفول عند التطبيق</td><td>استثناءات غير محلولة (بوابة الصدق)</td><td>انظر «معاينة» لمعرفة الأجنحة؛ استخدم سياسة مناسبة أو أصلح طبقة التوافق للجهاز</td></tr>
+<tr><td>«لا حيازة بيان»</td><td>الجهاز لم يُصدَر بيانه من هذه الوحدة</td><td>سجّل/أنشئ البيان من هذه الوحدة (إصدار الاسترداد)</td></tr>
+</table>
+
+<h2>10) اصطلاحات النطق (لأجل قراءة أدق للتقارير)</h2>
+<table>
+<tr><th>المصطلح</th><th>المعنى</th></tr>
+<tr><td>REAL_DEVICE</td><td>دليل مقروء من الجهاز الفعلي (ADB/dumpsys)</td></tr>
+<tr><td>SIMULATED</td><td>محاكاة حاسوبية — <b>لا تُحسب نجاحًا أبدًا</b></td></tr>
+<tr><td>evidence_id / audit_id</td><td>معرّف الدليل/التدقيق المتسلسل</td></tr>
+<tr><td>Device Owner (DPC)</td><td>تطبيق مالك الجهاز — شرط إثبات القيود الشاملة</td></tr>
+<tr><td>recovery_id</td><td>معرّف بيان الاسترداد العرضي (لا يكشف السرّ)</td></tr>
+</table>
+
+<p><small>التفاصيل التقنية: <code>RELEASE/AUTHENTICATION_AND_RECOVERY_DESIGN.html</code> · <code>RELEASE/IMPLEMENTATION_CHANGELOG.md</code></small></p>
+</div></body></html>

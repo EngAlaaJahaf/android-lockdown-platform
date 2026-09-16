@@ -15,6 +15,7 @@ from .controller import Controller
 from backend.recovery import RECOVERY_MODES
 
 MODE_HINTS = {
+    "R0_WITHDRAW": "Withdraw Device Owner: dpm remove-active-admin (testOnly build) + verify owner gone",
     "R1_RESTORE_POINT": "Restore point: clear applied restrictions (probe-verified, requires 2nd approver)",
     "R2_REPROVISION": "Re-provision: plan only (needs matching hardware/DPC in the field)",
     "R3_LAB_FLASH": "Lab flash of firmware: ALWAYS REFUSED (governance LAB_ONLY)",
@@ -486,5 +487,20 @@ class App(tk.Tk):
             self._apply_pol.set(pol_ids[0])
 
 
-def main():
-    App().mainloop()
+def main() -> int:
+    try:
+        App().mainloop()
+        return 0
+    except BaseException as ex:  # noqa: BLE001
+        from . import logger
+        import traceback
+        logger.log_startup_error(ex, traceback.format_exc())
+        try:
+            from tkinter import messagebox
+            messagebox.showerror("ALP Manager — خطأ عند بدء التشغيل",
+                                 f"تعذّر بدء المنصة.\n{type(ex).__name__}: {ex}\n\n"
+                                 "التفاصيل الكاملة في سجل الأخطاء:\n"
+                                 + logger.log_dir())
+        except Exception:  # noqa: BLE001
+            pass
+        return 1

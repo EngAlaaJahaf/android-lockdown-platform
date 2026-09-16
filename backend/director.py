@@ -11,6 +11,7 @@ layers; tests inject honest fakes.
 """
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from typing import Callable, Optional
@@ -116,6 +117,23 @@ class Director:
         if lane_subset:
             effective = [r for r in snap.resolved if r.feature in lane_subset]
 
+        # 1b. Management-channel protection: never let a REAL delivery sever the
+        # only uplink unless a recovery channel is demonstrably available.
+        if evidence_src == "REAL_DEVICE":
+            from .management_channel import check_recovery_channel, \
+                RecoveryChannelError
+            _dpc_in_app = os.environ.get("ALP_DPC_IN_APP_ROLLBACK", "0") == "1"
+            try:
+                rc = check_recovery_channel(
+                    device_id, [r.feature for r in effective],
+                    db_path=self.db_path,
+                    dpc_in_app_rollback=_dpc_in_app)
+            except RecoveryChannelError as ex:
+                res.notes.append("recovery-channel-check: BLOCKED (" + str(ex) + ")")
+                raise ApplyBlocked(str(ex))
+            res.notes.append("recovery-channel-check: " + rc["summary"]
+                             + ("; allowed" if rc["allowed"] else "; BLOCKED"))
+
         # 2. Authorization + approval gate
         rbac.authorize(op_role, "APPLY", require_mfa=True, mfa_ok=mfa_ok, approval=approval)
         if not can_transition("ENROLLED", "PHONE_ONLY") and capability.device_owner is not True:
@@ -154,6 +172,11 @@ class Director:
         from .compliance_forge import compliance_forge
         res.compliance = compliance_forge(device_id, policy.policy_id,
                                           expected, (verdict.observations or {}))
+        compliance_details = {
+            f: {"expected": expected.get(f),
+                "actual": (verdict.observations or {}).get(f)}
+            for f in expected
+        }
 
         # 6. State transition + persist + audit
         new_state = self._target_state(policy.category)
@@ -161,7 +184,8 @@ class Director:
             new_state = transition("ENROLLED", new_state)
         except Exception:
             new_state = "ENROLLED"
-        self._persist(device_id, policy.policy_id, verdict.result, res.evidence_id, new_state)
+        self._persist(device_id, policy.policy_id, verdict.result, res.evidence_id,
+                      new_state, compliance_details)
         res.stage = "COMPLETE"
         res.audit_id = self.audit.record(
             "cli", op_role, "AD4_APPLY", device_id=device_id,
@@ -181,7 +205,8 @@ class Director:
         }.get(category, "ENROLLED")
 
     def _persist(self, device_id: str, policy_id: str,
-                 result: str, evidence_id: str, new_state: str):
+                 result: str, evidence_id: str, new_state: str,
+                 compliance_details: dict = None):
         with connect(self.db_path) as c:
             row = c.execute("SELECT id, enrollment_state FROM devices WHERE device_id=?",
                             (device_id,)).fetchone()
@@ -196,6 +221,19 @@ class Director:
                 c.execute("UPDATE devices SET enrollment_state=?, compliance_state=?, "
                           "last_verification_at=datetime('now') WHERE device_id=?",
                           (dev_state, comp, device_id))
+                # Persist a compliance snapshot (per-feature diff) — the
+                # compliance table is a real reportable artifact, not a stub.
+                # (Requires the policy row to exist for the FK — the real
+                # workflow persists reference policies before applying.)
+                import json
+                pol_row = c.execute("SELECT id FROM policies WHERE policy_id=?",
+                                    (policy_id,)).fetchone()
+                if pol_row:
+                    c.execute("INSERT INTO compliance (device_id, policy_id, result, details, checked_at) "
+                              "VALUES (?,?,?,?,datetime('now'))",
+                              (row["id"], pol_row["id"], comp,
+                               json.dumps(compliance_details, sort_keys=True)
+                               if compliance_details else None))
 
     def _stamp_evidence(self, evidence_id: str, device_id: str, result: str):
         with connect(self.db_path) as c:
@@ -206,11 +244,3 @@ class Director:
                       (evidence_id, dev_pk, "VERIFY_RESULT", result))
             c.execute("UPDATE evidence SET result=? WHERE evidence_id=? AND result='PENDING'",
                       (result, evidence_id))
-
-
-# ---------------------------------------------------------------------------
-# Compliance mapping helper (kept here to avoid a circular import)
-# ---------------------------------------------------------------------------
-
-def _not_used():
-    pass

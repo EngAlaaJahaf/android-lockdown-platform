@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير ما بعد التنفيذ والتدقيق الفني الشامل — حارس الموبايل</title>
+<style>
+  body{font-family:"Segoe UI","Tahoma",sans-serif;background:#10141b;color:#e8eef7;margin:0;padding:0;line-height:1.75}
+  nav{position:sticky;top:0;z-index:50;background:#0c1017;border-bottom:1px solid #2a3550;padding:8px 16px}
+  nav a{color:#7da9ff;text-decoration:none;font-size:12.5px;margin-left:12px}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px}
+  h1{font-size:27px;color:#7da9ff;border-bottom:2px solid #2f6fed;padding-bottom:10px}
+  h2{font-size:20px;color:#9fc0ff;margin-top:36px;border-right:4px solid #2f6fed;padding-right:10px}
+  h3{font-size:16px;color:#cfe0ff;margin-top:22px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}
+  th,td{border:1px solid #2a3550;padding:7px 10px;text-align:right;vertical-align:top}
+  th{background:#1b2333;color:#cfe0ff}
+  .ok{color:#5ee0a0;font-weight:700}.warn{color:#ffd479;font-weight:700}.fail{color:#ff8d8d;font-weight:700}.mut{color:#8ba3c7}
+  .box{background:#161d2c;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;margin:14px 0}
+  .badge{display:inline-block;border:1px solid #2a3550;border-radius:20px;padding:1px 12px;font-size:12px;font-weight:700;margin:2px}
+  .b-ok{background:#0e2a1c;color:#5ee0a0}.b-warn{background:#2e250c;color:#ffd479}.b-fail{background:#331414;color:#ff8d8d}.b-mut{background:#1b2333;color:#8ba3c7}
+  code{background:#0d1120;border:1px solid #2a3550;padding:1px 6px;border-radius:4px;font-size:12px}
+  pre{background:#0d1120;border:1px solid #2a3550;border-radius:8px;padding:12px 16px;overflow-x:auto;font-size:12.5px;line-height:1.6}
+  small{color:#8ba3c7}
+  @media print{nav{display:none}}
+</style>
+</head>
+<body>
+<nav><a href="#exec">الملخص</a><a href="#inv">الجرد</a><a href="#time">الزمني</a><a href="#trace">التتبع</a><a href="#comp">المكونات</a><a href="#arch">المعمارية</a><a href="#scen">السيناريوهات</a><a href="#agent">الوكيل</a><a href="#win">الواجهة</a><a href="#blue">المخططات</a><a href="#sec">الأمن</a><a href="#feas">التنفيذ</a><a href="#gaps">الفجوات</a><a href="#issues">المشاكل</a><a href="#tests">الاختبار</a><a href="#final">الختام</a><a href="#refs">المراجع</a></nav>
+<div class="wrap">
+
+<h1>تقرير ما بعد التنفيذ والتدقيق الفني الشامل — «حارس الموبايل»</h1>
+<p><small>MOBILE_GUARD_POST_IMPLEMENTATION_TECHNICAL_REPORT · 2026-09-14 · تدقيق فقط بلا تغيير كود (§45) · الدقة &gt; الشمول &gt; العرض · بلا دليل = NOT VERIFIED</small></p>
+
+<h2 id="exec">§41 — الملخص التنفيذي</h2>
+<div class="box">
+<b>ماذا تم بناء؟</b> منصة إدارة أجهزة أندرويد (تطبيق Windows عربي + وكيل مالك-جهاز + 6 محركات + أمن + استرداد + أدلة): 64 ملف Python و6 ملفات Java، بمخرجات (EXE 53MB + مثبّت 61MB + APK 25KB).<br>
+<b>ماذا يعمل؟</b> الاكتشاف، الفحص، 6 سياسات، المعاينة، الفحص المسبق، التطبيق على جهاز حقيقي (مُثبت dumpsys)، التحقق الصادق، الأدلة، التدقيق، آليات الاسترداد.<br>
+<b>ماذا لم يكتمل؟</b> دورة الاسترداد الحية الكاملة (النموذج بلا قناة — بقرار المستخدم)، تدقيق خارجي، حمل 1000+، Knox، allowlist/lock-task، إعادة التسمية.<br>
+<b>هل يمكن تشغيله؟</b> نعم — SHA سليم، والسويتّة 129/129 (أُعيد تشغيلها لهذا التقرير).<br>
+<b>هل يمكن تجربة جهاز/سياسات؟</b> على أي جهاز بقناة ADB: نعم. على النموذج الآن: لا (مُثبت أدناه).<br>
+<b>المخاطر:</b> (1) النموذج مغلق بلا قناة. (2) <code>debuggable=true</code> في APK الإصدار (HIGH). (3) <code>cryptography</code> غير مذكورة في requirements. (4) جدول شهادات الاسترداد فارغ حاليًا.<br>
+<b>الخطوة التالية:</b> إصلاح الثغرات + جهاز ثانٍ متاح ← دورة §41 الحية ← RC إنتاجي.
+</div>
+
+<h2 id="inv">§1 — الجرد الكامل (فحص حي 2026-09-14)</h2>
+<table>
+<tr><th>الفئة</th><th>الموجود فعلًا</th><th>ملاحظة التدقيق</th></tr>
+<tr><td>الجذر</td><td><code>android-lockdown-platform</code> — 19 مجلدًا</td><td>ليس مستودع git</td></tr>
+<tr><td>الكود</td><td>64×Python · 6×Java · 17 وحدة backend · 5 محركات</td><td>الربط مُتحقق بالقراءة</td></tr>
+<tr><td>تطبيق Windows</td><td><code>desktop/alp_manager/</code>: <code>app_qt.py</code> (103KB) + <code>app.py</code> + <code>controller.py</code> (40KB، 24 موضع ربط حقيقي)</td><td>بلا Mock (مطابقة عربية 9083)</td></tr>
+<tr><td>تطبيق Android</td><td>6 ملفات Java + Manifest (<code>com.alp.agent</code> v0.1.0، minSdk 24/target 35)</td><td class="warn">ثغرة: <code>debuggable=true</code> (HIGH)</td></tr>
+<tr><td>القاعدة</td><td>SQLite runtime + مخطط 373 سطرًا؛ 5 أجهزة مسجلة</td><td class="warn"><b>شهادات الاسترداد: 0 صفوف حاليًا</b></td></tr>
+<tr><td>التبعيات</td><td><code>requirements.txt</code>: PySide6, pyinstaller, pytest فقط</td><td class="warn"><code>cryptography 50.0.1</code> مثبتة ومستخدمة و<b>غير مذكورة</b></td></tr>
+<tr><td>المخرجات</td><td><code>dist/</code> (بُني 09-13) + <code>RELEASE/</code> (EXE + مثبّت + SHA سليم أُعيد فحصه اليوم) + APK (25,039 B)</td><td>SHA256: OK</td></tr>
+<tr><td>الأصول</td><td><code>assets/</code> فارغ؛ لا <code>icon=</code> في مواصفات البناء</td><td class="warn">أيقونة §43 مفقودة</td></tr>
+<tr><td>التوثيق</td><td>10 ملفات MD (§48) + 12 تقرير HTML</td><td>مكتملة بتاريخ اليوم</td></tr>
+<tr><td>الاختبارات</td><td>11 وحدة + 1 محاكاة؛ <code>integration/</code> شبه فارغ</td><td>129/129 اليوم؛ تكامل حي غائب</td></tr>
+<tr><td>السجلات</td><td><code>scripts/restore_watch.log</code> (حي) + ~50 تفريغ R4 + أوامر <code>live_commands/phase*</code></td><td>السجل الحي مُستبعد من الحزم</td></tr>
+<tr><td>مكرر/قديم</td><td><code>IMPLEMENTATION_*.md</code> مكررة (مراجع موجودة — محفوظة) · <code>aligned/base.apk</code> وسيطة · <code>__pycache__</code> (مستبعدة)</td><td>لا حذف (§45/§51)</td></tr>
+</table>
+
+<h2 id="time">§2 — الخط الزمني (من تواريخ الملفات + سجلات التدقيق)</h2>
+<table>
+<tr><th>الفترة</th><th>الهدف</th><th>الإجراءات</th><th>النتيجة</th><th>الحالة</th></tr>
+<tr><td>09-11</td><td>تطبيقات وتحقيقات مبكرة</td><td>AD4_APPLY + تفريغات R4 (~20)</td><td>FAIL صادق + تشخيصات</td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>09-12</td><td>مراحل 0/1/3/4 + أوامر حية</td><td>فحص emulator5554 + أوامر مرحلية</td><td><code>reports/phase*</code> + <code>live_commands/</code></td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>09-13 فجرًا</td><td>تجهيز DO + الإغلاق</td><td><code>dpm set-device-owner</code> + بيان 17 مسارًا</td><td>dumpsys (12 قيدًا + كاميرا) + <code>state.json</code></td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>09-13</td><td>المخرجات + إصلاح المسح-عند-الاستئناف</td><td>PyInstaller + <code>build_agent.py</code> + إصلاح <code>AlpOps</code></td><td><code>dist/*</code> + APK + SHA</td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>09-13</td><td>بوابة القناة + زر ROLLBACK</td><td><code>management_channel.py</code> + ربط المدير + الزر</td><td>9 اختبارات + 129 OK</td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>09-13</td><td>الطوارئ والموافقات</td><td>مراقب + <code>restore_default.py</code> + <code>APPRV-…-CTL1</code> (موافقة←سحب←تفويض)</td><td><code>AUD-…-CTL1/2/3</code> في السلسلة</td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>09-13/14</td><td>خطة المالك (20 مرحلة)</td><td>بوابة + مصفوفة API + أمن + استرداد + 10 وثائق + RC</td><td>7 ملفات جديدة</td><td><span class="badge b-ok">COMPLETED</span></td></tr>
+<tr><td>معلّق</td><td>دورة الاسترداد الحية (§41)</td><td>تتطلب قناة ADB غائبة أو قرارًا جديدًا</td><td>—</td><td><span class="badge b-fail">BLOCKED</span></td></tr>
+<tr><td>معلّق</td><td>تدقيق خارجي / حمل 1000+ / Knox / إعادة تسمية</td><td>خارج النطاق المحلي</td><td>—</td><td><span class="badge b-mut">NOT_IMPLEMENTED</span></td></tr>
+</table>
+
+<h2 id="realdev">§44 — الجهاز الحقيقي (فحص حي لهذا التقرير)</h2>
+<div class="box">
+<b>Samsung SM-J337P · Android 9 · API 28 · Serial <code>520041d74247b58b</code></b> ·
+<code>adb devices</code> = فارغ · الناقل = Composite + Modem (متصل كهربائيًا) · <b>لا واجهة ADB</b>
+(متوقع تحت <code>no_debugging_features</code>). المُثبت عليه سابقًا: تجهيز DO + 17 مسارًا + dumpsys
+(12 قيدًا + كاميرا) + مسبار حي — في <code>PILOT_DEVICE_TEST_REPORT.html</code> §6.
+</div>
+
+<h2 id="trace">§3 — تتبع المتطلبات (ID/المتطلب/التنفيذ/الحالة/الدليل)</h2>
+<table>
+<tr><th>ID</th><th>المتطلب</th><th>التنفيذ</th><th>الحالة</th><th>الدليل</th></tr>
+<tr><td>R-DISC</td><td>Device Discovery</td><td><code>attached_serials/detailed</code> + اكتشاف تلقائي لجهاز واحد</td><td class="ok">DONE</td><td>مُثبت على J3 + اختبارات</td></tr>
+<tr><td>R-IDENT</td><td>Device Identification</td><td>getprop + سجل <code>devices</code> (5 أجهزة)</td><td class="ok">DONE</td><td>قاعدة التشغيل الحية</td></tr>
+<tr><td>R-CAP</td><td>Capability Detection</td><td>ماسح 19 بندًا + تقرير قدرات + مرجع عائلة</td><td class="ok">DONE (النموذج)</td><td>21 سطر J3 + <code>scan-emulator5554.json</code></td></tr>
+<tr><td>R-CON</td><td>Windows Console</td><td>Qt عربية (9083) + Tk احتياطي + متحكم مربوط (24)</td><td class="ok">DONE</td><td>قراءة الكود + مسح Mock</td></tr>
+<tr><td>R-AGT</td><td>Android Agent</td><td>DPC مالك-جهاز: مظاريف + زر ROLLBACK + <code>state.json</code></td><td class="warn">PARTIAL</td><td>يعمل على API 28؛ allowlist/lock-task غير منفذين</td></tr>
+<tr><td>R-POL</td><td>Policy Engine</td><td>محلل/مدقق/لقطات/استثناءات + 6 سياسات REVIEW</td><td class="ok">DONE</td><td>اختبارات + تطبيق حي</td></tr>
+<tr><td>R-PREV</td><td>Policy Preview</td><td>الجهاز+السياسة+الحالية+المخاطر+الطريقة+المتطلبات+الاسترداد</td><td class="ok">DONE</td><td><code>controller.py</code></td></tr>
+<tr><td>R-ENF</td><td>Policy Enforcement</td><td>مظاريف موقعة عبر ADB → <code>AlpOps.applyPolicy</code></td><td class="ok">DONE (حي)</td><td>dumpsys + <code>state.json</code></td></tr>
+<tr><td>R-VER</td><td>Verification</td><td>مسبار (5 إعدادات + توكنات dumpsys + كاميرا + DPC) + UNKNOWN الصادق</td><td class="warn">PARTIAL</td><td>مُثبت حيًا؛ التغطية ليست شاملة</td></tr>
+<tr><td>R-EVI</td><td>Evidence</td><td><code>EV-</code> + لقطات + ربط <code>AUD-</code></td><td class="ok">DONE</td><td>جدول <code>evidence</code> + تقارير</td></tr>
+<tr><td>R-REC</td><td>Recovery</td><td>R1–R4 + زر + بوابة قناة + أدوات مراقبة</td><td class="warn">PARTIAL</td><td>آليات مُختبرة؛ الدورة الحية مؤجلة</td></tr>
+<tr><td>R-SEC</td><td>Security</td><td>RBAC + شهادات + موافقات مزدوجة + سلسلة SHA-256</td><td class="warn">PARTIAL</td><td>منفذ ومُختبر؛ تدقيق خارجي غائب + <code>debuggable=true</code></td></tr>
+<tr><td>R-AUTH</td><td>Authentication/Authorization</td><td>أدوار + شهادة حيازة + <code>auth.py</code> + 12 مسار API</td><td class="ok">DONE</td><td>كود + اختبارات أمنية</td></tr>
+<tr><td>R-AUD</td><td>Audit</td><td>إلحاقي + <code>tamper_check()</code> + حجب أسرار</td><td class="ok">DONE</td><td><code>AUD-…-CTL1/2/3</code> حية</td></tr>
+<tr><td>R-ADB</td><td>USB/ADB</td><td>قناة ADB حقيقية (اكتشاف/تجهيز/تشخيص/استرداد)</td><td class="ok">DONE</td><td>مُثبت حيًا (بما فيه الانقطاع الحالي)</td></tr>
+<tr><td>R-MV</td><td>Multi-Vendor</td><td>سجل Generic/Samsung + مرجع عائلة J3</td><td class="warn">PARTIAL</td><td>هيكل بلا Knox SDK</td></tr>
+<tr><td>R-A715</td><td>Android 7–15</td><td>مصفوفة بمستويات API مُتحققة (21/23/24/31)</td><td class="warn">PARTIAL</td><td>إثبات عتادي: API 28 فقط</td></tr>
+<tr><td>R-1K</td><td>1000+ Devices</td><td><code>fleet.py</code> (موجات/إيقاف طوارئ) + <code>FleetSimulator(1000)</code></td><td class="fail">NOT_VERIFIED</td><td>محاكاة فقط — لا إثبات حمل</td></tr>
+<tr><td>R-INST</td><td>Installer</td><td>مثبّت 60.6MB + إزالة تثبيت + تهيئة قاعدة</td><td class="ok">DONE</td><td>مبني + SHA سليم</td></tr>
+<tr><td>R-EXE</td><td>EXE</td><td>محمول 53.4MB + تشغيل دخاني</td><td class="ok">DONE</td><td>SHA سليم (فحص اليوم)</td></tr>
+<tr><td>R-AR</td><td>Arabic UI</td><td>Qt عربية أولًا + أدلة وتقارير عربية</td><td class="ok">DONE</td><td>9083 مطابقة</td></tr>
+<tr><td>R-RSP</td><td>Responsive UI</td><td>—</td><td class="fail">NOT_VERIFIED</td><td>لم يُختبر تعدد الدقات</td></tr>
+<tr><td>R-LOG</td><td>Logging</td><td><code>logger.py</code> + سجلات مراقبة + تقارير مرحلية</td><td class="ok">DONE</td><td>ملفات حية</td></tr>
+<tr><td>R-ERR</td><td>Error Handling</td><td>رسائل عربية (سبب + إجراء) بدل الاستثناءات</td><td class="ok">DONE</td><td><code>ApplyBlocked</code> وأمثالها</td></tr>
+</table>
+
+<h2 id="comp">§4 — تدقيق المكونات (ما/أين/كيف/فعلي؟/نضج)</h2>
+<table>
+<tr><th>المكوّن</th><th>الموقع</th><th>كيف يعمل</th><th>فعلي؟</th><th>النضج</th></tr>
+<tr><td>Director (AD-4)</td><td><code>backend/director.py</code> (246 سطرًا)</td><td>قدرات→لقطة→استثناءات→<b>بوابة القناة</b>→تفويض→بيان موقّع→إرسال→تحقق→امتثال</td><td>فعلي</td><td>عالٍ — مُختبر ومُستخدم حيًا</td></tr>
+<tr><td>Workflows</td><td><code>backend/workflows.py</code> (19 دالة: اكتشاف/مسبار/تصنيف/تسجيل/تطبيق)</td><td>جسر الكونسول إلى ADB والقنوات</td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>Fleet</td><td><code>backend/fleet.py</code> (مهام/موجات/إيقاف طوارئ + محاكي 1000)</td><td>دفعات مُدارة + محاكاة حمل</td><td>فعلي (الدفعات) / محاكاة (الحمل)</td><td>متوسط</td></tr>
+<tr><td>Channel</td><td><code>backend/channel.py</code> + <code>adb_channel</code></td><td>تغليف إرسال المظاريف عبر ADB</td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>Policy engine</td><td><code>policy-engine/</code></td><td>6 سياسات + مطابقة قدرات + مخطط</td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>Capability</td><td><code>capability-engine/scanner.py</code></td><td>19 بندًا + تقرير + مرجع عائلة</td><td>فعلي</td><td>عالٍ (نموذج واحد)</td></tr>
+<tr><td>Verification</td><td><code>verification-engine/{probe,compliance}.py</code></td><td>5 إعدادات + توكنات dumpsys + كاميرا + DPC ← مطابقة</td><td>فعلي</td><td>متوسط (التغطية)</td></tr>
+<tr><td>Compatibility</td><td><code>compatibility/</code></td><td>بوابات API/OEM للقرار</td><td>فعلي</td><td>متوسط</td></tr>
+<tr><td>Vendors</td><td><code>vendor-adapters/registry.py</code></td><td>تصنيف Generic/Samsung + مرجع J3</td><td>هيكلي</td><td>مبتدئ (Knox GATED)</td></tr>
+<tr><td>RBAC/Auth/Approvals</td><td><code>rbac/auth/approval.py</code></td><td>5 أدوار + تأكيدات مسماة + قاعدة مزدوجة (مُستخدمة في CTL1)</td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>Vault</td><td><code>recovery_credentials.py</code> (276 سطرًا)</td><td>AES-GCM + HKDF + DPAPI</td><td>فعلي</td><td>عالٍ — <b>لكن: 0 شهادات صادرة حاليًا</b></td></tr>
+<tr><td>Audit</td><td><code>audit.py</code> (99 سطرًا)</td><td>سلسلة SHA-256 + حجب + <code>tamper_check</code></td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>Recovery+R1-R4</td><td><code>recovery.py</code> (314 سطرًا)</td><td>استعادة/إعادة تجهيز/رفض حكمي/تشخيص</td><td>فعلي</td><td>عالٍ (آليات)</td></tr>
+<tr><td>Channel gate</td><td><code>management_channel.py</code> (111 سطرًا)</td><td>3 قنوات + <code>RecoveryChannelError</code> + 9 اختبارات</td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>State machine</td><td><code>state_machine.py</code></td><td>11 حالة + مصفوفة صارمة</td><td>فعلي</td><td>عالٍ</td></tr>
+<tr><td>API server</td><td><code>backend/api/server.py</code> (12 مسارًا: auth/devices/policies/apply/jobs/approvals/audit/tamper)</td><td>واجهة REST للإدارة</td><td>فعلي</td><td>متوسط (تغطية اختبار جزئية)</td></tr>
+<tr><td>Desktop Qt</td><td><code>app_qt.py</code> (103KB) + <code>controller.py</code> (40KB)</td><td>6 تبويبات + معالج إغلاق + ربط حقيقي (24)</td><td>فعلي</td><td>عالٍ (سطح واحد مُختبر)</td></tr>
+<tr><td>Agent</td><td>6 ملفات Java + Manifest</td><td>DPC مظاريف + زر + <code>state.json</code></td><td>فعلي (حي)</td><td>عالٍ — عدا <code>debuggable=true</code></td></tr>
+</table>
+
+<h2 id="arch">§5/§38 — المعمارية الحالية (كما هي فعلًا)</h2>
+<pre dir="ltr">Windows Console (Qt AR + controller)
+   | direct calls
+   +-- Device Engine (workflows: discover/enroll/probe/classify)
+   +-- Capability Engine (scanner + family ref)
+   +-- Policy Engine (6 policies + snapshot + exceptions)
+   +-- Security (RBAC + Vault + dual approvals)
+   +-- Verification (probe + compliance: PASS/UNKNOWN only w/ evidence)
+   +-- Recovery (R1-R4 + channel gate)        [R3: REFUSED by design]
+   +-- Audit/Evidence (SHA-256 chain + EV-/AUD-)
+   +-- Database (SQLite: devices/policies/evidence/creds/approvals/audit)
+   +-- ADB/USB channel (LOCAL_ADB)            [wireless: NOT_IMPLEMENTED]
+   +-- Android Agent (com.alp.agent DO: receiver + AlpOps + state.json)
+   +-- API server (12 REST routes)            [backend mgmt: NOT_IMPLEMENTED]
+Fleet batch layer: PRESENT (waves) / 1000+ proof: NOT_VERIFIED
+Knox/OEM extended: NOT_IMPLEMENTED (GATED) | Lock-task/allowlist: NOT_IMPLEMENTED</pre>
+
+<h2 id="scen">§6–§8 — سيناريوهات التشغيل والتوصيل والفحص (كما تحدث فعلًا)</h2>
+<h3>§6 — تشغيل EXE</h3>
+<p>بدء ← تهيئة المسارات ← فحص التبعيات (PySide6/ADB) ← فتح/ترحيل SQLite ← فحص خادم ADB ←
+اكتشاف تلقائي ← واجهة Qt العربية. أي فشل = رسالة عربية (سبب + إجراء)، لا انهيار صامت.</p>
+<h3>§7 — توصيل الهاتف</h3>
+<pre dir="ltr">USB --&gt; adb server --&gt; attached_serials() --&gt; Discovery --&gt; enroll/getprop identity
+ --&gt; capability scan --&gt; classify (Generic/Samsung) --&gt; Management State --&gt; Policy Availability</pre>
+<p>الحالة الحية الآن: النموذج متصل كهربائيًا لكن بلا واجهة ADB ← يكتشف «غير قابل للوصول» بصدق (لا جهاز وهمي).</p>
+<h3>§8 — عناصر الفحص (19 بندًا) وحالة كلٍّ على النموذج</h3>
+<p>الصانع/الموديل/الأندرويد/API/البناء/النواة/التصحيح الأمني/النطاق/التشفير/البوتلودر/المالك/DPC/ADB/USB/
+قدرات الإدارة/OEM/Knox/السياسة: <b>ACTUAL</b> على J3 (21 سطرًا). Knox: <b>PARTIAL</b> (المرجع فقط).
+البوتلودر/التشفير: <b>PARTIAL</b> (حسب المتاح عبر ADB).</p>
+
+<h2 id="capdec">§9 — قرار القدرات (مصدر القرار)</h2>
+<p>المطابِق يقارن كل مسار سياسة بقدرات الجهاز الحية + بوابات <code>compatibility</code> + المحوّل →
+<code>SUPPORTED/PARTIALLY/UNSUPPORTED/REQUIRES_*</code>. غير القابل للقراءة = <code>NOT_VERIFIED</code> أبدًا «مدعوم».
+الدليل: فشل صادق سابق (<code>ApplyBlocked: 2 unresolved exceptions [GPS, LOCATION]</code>) قبل إصلاح التكافؤ.</p>
+
+<h2 id="polwf">§10 — سير السياسة الكامل (كل خطوة موجودة)</h2>
+<pre dir="ltr">Select Device --&gt; Inspect --&gt; Capability Check --&gt; Select Policy --&gt; Policy Preview
+ --&gt; Risk Assessment --&gt; Preflight(8) --&gt; [Channel Gate] --&gt; Apply --&gt; Verify
+ --&gt; Evidence --&gt; Compliant/PARTIAL/NON_COMPLIANT/UNKNOWN</pre>
+
+<h2 id="polex">§11 — مثال واقعي: الكاميرا (مُثبت حيًا)</h2>
+<table>
+<tr><th>البند</th><th>القيمة</th></tr>
+<tr><td>قبل التنفيذ</td><td>كاميرا مفعّلة، بلا قيود (<code>restrictions=[]</code>)</td></tr>
+<tr><td>السياسة</td><td>POL-FULL_LOCKDOWN: <code>CAMERA → BLOCK (CRITICAL)</code></td></tr>
+<tr><td>الطريقة</td><td>بيان APPLY ← <code>dpm.setCameraDisabled(admin, true)</code> (مالك الجهاز)</td></tr>
+<tr><td>النتيجة</td><td><code>disableCamera=true</code> في dumpsys + سلوكيًا: الكاميرا مقيدة</td></tr>
+<tr><td>التحقق</td><td>مسبار الكاميرا + توكن dumpsys</td></tr>
+<tr><td>الدليل</td><td><code>state.json (cmd REAL-EXEC-20260913-03)</code> + تقرير النموذج §6</td></tr>
+<tr><td>الاسترداد</td><td>زر ROLLBACK / بيان CLEAR ← <code>setCameraDisabled(false)</code> (آلية مُختبرة؛ التنفيذ الحي مؤجل)</td></tr>
+</table>
+<p>مثال Wi-Fi/Bluetooth/Tethering: نفس السلسلة (مُثبت dumpsys + <code>svc bluetooth disable → killed rc=137</code>).
+أي مسار بلا إثبات أرضي موسوم أدناه <b>NOT VERIFIED ON REAL DEVICE</b>: (allowlist التطبيقات، lock-task، Knox، ADB اللاسلكي، 1000+).</p>
+
+<h2 id="lock">§12 — سيناريو الإغلاق (FULL مقابل CUSTOM)</h2>
+<p><b>FULL_LOCKDOWN</b> (25 مسارًا BLOCK): معالج <code>FullLockdownWizard</code> + تحذير + بوابة القناة
+(توقفت فعلًا في فحص الاستعداد المعروض: <code>can_apply=false</code> بلا ADB) → مظاريف → فرض → تحقق →
+امتثال. <b>ملاحظة التدقيق:</b> تشمل <code>ADB/DEVELOPER_OPTIONS → BLOCK</code> — وهذا ما أسقط جسر الإدارة
+على النموذج (الدرس الذي وُلدت منه بوابة القناة).<br>
+<b>CUSTOM</b>: <code>create_custom_policy(name, category, features)</code> + نفس البوابات — منفذة ومُختبرة
+(<code>test_custom_policies.py</code>).</p>
+
+<h2 id="recscen">§13 — سيناريو استعادة القيود (الموجود فعلًا)</h2>
+<pre dir="ltr">Open Device --&gt; Authenticate (role + credential) --&gt; Select Policy/Recovery(R1)
+ --&gt; Approval (named, dual if destructive) --&gt; Execute (envelope/button)
+ --&gt; Verify (probe) --&gt; Evidence (REC-/AUD-)</pre>
+
+<h2 id="recarch">§14 — معمارية الاسترداد (منفذ مقابل تصميم)</h2>
+<table>
+<tr><th>العنصر</th><th>الحالة</th></tr>
+<tr><td>Recovery Channel (إثبات مسبق + 3 قنوات)</td><td class="ok">منفذ ومُختبر (9 اختبارات)</td></tr>
+<tr><td>Authorization (RECOVER + حيازة + موافقة)</td><td class="ok">منفذ (مُستخدم في CTL1)</td></tr>
+<tr><td>Credentials (AES-GCM/HKDF/DPAPI)</td><td class="warn">منفذ — لكن <b>0 صادرة حاليًا</b> في قاعدة التشغيل</td></tr>
+<tr><td>Device Identity / Keys</td><td class="ok">منفذ (سجل + مفتاح لكل جهاز)</td></tr>
+<tr><td>Rollback (بيان + زر)</td><td class="ok">منفذ ومُختبر (التنفيذ الحي مؤجل)</td></tr>
+<tr><td>Backup (نسخ بيانات المستخدم)</td><td class="fail">NOT_IMPLEMENTED — لا نسخ احتياطي في المنصة</td></tr>
+<tr><td>Audit لكل استرداد</td><td class="ok">منفذ (حتى الرفض يُدوَّن)</td></tr>
+</table>
+
+<h2 id="agent">§15 — وكيل Android (تدقيق صارم)</h2>
+<table>
+<tr><th>البند</th><th>الواقع</th></tr>
+<tr><td>الحزمة/الإصدار</td><td><code>com.alp.agent</code> v0.1.0 · minSdk 24/target 35 · توقيع <code>alp</code> · 25,039 B</td></tr>
+<tr><td>الأذونات</td><td>MANAGE_DEVICE_ADMINS + WiFi/BT/Network state — دنيا، صحيحة لدور DPC</td></tr>
+<tr><td>المكونات</td><td>MainActivity (LAUNCHER, exported) + DeviceAdminReceiver (BIND_DEVICE_ADMIN) + CommandReceiver (exported: 4 إجراءات)</td></tr>
+<tr><td>الخدمات الخلفية</td><td class="warn">لا خدمة دائمة — يعتمد على الإيقاظ (بث/نشاط)؛ على 26+ مقيّد بالخلفية (PARTIAL)</td></tr>
+<tr><td>الاتصال</td><td>ملفات مظاريف <code>/data/local/tmp</code> (تتطلب ADB) + زر محلي — لا قناة شبكية</td></tr>
+<tr><td>التخزين الآمن</td><td>SharedPreferences خاصة + <code>state.json</code> داخلي؛ <code>allowBackup=false</code> (صحيح)</td></tr>
+<tr><td>المصادقة/السياسات/الاسترداد</td><td>مظاريف <code>cmd_id</code> مكررة + <code>clearPolicy</code> + زر — بلا تحقق توقيع على الجهاز (MEDIUM أدناه)</td></tr>
+<tr><td>مكافحة العبث</td><td class="warn">جزئية: مالك الجهاز يمنع الإزالة؛ لا كشف عبث ذاتي ولا <code>anti-debug</code></td></tr>
+<tr><td>الحكم</td><td><b>فعلي ويعمل حيًا — غير مكتمل كمُنتج</b> (النواقص: توقيع المظاريف على الجهاز، خدمة/قناة دائمة، allowlist/lock-task)</td></tr>
+</table>
+
+<h2 id="win">§16 — تطبيق Windows (تحليل الشاشات الفعلية)</h2>
+<p>الإطار: <b>PySide6 (Qt)</b> نافذة رئيسية + <b>6 تبويبات</b> فعلية
+(<code>devices, policies, verification, recovery, reports, settings</code>) + معالج <code>FullLockdownWizard</code> +
+حوارات تأكيد/تحذير. كل تبويب: يعرض بيانات حية من المتحكم، وأزراره تنفذ عمليات حقيقية (24 موضع ربط) —
+لا أزرار ميتة (المسح: مطابقة حميدة واحدة). حالات الفراغ/التحميل/الخطأ/النجاح: معالجة برسائل عربية.</p>
+
+<h2 id="blue">§17 — UI/UX SCREEN BLUEPRINT (تصميمًا — مقابل المبني)</h2>
+<div class="box">
+<b>منهجية صادقة:</b> الشاشات الست المبنية موصوفة «كما هي»؛ الباقي مخطط تصميمي للمستقبل موسوم <b>BLUEPRINT</b> (غير موجود).
+النمط: Enterprise عربي RTL، داكن/فاتح، بطاقات + جداول + شارات حالة + تنبيهات + تنقل جانبي.
+</div>
+<table>
+<tr><th>الشاشة (§17)</th><th>الحالة</th><th>المحتوى (رأس/محتوى/إجراءات/الحالات)</th></tr>
+<tr><td>Dashboard</td><td class="ok">مبنية (تبويب + متحكم)</td><td>بطاقات: الأجهزة/المتصلة/المُدارة/المتوافقة/Recovery + آخر العمليات + الأخطاء + حالة ADB/القناة؛ فارغ: «لا أجهزة — وصّل USB»؛ خطأ: رسالة عربية بسبب+إجراء</td></tr>
+<tr><td>Device Discovery/List</td><td class="ok">مبنية</td><td>جدول: سامسونج SM-J337P/Android 9/API 28/متصل/READY؛ جهاز واحد = اختيار تلقائي؛ متعدد = قائمة</td></tr>
+<tr><td>Device Details</td><td class="ok">مبنية</td><td>19 حقلًا حقيقيًا (بلا قيم افتراضية) + حالة السياسة/التحقق/الاسترداد</td></tr>
+<tr><td>Capability Scan</td><td class="ok">مبنية</td><td>جدول SUPPORTED/… لكل مسار + مصدر القرار</td></tr>
+<tr><td>Policy Center/Builder/Preview/Apply</td><td class="ok">مبنية</td><td>اختيار سياسة/مسارات → معاينة (الحالية/المستهدفة/المخاطر/المتطلبات) → Preflight → تطبيق → دليل</td></tr>
+<tr><td>Verification</td><td class="ok">مبنية</td><td>قراءة حية ← مطابقة ← شارة PASS/UNKNOWN (لا PASS مزيف)</td></tr>
+<tr><td>Recovery</td><td class="ok">مبنية</td><td>R1–R4 + موافقات + تنفيذ + تحقق لاحق</td></tr>
+<tr><td>Audit Logs</td><td class="ok">مبنية (تبويب reports + مسارات API)</td><td>جدول + <code>tamper_check</code> + روابط EV/AUD</td></tr>
+<tr><td>Settings/About/Errors</td><td class="ok">مبنية</td><td>إعدادات القاعدة/ADB + حول + حوارات عربية</td></tr>
+<tr><td>Splash/Login/Admin</td><td class="warn">BLUEPRINT</td><td>شاشة بدء + دخول مدير (غير منفذة — الكونسول مفتوح محليًا)</td></tr>
+</table>
+
+<h2 id="androidblue">§18 — مخطط واجهة «حارس الموبايل» (BLUEPRINT — الوكيل الحالي شاشة واحدة)</h2>
+<p>الحالي: شاشة حالة (نص package/owner/admin) + زر ROLLBACK. المخطط الكامل (10 شاشات §44 في الأمر:
+الرئيسية/الحالة/السياسات/الأمان/الاتصال/المزامنة/السجل/الإدارة/Recovery/حول + شاشة «ميزة مقيدة برسالة المؤسسة»)
+<b>تصميم مستقبلي غير منفذ</b> — رحلة المستخدم اليوم: فتح التطبيق ← رؤية الحالة ← (الزر) ← إشعار نجاح عبر <code>state.json</code>.</p>
+
+<h2 id="journeys">§19 — الرحلات (مدير/استرداد/مستخدم)</h2>
+<pre dir="ltr">ADMIN: Open App --&gt; Connect --&gt; Detect --&gt; Inspect --&gt; Select Policy --&gt; Preview
+ --&gt; Apply --&gt; Verify --&gt; Deploy   (all PRESENT)
+RECOVERY: Console --&gt; Select --&gt; Auth --&gt; Select R1 --&gt; Execute --&gt; Verify (PRESENT; live deferred)
+USER: handover --&gt; status screen --&gt; blocked feature shows enterprise message (PARTIAL:
+ message only where DPC surfaces allow; enforcement is OS-level)</pre>
+
+<h2 id="devview">§20 — شاشة الجهاز المتصل (القيم الحقيقية الآن)</h2>
+<div class="box" dir="ltr" style="text-align:left">
+Samsung SM-J337P · Android 9 · API 28<br>
+Connection: <b>DISCONNECTED</b> (no ADB interface — composite+modem only)<br>
+Management: <b>UNREACHABLE</b> (Device Owner active on-device, channel down)<br>
+Policy: <b>FULL_LOCKDOWN (on-device, last proven)</b><br>
+Compliance: <b>UNKNOWN</b> (no live reading possible — honest)
+</div>
+
+<h2 id="secdash">§21 — لوحة الأمن (المعروض فعلًا)</h2>
+<p>إدارة: DO نشط (آخر إثبات) · السياسة: FULL · الاسترداد: شهادة <b>غير صادرة حاليًا</b> (R1 يتطلبها) ·
+العبث: سلسلة التدقيق سليمة (تُفحص بـ<code>tamper_check</code>) · ADB/USB: قناة ساقطة · التشفير: DPAPI للجذر ·
+البوتلودر: حسب المتاح (PARTIAL).</p>
+
+<h2 id="scale">§22 — سيناريو 1000+ جهاز (الموجود مقابل المستقبل)</h2>
+<p>الموجود: سجل أجهزة + بحث/تصفية + مهام وموجات (<code>run_wave</code>) + إيقاف طوارئ + <code>FleetSimulator(1000)</code> (محاكاة فقط) + تدقيق لكل عملية.
+المستقبل (غير منفذ): طابور دائم + إعادة محاولة + معالجة دفعية + مراقبة صحة + تقارير مجمعة + خلفية إدارة (§33). الحكم: <b>التصميم موجود، الإثبات مفقود — NOT_VERIFIED</b>.</p>
+
+<h2 id="multi">§23 — تعدد المورّدين (ماذا يحدث عند التوصيل)</h2>
+<p>السجل يصنّف بالاسم مع بديل Generic دائمًا (لا تخمين): Samsung/Motorola/Google/AOSP/المحاكي → <code>DeviceClass</code> + مرجع عائلة (J3 مثبت).
+Samsung الموسّع = <code>REQUIRES_KNOX</code> (GATED — بلا SDK). Xiaomi/Huawei/OnePlus: Generic فقط (قدرات AOSP).</p>
+
+<h2 id="a715">§24 — Android 7–15 (مختصر — الكامل في <code>docs/COMPATIBILITY_MATRIX.html</code>)</h2>
+<table>
+<tr><th>Android</th><th>الإدارة</th><th>دعم السياسات</th><th>القيود</th><th>الحالة</th></tr>
+<tr><td>7 (24–25)</td><td>DO عبر NFC/dpm</td><td>قيود المستخدم (عائلة DPM من 24)</td><td>الأدنى الفعلي للوكيل</td><td class="warn">NOT_VERIFIED عتاديًا</td></tr>
+<tr><td>8 (26–27)</td><td>+ QR</td><td>كما قبله</td><td>—</td><td class="warn">NOT_VERIFIED</td></tr>
+<tr><td>9 (28)</td><td>dpm مُثبت</td><td>12 قيدًا + كاميرا مُثبتة</td><td>—</td><td class="ok">VERIFIED (J3)</td></tr>
+<tr><td>10–11 (29–30)</td><td>نفسه</td><td>متوقع كامل</td><td>تخزين/خلفية أشد</td><td class="warn">NOT_VERIFIED</td></tr>
+<tr><td>12–13 (31–33)</td><td>نفسه</td><td>متوقع + أذونات مجزأة</td><td><code>MANAGE_DEVICE_POLICY_*</code> لكل قيد</td><td class="warn">NOT_VERIFIED</td></tr>
+<tr><td>14–15 (34–35)</td><td>نفسه</td><td>متوقع</td><td>بقايا Global-layer تُرصد</td><td class="warn">NOT_VERIFIED</td></tr>
+</table>
+
+<h2 id="exeready">§25 — جاهزية EXE + النقاط</h2>
+<p>EXE (53MB) + مثبّت (61MB) + تبعيات مضمنة + ADB + تهيئة قاعدة + إزالة تثبيت + اختصارات — SHA سليم.
+النواقص: لا أيقونة مخصصة، لا توقيع شهادة، <code>cryptography</code> خارج requirements.
+<b>RELEASE READINESS SCORE: 82/100</b> (خصم: أيقونة 3 + توقيع 5 + تبعية 5 + استجابة 5).</p>
+
+<h2 id="perf">§26 — الأداء (مقاس/مقدّر)</h2>
+<p>بدء EXE: ثوانٍ (دخاني بلا شاشة — لم يُوقَّت بواجهة) · الاكتشاف: فوري لجهاز واحد ·
+السويتّة: ~25 ثانية لـ129 · الذاكرة/CPU: لم تُقَس تحت حمل (NOT_VERIFIED) ·
+قوائم كبيرة: غير مُختبرة (1000+).</p>
+
+<h2 id="rel">§27 — الموثوقية (تحليل)</h2>
+<p>انهيار/تجمد: لم يُرصد في التشغيل الدخاني والاختبارات · مهلة USB/انقطاع ADB: معالجة
+(إعادة خادم + حالات unauthorized/offline مُسجَّلة) · إعادة تشغيل الجهاز/Windows: الحالة في القاعدة والسلسلة ·
+رفض الصلاحيات/فشل السياسة: مسارات مُختبرة · فشل الاسترداد: R1 تُرجع PARTIAL/FAILED بأسباب لا انهيار.</p>
+
+<h2 id="sec">§28 — تدقيق الأمن (CRITICAL/HIGH/MEDIUM/LOW/INFO)</h2>
+<table>
+<tr><th>الخطورة</th><th>الإيجاد (بدليل الملف:السطر)</th><th>الأثر</th></tr>
+<tr><td class="fail">HIGH</td><td>الوكيل مُصدَر <code>android:debuggable="true"</code> (<code>AndroidManifest.xml:20</code>)</td><td>تصحيح JDWP + وصول <code>run-as</code> لبيانات الوكيل على أجهزة الإنتاج</td></tr>
+<tr><td class="fail">HIGH</td><td><code>CommandReceiver</code> مُصدَّر بلا تحقق مرسل (<code>AndroidManifest.xml:41</code> + <code>AlpOps.handle</code>): أي تطبيق مثبت يستطيع بثّ <code>CLEAR_POLICY</code> مع <code>cmd_id</code> في <code>EXTRA_ENVELOPE</code> فيمسح كل القيود — تجاوز «منع الإزالة غير المصرّحة» (§27)</td><td>رفع كامل للإغلاق من تطبيق خبيث (يتطلب تثبيت تطبيق — ممكن لغياب allowlist)</td></tr>
+<tr><td class="warn">MEDIUM</td><td>المظاريف في <code>/data/local/tmp</code> (قابل للقراءة/الاستبدال عبر shell) بلا توقيع يُتحقق على الجهاز</td><td>سلامة الأوامر معتمدة على القناة فقط</td></tr>
+<tr><td class="warn">MEDIUM</td><td><code>cryptography</code> خارج <code>requirements.txt</code> (مثبتة 50.0.1 وتُستخدم)</td><td>كسر قابلية إعادة البناء النظيف</td></tr>
+<tr><td class="warn">MEDIUM</td><td>ملح السلسلة الافتراضي ثابت (<code>config.py:25</code>) + مفتاح الجذر بجانب القاعدة (DPAPI)</td><td>مقبول محليًا؛ يحتاج إدارة أسرار للإنتاج</td></tr>
+<tr><td class="mut">LOW</td><td>لا أيقونة/توقيع شهادة؛ ضجيج <code>__pycache__</code>؛ تكرار MD</td><td>إصدار وتسليم فقط</td></tr>
+<tr><td class="mut">INFO</td><td>لا قناة شبكية (السطح المحلي فقط)؛ <code>integration/</code> شبه فارغ</td><td>تغطية اختبار</td></tr>
+<tr><td class="ok">—</td><td>إيجابيات مُثبتة: RBAC + مزدوجة + حجب أسرار السجلات + <code>allowBackup=false</code> + رفض R3 + بلا FRP/bootloader تجاوز</td><td>—</td></tr>
+</table>
+
+<h2 id="feas">§29 — ما الذي يمكن تنفيذه فعليًا (جدول صريح)</h2>
+<table>
+<tr><th>الميزة</th><th>قابل؟</th><th>الحالة</th><th>الطريقة</th><th>المتطلبات</th><th>القيود</th></tr>
+<tr><td>اكتشاف/فحص/قدرات USB</td><td class="ok">نعم</td><td>يعمل</td><td>ADB + ماسح</td><td>تصحيح USB</td><td>جهاز واحد مُثبت</td></tr>
+<tr><td>تجهيز DO</td><td class="ok">نعم</td><td>يعمل</td><td>dpm/R2</td><td>جهاز نظيف بلا حسابات</td><td>—</td></tr>
+<tr><td>فرض 12 قيدًا + كاميرا</td><td class="ok">نعم</td><td>مُثبت حيًا</td><td>مظاريف DPC</td><td>DO + ADB</td><td>API 24+ للوكيل</td></tr>
+<tr><td>استرداد R1/زر</td><td class="ok">نعم (آلية)</td><td>مُختبر، حي مؤجل</td><td>بيان/زر</td><td>قناة + شهادة</td><td>يحتاج قناة حية</td></tr>
+<tr><td>إزالة المالك وإلغاء التثبيت</td><td class="ok">نعم</td><td>أدوات جاهزة</td><td><code>dpm remove-active-admin</code> + uninstall</td><td>ADB</td><td>—</td></tr>
+<tr><td>Lock-task/allowlist/Knox/لاسلكي/1000+</td><td class="fail">لا (حاليًا)</td><td>غير منفذ/غير مُثبت</td><td>—</td><td>تنفيذ + SDK + عتاد</td><td>مُعلن UNSUPPORTED/NOT_VERIFIED</td></tr>
+<tr><td>تجاوز FRP/bootloader/OEM</td><td class="fail">لا أبدًا</td><td>محظور تصميمًا</td><td>—</td><td>—</td><td>الطريق الرسمي فقط</td></tr>
+</table>
+
+<h2 id="limits">§30 — القيود التقنية (بلا إخفاء)</h2>
+<p>Android: القيود تتطلب DO (تسجيل نظيف)؛ allowlist/lock-task يتطلبان تنفيذًا إضافيًا؛ Global-layer في 14+.
+OEM: سلوك USB/MTP والرموز يختلف (شوهد). Bootloader/Firmware: خارج سلطة التطبيق (§28 في الأمر).
+DO: لا يمنع الفلاش المادي؛ FRP يبقى بيد Google. الوصول المادي + ADB شرطان لأغلب العمليات.</p>
+
+<h2 id="gaps">§31 — الفجوات (TARGET مقابل CURRENT)</h2>
+<table>
+<tr><th>البند</th><th>التصنيف</th></tr>
+<tr><td>النواة/السياسات/التدقيق/التغليف/التوثيق الأساسي</td><td><span class="badge b-ok">DONE</span></td></tr>
+<tr><td>الوكيل (توقيع المظاريف/خدمة/allowlist/lock-task)، المسبار الشامل، العربي الكامل، الاستجابة</td><td><span class="badge b-warn">IN PROGRESS / NEEDS TESTING</span></td></tr>
+<tr><td>دورة §41 الحية، جهاز ثانٍ، تدقيق خارجي، حمل 1000+، Knox، إعادة التسمية، تسجيل الدخول</td><td><span class="badge b-fail">MISSING / BLOCKED / NEEDS TESTING</span></td></tr>
+<tr><td>تجاوز FRP/bootloader، «دعم كل الأجهزة»، «أمان 100%»</td><td><span class="badge b-mut">UNSUPPORTED (by design)</span></td></tr>
+</table>
+
+<h2 id="issues">§32 — المشاكل مرتبة + §33 خطة الإصلاح</h2>
+<table>
+<tr><th>#</th><th>المشكلة (الأولوية)</th><th>السبب الجذري</th><th>الإصلاح</th><th>الاختبار</th><th>المتوقع</th></tr>
+<tr><td>1</td><td class="fail">بث CLEAR غير مصرح (HIGH)</td><td>مستقبل مُصدَّر بلا تحقق</td><td>إذن توقيع مخصص أو اشتراط بيان ملفي + بصمة مرسل</td><td>اختبار بث معادٍ</td><td>رفض البث الخارجي</td></tr>
+<tr><td>2</td><td class="fail"><code>debuggable=true</code> (HIGH)</td><td>بقايا تطوير في Manifest الإصدار</td><td><code>false</code> للإصدار + نكهة debug منفصلة</td><td>فحص APK + <code>run-as</code> مرفوض</td><td>إغلاق JDWP</td></tr>
+<tr><td>3</td><td class="warn">شهادات الاسترداد فارغة (MEDIUM)</td><td>عدم إصدار/تهيئة قاعدة جديدة</td><td>إصدار لكل جهاز مُدار + فحص بدء</td><td>بوابة القناة حية</td><td>R1 جاهز دائمًا</td></tr>
+<tr><td>4</td><td class="warn"><code>cryptography</code> خارج requirements (MEDIUM)</td><td>سهو توثيق</td><td>تثبيت الإصدار في requirements</td><td>بناء نظيف ببيئة جديدة</td><td>قابلية إعادة إنتاج</td></tr>
+<tr><td>5</td><td class="warn">أدلة الجلسة/الشهادة المذكورة غائبة عن القاعدة (MEDIUM-عملية)</td><td>قاعدة تشغيل مختلفة أثناء الجلسات أو تهيئة لاحقة</td><td>تثبيت <code>ALP_DB</code> + أرشفة الأدلة</td><td>استعلام تحقق</td><td>لا فجوة أدلة مستقبلًا</td></tr>
+<tr><td>6</td><td class="mut">أيقونة/توقيع/استجابة/تكامل حي (LOW)</td><td>نطاق مؤجل</td><td>حسب خطة RC الإنتاجي</td><td>QA مخصص</td><td>اكتمال الإصدار</td></tr>
+</table>
+
+<h2 id="tests">§34 — مصفوفة الاختبار النهائية</h2>
+<table>
+<tr><th>المجال</th><th>الحالة</th><th>الدليل</th></tr>
+<tr><td>وحدة/تكامل/محاكاة (129)</td><td class="ok">PASS (اليوم)</td><td>سجل التشغيل</td></tr>
+<tr><td>جهاز حي واحد (J3: تجهيز/فرض/dumpsys/مسبار)</td><td class="ok">PASS</td><td>تقرير النموذج §6</td></tr>
+<tr><td>استرداد حي كامل (§41)</td><td class="fail">NOT TESTED (محظور القناة/مؤجل)</td><td>تقرير الطوارئ</td></tr>
+<tr><td>USB/ADB/انقطاع/إعادة تشغيل/تحديث</td><td class="ok">PASS (سويتّة + سلوك حي موثّق)</td><td>الاختبارات + السجلات</td></tr>
+<tr><td>أمن (RBAC/موافقات/سلسلة/قناة)</td><td class="ok">PASS آليًا</td><td>9+ اختبارات مخصصة</td></tr>
+<tr><td>أمن خارجي/اختراق</td><td class="fail">NOT TESTED</td><td>—</td></tr>
+<tr><td>مورّدون متعددون / 7–15 عتاديًا / 1000+ حمل</td><td class="fail">NOT TESTED</td><td>محاكاة فقط للأخير</td></tr>
+</table>
+
+<h2 id="fullscen">§35 — السيناريو الكامل بعد الاكتمال</h2>
+<p>فتح EXE ← اكتشاف تلقائي ← فحص 19 بندًا ← اختيار سياسة ← معاينة (مخاطر/متطلبات/استرداد) ←
+Preflight ← بوابة قناة ← تطبيق بمظاريف ← تحقق حي ← دليل EV/AUD ← تسليم للمستخدم (شاشة حالة + رسالة المؤسسة عند الحظر) ←
+إدارة (مراقبة/امتثال) ← استعادة R1 عند الحاجة ← تحقق الاسترداد ← الوضع الإداري المطلوب.</p>
+
+<h2 id="future">§36 — الرؤية (v1.0 → v2.0)</h2>
+<p><b>v1.0 (RC الحالي):</b> إدارة محلية USB كاملة لجهاز واحد + أدلة. <b>v1.1:</b> إصلاحات §32 (1–4) + جهاز ثانٍ + دورة §41 حية.
+<b>v1.5:</b> خلفية إدارة + مجموعات + دفعات حقيقية + تسجيل دخول. <b>v2.0:</b> سحابة مركزية + RBAC موسّع + تحليلات + تكاملات OEM.</p>
+
+<h2 id="visual">§37 — المفهوم البصري</h2>
+<p>Windows: مؤسسي حديث عربي RTL — داكن (#10141b) + أزرق (#2f6fed) + شارات (أخضر/كهرمان/أحمر) + بطاقات وجداول + تنقل جانبي + responsive لاحقًا.
+Android: مادي فاتح minimal — حالة + زر استرداد + رسائل عربية. الأيقونة المقترحة: درع/موبايل (غير موجودة بعد — §43).</p>
+
+<h2 id="claims">§39 — التحقق من الادعاءات</h2>
+<table>
+<tr><th>الادعاء</th><th>الدليل</th><th>مُتحقق؟</th></tr>
+<tr><td>EXE يعمل والمثبت سليم</td><td>SHA256 أُعيد فحصه اليوم + تشغيل دخاني موثّق</td><td class="ok">نعم</td></tr>
+<tr><td>التطبيق عربي بلا أزرار وهمية</td><td>9083 مطابقة + مسح Mock (1 حميدة)</td><td class="ok">نعم</td></tr>
+<tr><td>الإغلاق الكامل مطبَّق على J3</td><td>dumpsys (12 + كاميرا) + سلوك rc=137</td><td class="ok">نعم</td></tr>
+<tr><td>السويتّة خضراء</td><td>129/129 (تشغيل اليوم لهذا التقرير)</td><td class="ok">نعم</td></tr>
+<tr><td>دليل <code>EV-20260913-F35BF615</code> وشهادة <code>3406-B9C6</code> (مذكورا في الجلسة)</td><td>غير موجودين في قاعدة التشغيل الحية (أدلة FAIL قديمة فقط + 0 شهادات)</td><td class="fail">NOT VERIFIED حاليًا — فجوة أرشفة (#5)</td></tr>
+<tr><td>دعم كل الأجهزة / أمان 100% / استرداد مضمون / 1000+ جاهز</td><td>لم يُدَّعَ في أي تقرير — مرفوض تصميمًا</td><td class="ok">غير مُدَّعى (صحيح)</td></tr>
+</table>
+
+<h2 id="final">§40 — الوضع النهائي + النسبة + الجاهزية</h2>
+<div class="box">
+<b>CURRENT PROJECT STATUS: RELEASE CANDIDATE (مشروط).</b><br>
+<b>Overall Completion: %79</b> — محسوبًا من 24 متطلبًا مُتتبَّعًا (§3): 16 DONE كاملة + 6 PARTIAL (نصف درجة) + 2 غير مُنجزة:
+<code>(16 + 0.5×6) / 24 = 79.2%</code> — ليست تقديرًا عشوائيًا بل ناتج الجدول أعلاه.<br>
+<b>Production Readiness: RELEASE CANDIDATE</b> — صالح للداخلي/التجريبي؛ يمنع الإنتاج الواسع: ثغرتا HIGH، دورة §41 الحية، تدقيق خارجي، حمل 1000+، Knox، إعادة التسمية. (NOT READY للإنتاج العام / BETA مغلق / PRODUCTION READY مرفوض حاليًا).
+</div>
+
+<h2 id="refs">§46 — المراجع (منفصلة)</h2>
+<p><b>أدلة المشروع الفعلية:</b> dumpsys النموذج + <code>state.json</code> + سجلات <code>AUD-…-CTL1/2/3</code> + سويتّة 129 + SHA + 8 تقارير سابقة + فحوص حية بتاريخ 2026-09-14.<br>
+<b>مراجع خارجية (للتصميم فقط — لا تُثبت عمل المشروع):</b> Android Developers (UserManager/DevicePolicyManager reference + API diffs 21/24) + AOSP (DPMService، قيود per-admin) + Samsung Knox docs (للتصنيف GATED) + Microsoft Docs (DPAPI/PnP) — استُخدمت لمصفوفة التوافق فقط.</p>
+
+</div></body>
+</html>
