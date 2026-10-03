@@ -17,7 +17,7 @@ import android.os.IBinder;
 import android.os.Looper;
 
 /**
- * Persistent enforcement service for the Wi-Fi lockdown.
+ * Persistent enforcement service for the lockdown.
  *
  * The LT-8110 AOSP generic build treats wifi-state changers as "privileged":
  * WifiServiceImpl only applies the DISALLOW_CONFIG_WIFI restriction to non
@@ -29,15 +29,16 @@ import android.os.Looper;
  *
  * This service keeps the agent process alive permanently (foreground service
  * with a persistent notification, the same pattern enterprise MDM agents use),
- * then enforces radio-off through two independent paths while the
- * DISALLOW_CONFIG_WIFI restriction is provably active:
+ * then re-asserts the COMMITTED policy (written only from verified envelopes)
+ * through two independent paths while the lockdown is provably active:
  *   1. a runtime-registered receiver snaps the radio OFF the moment the
  *      framework reports ENABLED;
- *   2. a periodic re-assertion every few seconds guarantees the OFF state
- *      even if the ENABLED broadcast is missed.
- * The result is exactly a CSS "disabled" switch: any tap is rolled back in a
- * moment and the wifi icon always settles back to OFF. When the restriction is
- * not active the service stays silent and never touches the radio.
+ *   2. a periodic re-assertion every few seconds re-applies every BLOCK row of
+ *      the committed policy (radio, camera, managed restrictions) — any
+ *      untrusted attempt to lift a restriction is rolled back within seconds
+ *      unless a verified CLEAR/WITHDRAW (or the console-provisioned PIN) has
+ *      already removed that row from the committed definition.
+ * When nothing is committed the service stays silent and never touches policy.
  */
 public class AlpForegroundService extends Service {
     private static final String TAG = "ALP";
@@ -63,8 +64,7 @@ public class AlpForegroundService extends Service {
             int state = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
                     WifiManager.WIFI_STATE_UNKNOWN);
             if (state == WifiManager.WIFI_STATE_ENABLED) {
-                if (!context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
-                        .getBoolean("wifi_blocked", false)) {
+                if (!AlpOps.wifiBlockCommitted(context)) {
                     return;
                 }
                 android.util.Log.d(TAG, "snap-back: radio ENABLED while blocked");
@@ -111,22 +111,14 @@ public class AlpForegroundService extends Service {
         DevicePolicyManager dpm =
                 (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
         ComponentName admin = new ComponentName(this, AlpDeviceAdminReceiver.class);
-        WifiManager wm = (WifiManager) getApplicationContext()
-                .getSystemService(Context.WIFI_SERVICE);
-        if (dpm == null || wm == null) {
+        if (dpm == null) {
             return;
         }
         if (!dpm.isDeviceOwnerApp(getPackageName())) {
             return;
         }
-        if (!getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
-                .getBoolean("wifi_blocked", false)) {
-            return;
-        }
-        if (wm.isWifiEnabled()) {
-            android.util.Log.d(TAG, "re-assert: radio ON while blocked");
-            AlpOps.ensureWifiOff(this);
-            AlpStats.record(this, "wifi_reassert");
+        if (AlpOps.enforceCommitted(this, dpm, admin)) {
+            AlpStats.record(this, "policy_reassert");
         }
     }
 

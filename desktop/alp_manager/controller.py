@@ -47,6 +47,7 @@ from backend.workflows import (attached_serials, attached_detailed,           # 
                                enroll_device, persist_reference_policies,
                                run_director_apply, resolve_policy, live_probe,
                                vendor_adapter_for_device, classify_device,
+                               is_agent_installed,
                                apps as apps_inventory,
                                create_custom_policy)
 from backend.channel import adb_channel            # noqa: E402
@@ -202,12 +203,37 @@ class Controller:
         out = []
         for d in attached_detailed():
             model = (d["model"] or "").replace("_", "-")   # SM_J337P -> SM-J337P
+            ready = bool(d["ready"])
+            registered = d["serial"] in reg
+            # A device with no agent can never receive a policy: the New
+            # Devices page gates every later step behind Install when this
+            # is false, so the operator cannot silently skip it.
+            agent = is_agent_installed(d["serial"]) if ready else False
+            # The single source of truth for "what now": any console — web or
+            # desktop, current or future — renders exactly this step instead
+            # of re-implementing the gating logic (and getting it wrong).
+            if not ready:
+                step = ("authorize",
+                        "على الهاتف: اسمح بتصحيح USB لهذا الكمبيوتر ثم حدّث")
+            elif not agent:
+                step = ("install",
+                        "التطبيق غير مثبت على هذا الهاتف — ثبّته أولاً، "
+                        "فلن يصل إليه أي شيء بدونه")
+            elif not registered:
+                step = ("register",
+                        "التطبيق مثبت — سجّل الجهاز لبدء إدارته")
+            else:
+                step = ("group",
+                        "الجهاز جاهز — أضفه إلى مجموعة لنشر ملفاتها عليه")
             out.append({
                 "serial": d["serial"],
                 "state": d["state"],
                 "model": model,
-                "ready": bool(d["ready"]),
-                "registered": d["serial"] in reg,
+                "ready": ready,
+                "registered": registered,
+                "agent_installed": agent,
+                "next_step": step[0],
+                "next_step_reason": step[1],
             })
         return out
 
@@ -375,6 +401,32 @@ class Controller:
             return res
         except Exception as ex:
             logger.log_error("apply", ex, device_id=device_id, policy=policy)
+            return {"ok": False, "error": f"{type(ex).__name__}: {ex}"}
+
+    # ------------------------------------------------------------------
+    # On-device rollback PIN (provisioned via a SIGNED envelope)
+    # ------------------------------------------------------------------
+    def provision_pin(self, device_id: str, pin: str = "", serial: str = "") -> dict:
+        """Issue a PROVISION_PIN envelope through the REAL adb channel.
+
+        Envelope is Ed25519-signed on THIS console; the embedded public key on
+        the device is what accepts it. `pin` empty => a crypto-random 6-digit
+        code is generated and returned once for the operator to hand to the
+        user (the device itself can never set/reset its own rollback PIN).
+        """
+        try:
+            from backend import pins as _pins  # noqa: PLC0415
+            out = _pins.provision_pin(device_id, pin, serial=serial)
+            out["ok"] = True
+            logger.log_event("provision_pin", "issued",
+                             device_id=device_id, cmd_id=out["envelope"]["cmd_id"],
+                             action="PROVISION_PIN")
+            if not out["delivery"].get("ok"):
+                out["ok"] = False
+                out["error"] = out["delivery"].get("error") or "adb delivery failed"
+            return out
+        except Exception as ex:  # noqa: BLE001
+            logger.log_error("provision_pin", ex, device_id=device_id)
             return {"ok": False, "error": f"{type(ex).__name__}: {ex}"}
 
     # ------------------------------------------------------------------

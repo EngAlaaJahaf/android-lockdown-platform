@@ -116,6 +116,14 @@ def main() -> int:
         DID = j["data"].get("device_id", "WEB-" + SER)
         print("enroll        ->", DID)
 
+        # possession-factor credential for the vault
+        code, j = req("POST", "/api/v1/recovery/vault",
+                      {"action": "issue", "device_id": DID, "mfa": totp_code()},
+                      token=TOKEN)
+        assert j.get("ok") and j["data"].get("ok"), j
+        rec_id = j["data"].get("recovery_id", "")
+        print("vault issue   ->", rec_id)
+
         # policies + preflight (no MFA needed for preflight)
         req("POST", "/api/v1/policies/sync", {"mfa": totp_code()}, token=TOKEN)
         code, j = req("GET", "/api/v1/policies", token=TOKEN)
@@ -141,6 +149,35 @@ def main() -> int:
         d = j.get("data", {})
         print("R4 via web    ->", d.get("status"), "/ source=", d.get("source"))
         assert d.get("status") == "COMPLETE" and d.get("source") == "REAL_DEVICE", j
+
+        # optional full R0_WITHDRAW -> R2_REPROVISION round-trip over HTTP,
+        # but only when THIS console's agent is the active device owner
+        owner_line = ""
+        try:
+            from backend.workflows import adb as engine_adb
+            out = subprocess.check_output([engine_adb(), "-s", SER, "shell",
+                                           "dpm", "list-owners"],
+                                          stderr=subprocess.STDOUT, text=True, timeout=20)
+            owner_line = out.strip()
+        except Exception:
+            pass
+        if os.environ.get("ALP_FULL_RT") == "1":
+            if "com.alp.agent" in owner_line:
+                for mode in ("R0_WITHDRAW", "R2_REPROVISION"):
+                    code, j = req("POST", "/api/v1/recovery",
+                                  {"device_id": DID, "mode": mode, "mfa": totp_code(),
+                                   "approver1": "admin", "approver2": "admin",
+                                   "reason": "webui_smoke full round trip",
+                                   "serial": SER, "exec": True, "skip_approval": True},
+                                  token=TOKEN)
+                    d = j.get("data", {})
+                    print(f"{mode} via web  ->", d.get("status"), "/",
+                          d.get("source"), "/", d.get("owner_state", ""))
+                    assert d.get("status") in ("COMPLETE",) and d.get("source") == "REAL_DEVICE", j
+            else:
+                print("full RT      -> SKIPPED (device owner is a third-party "
+                      "DPC; ALP cannot self-unenroll another product)")
+                print("owner detect ->", owner_line or "none visible")
 
         # audit + tamper
         code, j = req("GET", "/api/v1/audit?tail=20", token=TOKEN)

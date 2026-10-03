@@ -320,12 +320,56 @@ class App(tk.Tk):
         self._apply_sub.grid(row=1, column=3, sticky="w")
         ttk.Button(box, text="Apply now", command=self._apply).grid(row=2, column=1, sticky="w", pady=4)
 
+        pinbox = ttk.LabelFrame(frame, text="Provision rollback PIN (signed PROVISION_PIN)", padding=8)
+        pinbox.pack(fill="x", padx=8, pady=6)
+        ttk.Label(pinbox, text="Device").grid(row=0, column=0, sticky="e")
+        self._pin_dev = ttk.Combobox(pinbox, state="readonly", width=30)
+        self._pin_dev.grid(row=0, column=1, sticky="w")
+        ttk.Label(pinbox, text="PIN (4-12, empty = random)").grid(row=0, column=2, sticky="e")
+        self._pin_edit = ttk.Entry(pinbox, width=22)
+        self._pin_edit.grid(row=0, column=3, sticky="w")
+        ttk.Button(pinbox, text="Provision PIN",
+                   command=self._provision_pin).grid(row=0, column=4, sticky="w", padx=6)
+
         hint = ttk.Label(frame, text="PASS only ever comes from a REAL_DEVICE observation with an evidence_id. "
                                      "SIMULATED never passes; R3 flash is always refused.", foreground="#7a5c00")
         hint.pack(fill="x", padx=8)
         self._apply_log = scrolledtext.ScrolledText(frame, height=28, state="disabled")
         self._apply_log.pack(fill="both", expand=True, padx=8, pady=4)
         frame.columnconfigure(1, weight=1)
+
+    def _provision_pin(self):
+        did = self._pin_dev.get()
+        pin = self._pin_edit.get().strip()
+        if not did:
+            messagebox.showerror("Provision PIN", "select a device first")
+            return
+        if pin and not (pin.isdigit() and 4 <= len(pin) <= 12):
+            messagebox.showerror("Provision PIN", "PIN must be 4-12 digits")
+            return
+        by_hand = pin or "a 6-digit random code shown once"
+        if not messagebox.askyesno(
+                "Provision PIN",
+                f"Issue rollback PIN for {did}? (Ed25519-signed from this console)\n\n"
+                f"PIN: {by_hand}\n\nHand it to the user; it cannot be changed from the device."):
+            return
+        self._async(lambda: self.ctl.provision_pin(did, pin),
+                    lambda r: self._on_provisioned(r))
+
+    def _on_provisioned(self, res):
+        self._set_text(self._apply_log, self._fmt(res))
+        if not res.get("ok"):
+            messagebox.showerror("Provision PIN", res.get("error", "unknown failure"))
+            self._pin_edit.delete(0, "end")
+            return
+        self._pin_edit.delete(0, "end")
+        self._pin_edit.insert(0, res.get("pin", ""))
+        messagebox.showinfo(
+            "Provision PIN",
+            f"PIN delivered to {self._pin_dev.get()}.\n\n"
+            f"Code: {res.get('pin', '')}\n\n"
+            "Shown once - the device rollback button will ask for it "
+            "(5-fail lockout).")
 
     def _apply(self):
         did = self._apply_dev.get()
@@ -476,7 +520,7 @@ class App(tk.Tk):
     def _populate_combos(self):
         devs = self.ctl.devices()
         ids = [f"{d['device_id']} [{d.get('serial') or ''}]" for d in devs]
-        for cb in (self._apply_dev, self._rec_dev):
+        for cb in (self._apply_dev, self._rec_dev, self._pin_dev):
             cb.configure(values=ids)
             if ids and not cb.get():
                 cb.set(ids[0])

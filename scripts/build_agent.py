@@ -57,6 +57,68 @@ def ensure_keystore():
          "-dname", "CN=ALP Agent, OU=ALP, O=ALP, C=JO"])
 
 
+def embed_public_key():
+    """Write the console Ed25519 PUBLIC key into res/raw/alp_pubkey.bin so the
+    on-device EnvelopeGuard can verify commands. The private half never enters
+    the APK — a keyfile mismatch here means every agent command is rejected."""
+    pub_hex = os.environ.get("ALP_ED_PUB", "").strip()
+    if not pub_hex:
+        pub_file = os.path.join(ROOT, "android-agent", "alp_pubkey.hex")
+        if os.path.exists(pub_file):
+            with open(pub_file, "r", encoding="utf-8") as fh:
+                pub_hex = fh.read().strip()
+    if not pub_hex:
+        raise SystemExit(
+            "missing Ed25519 public key — run `python scripts/gen_agent_key.py`"
+            " (or set ALP_ED_PUB) before building the agent")
+    raw = os.path.join(APP, "res", "raw")
+    os.makedirs(raw, exist_ok=True)
+    with open(os.path.join(raw, "alp_pubkey.bin"), "w", encoding="ascii") as fh:
+        fh.write(pub_hex)
+    print(f"  embedded Ed25519 public key ({len(pub_hex)} hex chars)")
+
+
+def write_release_manifest() -> str:
+    """Strip android:testOnly AND the launcher icon from the manifest.
+
+    A testOnly APK cannot be claimed as Device Owner (`dpm set-device-owner`
+    refuses: "testOnly apps cannot be set as device owner") and it is why
+    `adb install` demands -t. debuggable is kept on purpose: the backend
+    reads on-device evidence via `adb shell run-as com.alp.agent`.
+
+    Removing the MAIN/LAUNCHER filter hides the app from the app drawer. The
+    agent is then reachable only via the dialer secret code (#*#*2026#*#*,
+    Telephony.SECRET_CODE) or the console (backend/channel.py wakes it with
+    `am start` before delivering envelopes — so the activity stays exported;
+    a non-exported MainActivity breaks the console apply path).
+    """
+    import re
+    src = os.path.join(APP, "AndroidManifest.xml")
+    with open(src, "r", encoding="utf-8") as fh:
+        xml = fh.read()
+    if "android:testOnly" not in xml:
+        raise SystemExit("release manifest requested but android:testOnly not found")
+    release = xml.replace(' android:testOnly="true"', "")
+
+    activity_re = re.compile(
+        r'<activity android:name="\.MainActivity"[^>]*>.*?</activity>', re.S)
+    m = activity_re.search(release)
+    if not m:
+        raise SystemExit("release manifest: MainActivity block not found")
+    block = m.group(0)
+    cleaned = re.sub(
+        r'<intent-filter>\s*<action android:name="android\.intent\.action\.MAIN" />'
+        r'\s*<category android:name="android\.intent\.category\.LAUNCHER" />'
+        r'\s*</intent-filter>', "", block)
+    release = release.replace(block, cleaned)
+
+    out = os.path.join(BUILD, "AndroidManifest.release.xml")
+    os.makedirs(BUILD, exist_ok=True)
+    with open(out, "w", encoding="utf-8") as fh:
+        fh.write(release)
+    return out
+
+
 def main() -> None:
     os.chdir(AGENT)
     shutil.rmtree(BUILD, ignore_errors=True)
@@ -65,7 +127,19 @@ def main() -> None:
         if not os.path.exists(p):
             raise SystemExit(f"missing tool: {p}")
 
+    import argparse
+    ap = argparse.ArgumentParser(description="build the ALP agent APK")
+    ap.add_argument("--release", action="store_true",
+                    help="drop android:testOnly so the APK can become Device "
+                         "Owner (dpm set-device-owner) + plain `adb install`")
+    ap.add_argument("--apk", default=OUT_APK,
+                    help=f"output APK path (default {OUT_APK})")
+    args = ap.parse_args()
+
     ensure_keystore()
+    embed_public_key()
+    manifest = write_release_manifest() if args.release else os.path.join(
+        APP, "AndroidManifest.xml")
 
     res_zip = os.path.join(BUILD, "res.zip")
     run([AAPT2, "compile", "--dir", os.path.join(APP, "res"), "-o", res_zip])
@@ -76,7 +150,7 @@ def main() -> None:
     run([AAPT2, "link",
          "-o", base_apk,
          "-I", ANDROID_JAR,
-         "--manifest", os.path.join(APP, "AndroidManifest.xml"),
+         "--manifest", manifest,
          "--min-sdk-version", "24",
          "--target-sdk-version", "35",
          "--version-code", "1",
@@ -111,17 +185,17 @@ def main() -> None:
     aligned = os.path.join(BUILD, "aligned.apk")
     run([ZIPALIGN, "-f", "4", base_apk, aligned])
 
-    if os.path.exists(OUT_APK):
-        os.remove(OUT_APK)
+    if os.path.exists(args.apk):
+        os.remove(args.apk)
     run([APKSIGNER, "sign", "--ks", KEYSTORE,
          "--ks-pass", "pass:" + KEYSTORE_PASS,
          "--key-pass", "pass:" + KEYSTORE_PASS,
          "--ks-key-alias", KEY_ALIAS,
-         "--out", OUT_APK, aligned])
-    run([APKSIGNER, "verify", "--print-certs", OUT_APK])
+         "--out", args.apk, aligned])
+    run([APKSIGNER, "verify", "--print-certs", args.apk])
 
-    size = os.path.getsize(OUT_APK)
-    print(f"APK built: {OUT_APK} ({size} bytes)")
+    size = os.path.getsize(args.apk)
+    print(f"APK built: {args.apk} ({size} bytes, release={bool(args.release)})")
 
 
 if __name__ == "__main__":

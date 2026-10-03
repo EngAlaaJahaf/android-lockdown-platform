@@ -5,11 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * Thin broadcast bridge into AlpOps. On devices that reliably dispatch dynamic
- * broadcasts this is the primary wake path; on builds that vault background
- * broadcasts (standby-bucket RESTRICTED / app-freezer), MainActivity's
- * activity-nudge path processes the same envelope files instead. Both delegate
- * to AlpOps, so behavior is identical regardless of transport.
+ * Thin broadcast bridge into AlpOps. Envelope CONTENT is never read from the
+ * intent: a locally installed app must not be able to inject a policy/cancel
+ * command without the console's Ed25519 signature. Both the broadcast and the
+ * activity-nudge path resolve envelopes from the /data/local/tmp files the
+ * console pushes, and AlpOps.handle gates every one through EnvelopeGuard —
+ * a forged broadcast with no (or invalid) envelope file is inert.
  */
 public class CommandReceiver extends BroadcastReceiver {
 
@@ -18,11 +19,11 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final String ACTION_GET_STATE = "com.alp.agent.GET_STATE";
     public static final String ACTION_REPORT = "com.alp.agent.REPORT_CAPABILITY";
     public static final String ACTION_WITHDRAW_DO = "com.alp.agent.WITHDRAW_DO";
-    public static final String EXTRA_ENVELOPE = "envelope";
+    public static final String ACTION_PROVISION_PIN = "com.alp.agent.PROVISION_PIN";
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        String action = intent.getAction();
-        AlpOps.handle(context, action, intent.getStringExtra(EXTRA_ENVELOPE), null);
+        // envelope payload deliberately ignored — files-only + signature.
+        AlpOps.handle(context, intent.getAction(), null, null);
     }
 }

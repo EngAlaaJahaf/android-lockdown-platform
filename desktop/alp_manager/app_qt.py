@@ -1114,7 +1114,70 @@ class App(QMainWindow):
         self._apply_log = QPlainTextEdit()
         self._apply_log.setReadOnly(True)
         v.addWidget(self._apply_log, 1)
+
+        pin_form = QFrame()
+        pin_form.setObjectName("box")
+        pf = QHBoxLayout(pin_form)
+        pf.addWidget(QLabel("توفير رمز PIN لزر التراجع:"))
+        self._pin_dev = QComboBox()
+        self._pin_dev.setMinimumWidth(260)
+        pf.addWidget(self._pin_dev)
+        self._pin_edit = QLineEdit()
+        self._pin_edit.setPlaceholderText("4–12 أرقام — اتركه فارغاً لتوليد عشوائي")
+        self._pin_edit.setMaximumWidth(220)
+        pf.addWidget(self._pin_edit)
+        b_pin = QPushButton("توفير الرمز")
+        b_pin.clicked.connect(self._pin_provision_action)
+        pf.addWidget(b_pin)
+        v.addWidget(pin_form)
+        self._sensitive_widgets.extend([self._pin_dev, self._pin_edit, b_pin])
+
         self._stack.addWidget(page)
+
+    def _pin_provision_action(self):
+        did = self._pin_dev.currentData()
+        if not did:
+            self._err("توفير الرمز", "اختر الجهاز أولًا.")
+            return
+        pin = self._pin_edit.text().strip()
+        if pin and not (pin.isdigit() and 4 <= len(pin) <= 12):
+            self._err("توفير الرمز", "الرمز يجب أن يكون 4–12 رقماً.")
+            return
+        msg = (f"توفير رمز PIN للجهاز {did} — يوقَّع توقيع Ed25519 من هذه الوحدة.\n\n"
+               + (f"الرمز المحدد: {pin}" if pin else
+                  "سيُولَّد رمز عشوائي من 6 أرقام ويُعرض مرة واحدة."))
+        ret = QMessageBox.question(self, "توفير رمز PIN", msg,
+                                   QMessageBox.Yes | QMessageBox.No,
+                                   QMessageBox.No)
+        if ret != QMessageBox.Yes:
+            self._set_flow("أُلغي توفير الرمز")
+            return
+        self._busy_start("جارٍ توقيع وتوصيل الرمز…")
+        self._set_flow("توقيع PROVISION_PIN وإرساله عبر ADB…")
+        self._lock_sensitive(True)
+        self._task("pin", self.ctl.provision_pin, did, pin)
+
+    def _h_pin(self, res, err):
+        self._lock_sensitive(False)
+        if err:
+            self._set_flow("توفير الرمز فشل")
+            self._err("توفير الرمز", str(err))
+            return
+        if not res.get("ok"):
+            self._set_flow("توفير الرمز فشل")
+            self._err("توفير الرمز", res.get("error", "فشل غير معروف"))
+            return
+        self._apply_log.appendPlainText(self._fmt_json(res))
+        self._pin_edit.setPlaceholderText("4–12 أرقام — اتركه فارغاً لتوليد عشوائي")
+        self._pin_edit.setText(res.get("pin", ""))
+        self._set_flow("تم توفير الرمز ✓ — احفظه الآن (يُعرض مرة واحدة)")
+        self._busy_start("تم توفير الرمز للجهاز")
+        QMessageBox.information(
+            self, "توفير الرمز",
+            f"تم توقيع وتوصيل رمز PIN للجهاز {self._pin_dev.currentData()}.\n\n"
+            f"الرمز: {res.get('pin', '')}\n\n"
+            "احفظه الآن — لا يُعرض إلا مرة واحدة. سيُسأل عنه الزر "
+            "«تراجع» في التطبيق على الجهاز (مع قفل بعد 5 محاولات).")
 
     def _apply_dev_changed(self, *_):
         did = self._apply_dev.currentData()
@@ -2087,7 +2150,17 @@ class App(QMainWindow):
         self._rec_dev.blockSignals(False)
         if target and self._rec_dev.findData(target) >= 0:
             self._rec_dev.setCurrentIndex(self._rec_dev.findData(target))
-        for cb in (self._apply_dev, self._rec_dev):
+
+        self._pin_dev.blockSignals(True)
+        self._pin_dev.clear()
+        for d in devices:
+            self._pin_dev.addItem(
+                f"{tx(d, 'device_id')} [{tx(d, 'serial')}]", tx(d, "device_id"))
+        self._pin_dev.blockSignals(False)
+        if target and self._pin_dev.findData(target) >= 0:
+            self._pin_dev.setCurrentIndex(self._pin_dev.findData(target))
+
+        for cb in (self._apply_dev, self._rec_dev, self._pin_dev):
             if cb.count() and cb.currentData() is None:
                 cb.setCurrentIndex(0)
 
