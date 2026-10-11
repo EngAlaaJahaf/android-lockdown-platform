@@ -4043,9 +4043,9 @@ ul.summaryTab.enr-tabs {
   background: transparent !important;
 }
 
-ul.summaryTab.device-details-tabs li,
-ul.summaryTab.profile-tabs li,
-ul.summaryTab.enr-tabs li {
+ul.summaryTab.device-details-tabs > li,
+ul.summaryTab.profile-tabs > li,
+ul.summaryTab.enr-tabs > li {
   margin: 0 !important;
   padding: 0 !important;
   list-style: none !important;
@@ -4054,9 +4054,9 @@ ul.summaryTab.enr-tabs li {
   float: none !important;
 }
 
-ul.summaryTab.device-details-tabs li a,
-ul.summaryTab.profile-tabs li a,
-ul.summaryTab.enr-tabs li a {
+ul.summaryTab.device-details-tabs > li > a,
+ul.summaryTab.profile-tabs > li > a,
+ul.summaryTab.enr-tabs > li > a {
   display: inline-block !important;
   font-family: 'Lato', sans-serif !important;
   font-size: 14px !important;
@@ -4072,19 +4072,19 @@ ul.summaryTab.enr-tabs li a {
   transition: color 0.15s ease, border-color 0.15s ease !important;
 }
 
-ul.summaryTab.device-details-tabs li a:hover,
-ul.summaryTab.profile-tabs li a:hover,
-ul.summaryTab.enr-tabs li a:hover {
+ul.summaryTab.device-details-tabs > li > a:hover,
+ul.summaryTab.profile-tabs > li > a:hover,
+ul.summaryTab.enr-tabs > li > a:hover {
   color: #0073b6 !important;
   background: transparent !important;
 }
 
-ul.summaryTab.device-details-tabs li a.active,
-ul.summaryTab.profile-tabs li a.active,
-ul.summaryTab.enr-tabs li a.active,
-ul.summaryTab.device-details-tabs li.active a,
-ul.summaryTab.profile-tabs li.active a,
-ul.summaryTab.enr-tabs li.active a {
+ul.summaryTab.device-details-tabs > li > a.active,
+ul.summaryTab.profile-tabs > li > a.active,
+ul.summaryTab.enr-tabs > li > a.active,
+ul.summaryTab.device-details-tabs > li.active > a,
+ul.summaryTab.profile-tabs > li.active > a,
+ul.summaryTab.enr-tabs > li.active > a {
   color: #0073b6 !important;
   font-weight: 600 !important;
   border-bottom: 2px solid #0073b6 !important;
@@ -4280,4 +4280,80 @@ ul.summaryTab.enr-tabs li.active a {
   justify-content: flex-start;
   gap: 12px;
 }
+
+/* Comprehensive Device 360 Actions Dropdown & Tabs Right Alignment */
+.comp-dev-tabs-right-actions {
+  margin-left: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  position: relative !important;
+  margin-bottom: 2px !important;
+}
+
+.btn-actions-dropdown:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+.btn-actions-dropdown:active {
+  background: #f1f5f9 !important;
+}
+
+ul.device-action-dropdown,
+.device-action-dropdown {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16) !important;
+  border-radius: 4px !important;
+  padding: 6px 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  min-width: 200px !important;
+  width: 200px !important;
+  z-index: 1050 !important;
+  box-sizing: border-box !important;
+}
+
+ul.device-action-dropdown li,
+.device-action-dropdown li {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  clear: both !important;
+  float: none !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  color: #1e293b !important;
+  cursor: pointer !important;
+  line-height: 1.4 !important;
+  transition: background 0.12s ease, color 0.12s ease !important;
+  list-style: none !important;
+  text-align: left !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  white-space: nowrap !important;
+}
+
+ul.device-action-dropdown li:hover,
+.device-action-dropdown li:hover {
+  background: #f1f5f9 !important;
+  color: #0073b6 !important;
+}
+
+ul.device-action-dropdown li.disabled-action,
+.device-action-dropdown li.disabled-action {
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  background: transparent !important;
+}
+
+ul.device-action-dropdown li.disabled-action:hover,
+.device-action-dropdown li.disabled-action:hover {
+  background: #f8fafc !important;
+  color: #94a3b8 !important;
+}
+
+
 

@@ -2483,12 +2483,24 @@ let CURRENT_COMP_DID = null;
 let CURRENT_COMP_DEVICE = null;
 
 function toggleCompDevActionsMenu(e) {
-  if (e) e.stopPropagation();
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
   const menu = $('compDeviceActionDropDown');
   if (menu) {
     menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
   }
 }
+
+document.addEventListener('click', function (e) {
+  const menu = $('compDeviceActionDropDown');
+  if (menu && menu.style.display === 'block') {
+    if (!e.target.closest('#compDevActionsBtnWrap')) {
+      menu.style.display = 'none';
+    }
+  }
+});
 
 function showCompActionPopover(id) {
   const el = $(id);

@@ -19,7 +19,7 @@
   <link href="assets/me/engine.css" rel="stylesheet" />
   <link href="assets/me/engine-internal.css" rel="stylesheet" />
   <link href="assets/me/login/login-engine.css" rel="stylesheet" />
-  <link href="assets/alp-console.css?v=20261010_payloads" rel="stylesheet" />
+  <link href="assets/alp-console.css?v=20261011_actions_fix" rel="stylesheet" />
   <link href="assets/alp-table.css?v=20261008" rel="stylesheet" />
   <link href="assets/alp-enrollment.css" rel="stylesheet" />
   <link href="assets/alp-ws.css" rel="stylesheet" />
@@ -2307,77 +2307,82 @@
                             </a>
                         </li>
 
-                        <!-- Actions Dropdown Toggle Button -->
-                        <span id="compDevActionsBtnWrap" data-summary-tab-button="0" class="tab-button-right font-sm-3" style="position:relative;" onclick="toggleCompDevActionsMenu(event)">
-                            <span class="device-actions-button">Actions</span>
-                        </span>
+                        <!-- Right-aligned Actions & Roadmap Link -->
+                        <div class="comp-dev-tabs-right-actions" style="margin-left:auto; display:inline-flex; align-items:center; gap:16px; margin-bottom:4px; position:relative; z-index:1100;">
+                            <span class="road-map-link font-sm-3" data-summary-tab-roadmap-link="" style="margin:0;">
+                                <a target="_blank" href="http://www.manageengine.com/mobile-device-management/product-roadmap-add-details.html?id=28&amp;mdmod&amp;utm_source=In-Product" id="ember1237" class="ember-view" style="color:#0073b6; font-size:13px; text-decoration:none;">Looking to manage calls?</a>
+                            </span>
 
-                        <span class="road-map-link font-sm-3" data-summary-tab-roadmap-link="">
-                            <a target="_blank" href="http://www.manageengine.com/mobile-device-management/product-roadmap-add-details.html?id=28&amp;mdmod&amp;utm_source=In-Product" id="ember1237" class="ember-view">Looking to manage calls?</a>
-                        </span>
-                    </ul>
+                            <div id="compDevActionsBtnWrap" data-summary-tab-button="0" class="tab-button-right font-sm-3" style="position:relative;">
+                                <button type="button" id="compDevActionsBtn" class="device-actions-button btn-actions-dropdown" onclick="toggleCompDevActionsMenu(event)" style="display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #cbd5e1; border-radius:3px; padding:4px 12px; font-size:13px; font-weight:500; color:#334155; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.04); transition:background 0.15s, border-color 0.15s;">
+                                    <span>Actions</span>
+                                    <span style="font-size:9px; color:#64748b; line-height:1;">▼</span>
+                                </button>
 
-                    <!-- 3. Actions Dropdown Menu (Full MDM Device Control Suite) -->
-                    <ul class="device-action-dropdown" id="compDeviceActionDropDown" style="display:none; position:absolute; right:25px; margin-top:-6px; z-index:1050; background:#fff; border:1px solid #cbd5e1; box-shadow:0 6px 18px rgba(0,0,0,0.15); border-radius:4px; min-width:185px;">
-                        <li data-mdm-action="Scan Now" onclick="executeCompAction('Scan Now')">
-                            Scan Now
-                        </li>
-                        <li data-mdm-action="Remote Lock" onclick="executeCompAction('Remote Lock')">
-                            Remote Lock
-                        </li>
-                        <li class="disabled-action" id="comp-action-li-2" onmouseenter="showCompActionPopover('comp-action-popover-2')" onmouseleave="hideCompActionPopover('comp-action-popover-2')">
-                            Remote Control
-                        </li>
-                        <div id="ember1261" class="ember-view">
-                            <div id="comp-action-popover-2" aria-haspopup="true" aria-expanded="false" tabindex="0" class="zh-draggable device-action-remarks-popover zpopover" style="display:none; position:absolute; left:-290px; top:40px; width:280px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:10px; font-size:12px; color:#334155; z-index:1060;">
-                                <div class="zpopover__content">
-                                    <div class="device-action-remarks-content">
-                                        Remote Commands disabled through device privacy settings. <a href="javascript:void(0)" onclick="executeCompAction('Remote Control')" class="blueTxt">Modify</a> and re-try.
+                                <!-- 3. Actions Dropdown Menu (Directly anchored beneath the Actions button) -->
+                                <ul class="device-action-dropdown" id="compDeviceActionDropDown" style="display:none; position:absolute; top:calc(100% + 4px); right:0; z-index:1200; background:#fff; border:1px solid #cbd5e1; box-shadow:0 6px 18px rgba(0,0,0,0.15); border-radius:4px; min-width:200px; margin:0; padding:4px 0; list-style:none; text-align:left;">
+                                    <li data-mdm-action="Scan Now" onclick="executeCompAction('Scan Now')">
+                                        Scan Now
+                                    </li>
+                                    <li data-mdm-action="Remote Lock" onclick="executeCompAction('Remote Lock')">
+                                        Remote Lock
+                                    </li>
+                                    <li class="disabled-action" id="comp-action-li-2" onmouseenter="showCompActionPopover('comp-action-popover-2')" onmouseleave="hideCompActionPopover('comp-action-popover-2')">
+                                        Remote Control
+                                    </li>
+                                    <div id="ember1261" class="ember-view">
+                                        <div id="comp-action-popover-2" aria-haspopup="true" aria-expanded="false" tabindex="0" class="zh-draggable device-action-remarks-popover zpopover" style="display:none; position:absolute; left:-290px; top:40px; width:280px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:10px; font-size:12px; color:#334155; z-index:1060;">
+                                            <div class="zpopover__content">
+                                                <div class="device-action-remarks-content">
+                                                    Remote Commands disabled through device privacy settings. <a href="javascript:void(0)" onclick="executeCompAction('Remote Control')" class="blueTxt">Modify</a> and re-try.
+                                                </div>
+                                            </div>
+                                            <div class="zpopover__pointer"></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="zpopover__pointer"></div>
+                                    <li data-mdm-action="Remote Alarm" onclick="executeCompAction('Remote Alarm')">
+                                        Remote Alarm
+                                    </li>
+                                    <li data-mdm-action="Clear Passcode" onclick="executeCompAction('Clear Passcode')">
+                                        Clear Passcode
+                                    </li>
+                                    <li data-mdm-action="Reset Passcode" onclick="executeCompAction('Reset Passcode')">
+                                        Reset Passcode
+                                    </li>
+                                    <li class="disabled-action" id="comp-action-li-6" onmouseenter="showCompActionPopover('comp-action-popover-6')" onmouseleave="hideCompActionPopover('comp-action-popover-6')">
+                                        Locate device
+                                    </li>
+                                    <div id="ember1262" class="ember-view">
+                                        <div id="comp-action-popover-6" aria-haspopup="true" aria-expanded="false" tabindex="0" class="zh-draggable device-action-remarks-popover zpopover" style="display:none; position:absolute; left:-290px; top:160px; width:280px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:10px; font-size:12px; color:#334155; z-index:1060;">
+                                            <div class="zpopover__content">
+                                                <div class="device-action-remarks-content">
+                                                    Geo-Tracking disabled! <a href="javascript:void(0)" onclick="switchCompTab('geo-tracking')" class="blueTxt">Enable Geo-Tracking</a> to locate the managed devices.
+                                                </div>
+                                            </div>
+                                            <div class="zpopover__pointer"></div>
+                                        </div>
+                                    </div>
+                                    <li data-mdm-action="Enable Lost Mode" onclick="executeCompAction('Enable Lost Mode')">
+                                        Enable Lost Mode
+                                    </li>
+                                    <li data-mdm-action="Restart Device" onclick="executeCompAction('Restart Device')">
+                                        Restart Device
+                                    </li>
+                                    <li data-mdm-action="Pause Kiosk" onclick="executeCompAction('Pause Kiosk')">
+                                        Pause Kiosk
+                                    </li>
+                                    <li data-mdm-action="Request Bug Report" onclick="executeCompAction('Request Bug Report')">
+                                        Request Bug Report
+                                    </li>
+                                    <li data-mdm-action="Clear App Data" onclick="executeCompAction('Clear App Data')">
+                                        Clear App Data
+                                    </li>
+                                    <li data-mdm-action="Deprovision (Wipe)" onclick="executeCompAction('Deprovision (Wipe)')" style="color:var(--ecs-base-clr-error, #dc2626); font-weight:500; border-top:1px solid #f1f5f9;">
+                                        Deprovision (Wipe)
+                                    </li>
+                                </ul>
                             </div>
                         </div>
-                        <li data-mdm-action="Remote Alarm" onclick="executeCompAction('Remote Alarm')">
-                            Remote Alarm
-                        </li>
-                        <li data-mdm-action="Clear Passcode" onclick="executeCompAction('Clear Passcode')">
-                            Clear Passcode
-                        </li>
-                        <li data-mdm-action="Reset Passcode" onclick="executeCompAction('Reset Passcode')">
-                            Reset Passcode
-                        </li>
-                        <li class="disabled-action" id="comp-action-li-6" onmouseenter="showCompActionPopover('comp-action-popover-6')" onmouseleave="hideCompActionPopover('comp-action-popover-6')">
-                            Locate device
-                        </li>
-                        <div id="ember1262" class="ember-view">
-                            <div id="comp-action-popover-6" aria-haspopup="true" aria-expanded="false" tabindex="0" class="zh-draggable device-action-remarks-popover zpopover" style="display:none; position:absolute; left:-290px; top:160px; width:280px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:10px; font-size:12px; color:#334155; z-index:1060;">
-                                <div class="zpopover__content">
-                                    <div class="device-action-remarks-content">
-                                        Geo-Tracking disabled! <a href="javascript:void(0)" onclick="switchCompTab('geo-tracking')" class="blueTxt">Enable Geo-Tracking</a> to locate the managed devices.
-                                    </div>
-                                </div>
-                                <div class="zpopover__pointer"></div>
-                            </div>
-                        </div>
-                        <li data-mdm-action="Enable Lost Mode" onclick="executeCompAction('Enable Lost Mode')">
-                            Enable Lost Mode
-                        </li>
-                        <li data-mdm-action="Restart Device" onclick="executeCompAction('Restart Device')">
-                            Restart Device
-                        </li>
-                        <li data-mdm-action="Pause Kiosk" onclick="executeCompAction('Pause Kiosk')">
-                            Pause Kiosk
-                        </li>
-                        <li data-mdm-action="Request Bug Report" onclick="executeCompAction('Request Bug Report')">
-                            Request Bug Report
-                        </li>
-                        <li data-mdm-action="Clear App Data" onclick="executeCompAction('Clear App Data')">
-                            Clear App Data
-                        </li>
-                        <li data-mdm-action="Deprovision (Wipe)" onclick="executeCompAction('Deprovision (Wipe)')" style="color:var(--ecs-base-clr-error, #dc2626); font-weight:500;">
-                            Deprovision (Wipe)
-                        </li>
                     </ul>
 
                     <!-- 4. Tab Panes Container -->
@@ -6929,7 +6934,7 @@
   </div>
   <!-- JS moved to alp-console.js (block 3) -->
   <script src="assets/alp-restrictions-data.js"></script>
-  <script src="assets/alp-console.js?v=20261011_instant_v8"></script>
+  <script src="assets/alp-console.js?v=20261011_instant_v9"></script>
   <script src="assets/alp-dialog.js?v=20261010_dialog_fix"></script>
   <script src="assets/alp-enrollment.js?v=20261005e"></script>
   <script src="assets/alp-table.js?v=20261004f"></script>
