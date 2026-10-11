@@ -313,40 +313,96 @@ def probe_and_persist_device_inventory(serial_or_did: str) -> dict:
     mem_out = _sh("cat", "/proc/meminfo")
     tot_m = re.search(r'MemTotal:\s*(\d+)', mem_out)
     avail_m = re.search(r'MemAvailable:\s*(\d+)', mem_out)
-    tot_ram_mb = round(int(tot_m.group(1)) / 1024, 3) if tot_m else 4096.0
-    avail_ram_mb = round(int(avail_m.group(1)) / 1024, 3) if avail_m else 2124.0
+    tot_ram_mb = round(int(tot_m.group(1)) / 1024, 2) if tot_m else 2048.0
+    if avail_m:
+        avail_ram_mb = round(int(avail_m.group(1)) / 1024, 2)
+    else:
+        # Fallback for older kernels: MemFree + Buffers + Cached
+        free_m = re.search(r'MemFree:\s*(\d+)', mem_out)
+        buf_m = re.search(r'Buffers:\s*(\d+)', mem_out)
+        cached_m = re.search(r'Cached:\s*(\d+)', mem_out)
+        free_kb = int(free_m.group(1)) if free_m else 0
+        buf_kb = int(buf_m.group(1)) if buf_m else 0
+        cached_kb = int(cached_m.group(1)) if cached_m else 0
+        avail_kb = free_kb + buf_kb + cached_kb
+        avail_ram_mb = round(avail_kb / 1024, 2) if avail_kb > 0 else round(tot_ram_mb * 0.5, 2)
 
     # 4. Storage (/data)
+    def _parse_size_str_to_kb(val: str) -> float:
+        val = val.strip()
+        if not val:
+            return 0.0
+        m = re.match(r'^([\d.]+)\s*([kKmMgGtT]?)b?$', val)
+        if not m:
+            return 0.0
+        num = float(m.group(1))
+        unit = m.group(2).upper()
+        if unit == 'K' or unit == '':
+            return num
+        elif unit == 'M':
+            return num * 1024.0
+        elif unit == 'G':
+            return num * 1024.0 * 1024.0
+        elif unit == 'T':
+            return num * 1024.0 * 1024.0 * 1024.0
+        return num
+
     df_out = _sh("df", "-k", "/data")
-    cap_gb = 64.0
-    free_gb = 52.0
-    used_gb = 12.0
-    df_lines = df_out.splitlines()
-    if len(df_lines) > 1:
-        p = df_lines[-1].split()
+    cap_gb = 0.0
+    free_gb = 0.0
+    used_gb = 0.0
+    df_lines = [line.strip() for line in df_out.splitlines() if line.strip()]
+    data_line = None
+    for line in df_lines:
+        if "/data" in line and not line.lower().startswith("filesystem"):
+            data_line = line
+            break
+    if not data_line and len(df_lines) > 1:
+        data_line = df_lines[-1]
+
+    if data_line:
+        p = data_line.split()
         if len(p) >= 4:
             try:
-                cap_gb = round(int(p[1]) / (1024 * 1024), 2)
-                free_gb = round(int(p[3]) / (1024 * 1024), 2)
-                used_gb = round(cap_gb - free_gb, 2)
+                cap_kb = _parse_size_str_to_kb(p[1])
+                free_kb = _parse_size_str_to_kb(p[3])
+                if cap_kb > 0:
+                    cap_gb = round(cap_kb / (1024.0 * 1024.0), 2)
+                    free_gb = round(free_kb / (1024.0 * 1024.0), 2)
+                    used_gb = round(max(0.0, cap_gb - free_gb), 2)
             except Exception:
                 pass
+    if cap_gb <= 0:
+        cap_gb = 16.0
+        free_gb = 12.0
+        used_gb = 4.0
 
     # 5. UDID
     udid = _sh("settings", "get", "secure", "android_id") or "c673a99957bf4358"
 
     # 6. CPU info
     cpu_out = _sh("cat", "/proc/cpuinfo")
-    cores = len(re.findall(r'^processor\s*:', cpu_out, re.M)) or 8
+    cores = len(re.findall(r'^processor\s*:', cpu_out, re.M)) or 4
     hw_m = re.search(r'Hardware\s*:\s*(.+)', cpu_out)
     proc_name = hw_m.group(1).strip() if hw_m else f"{brand} Octa-core ({abi})"
 
     # 7. Network / MAC / IP
-    wifi_mac = _sh("cat", "/sys/class/net/wlan0/address")
-    if not wifi_mac or len(wifi_mac) < 10:
+    raw_mac = _sh("cat", "/sys/class/net/wlan0/address").strip()
+    mac_valid = re.match(r'^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$', raw_mac)
+    if mac_valid and not raw_mac.startswith("00:00:00"):
+        wifi_mac = raw_mac.lower()
+    else:
         ip_out = _sh("ip", "link", "show", "wlan0")
         mac_m = re.search(r'link/ether\s+([0-9a-fA-F:]{17})', ip_out)
-        wifi_mac = mac_m.group(1) if mac_m else "5a:bd:3b:92:56:68"
+        if mac_m and not mac_m.group(1).startswith("00:00:00"):
+            wifi_mac = mac_m.group(1).lower()
+        else:
+            dumpsys_wifi = _sh("dumpsys", "wifi", timeout=5)
+            dmac_m = re.search(r'(?:Macaddr\s*=\s*|address=)([0-9a-fA-F:]{17})', dumpsys_wifi)
+            if dmac_m and not dmac_m.group(1).startswith("00:00:00"):
+                wifi_mac = dmac_m.group(1).lower()
+            else:
+                wifi_mac = "d0:fc:cc:e8:d4:51"
 
     wifi_ip = ""
     ip_addr_out = _sh("ip", "addr", "show", "wlan0")
@@ -358,7 +414,11 @@ def probe_and_persist_device_inventory(serial_or_did: str) -> dict:
         ip_tun_m = re.search(r'inet\s+([0-9.]+)', ip_addr_tun)
         wifi_ip = ip_tun_m.group(1) if ip_tun_m else "10.0.0.2"
 
-    bt_mac = wifi_mac[:-1] + "9" if len(wifi_mac) > 5 else "5a:bd:3b:92:56:69"
+    bt_out = _sh("settings", "get", "secure", "bluetooth_address").strip()
+    if bt_out and len(bt_out) == 17:
+        bt_mac = bt_out
+    else:
+        bt_mac = wifi_mac[:-1] + "9" if len(wifi_mac) > 5 else "5a:bd:3b:92:56:69"
 
     # 8. Device type
     is_tablet = "tab" in model.lower() or "lt" in model.lower() or "pad" in model.lower()
@@ -439,13 +499,19 @@ def probe_and_persist_device_inventory(serial_or_did: str) -> dict:
     save_device_inventory(did, info_dict, net_dict, apps_list)
 
     # Also update devices table
+    android_major = 0
+    if os_ver:
+        major_part = os_ver.split('.')[0]
+        if major_part.isdigit():
+            android_major = int(major_part)
+
     with connect() as c:
         c.execute("""
             UPDATE devices SET
                 manufacturer=?, model=?, android_version=?, build_fingerprint=?,
                 security_patch=?, updated_at=datetime('now')
             WHERE id=?
-        """, (brand, model, int(os_ver) if os_ver.isdigit() else dev.get("android_version"),
+        """, (brand, model, android_major or dev.get("android_version") or 5,
               fingerprint, sec_patch, dev["id"]))
 
     return get_device_inventory(did)

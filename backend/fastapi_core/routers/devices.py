@@ -37,9 +37,18 @@ router = APIRouter(prefix="/api/v1", tags=["Devices & ADB"])
 def fetch_devices_list():
     with connect() as c:
         rows = c.execute(
-            "SELECT device_id, serial, manufacturer, model, android_version, api_level, "
-            "enrollment_state, compliance_state, is_lab, last_verification_at "
-            "FROM devices ORDER BY id"
+            """
+            SELECT d.device_id, d.serial, d.manufacturer, d.model, d.android_version, d.api_level,
+                   d.enrollment_state, d.compliance_state, d.is_lab, d.last_verification_at,
+                   m.device_capacity, m.available_device_capacity, m.os_version, m.product_name,
+                   m.battery_level, m.total_ram_memory, m.available_ram_memory, m.device_type,
+                   m.is_rooted, m.encryption_status,
+                   n.wifi_mac, n.wifi_ip, n.bluetooth_mac
+            FROM devices d
+            LEFT JOIN mddeviceinfo m ON m.device_id = d.device_id
+            LEFT JOIN mdnetworkinfo n ON n.device_id = d.device_id
+            ORDER BY d.id
+            """
         ).fetchall()
     return [dict(r) for r in rows]
 

@@ -2596,8 +2596,7 @@ function renderComprehensiveDeviceView(dev, did, tab) {
   const devId = dev.device_id || did;
   const devSerial = dev.serial || mdi.serial_number || (live.identity && live.identity.serial) || devId;
   const devModel = dev.model || mdi.model_name || (live.identity && live.identity.model) || 'Android Device';
-  const devManufacturer = dev.manufacturer || mdi.manufacturer || (live.identity && live.identity.manufacturer) || 'Android';
-  const osVer = String(dev.android_version || mdi.os_version || (live.identity && live.identity.android_version) || '14');
+  const osVer = String((live.identity && live.identity.android_version) || dev.os_version || mdi.os_version || (dev.android_version ? dev.android_version : '') || '--');
   const buildFingerprint = dev.build_fingerprint || mdi.build_version || (live.identity && live.identity.build_fingerprint) || '--';
   const secPatch = dev.security_patch || mdi.security_patch_version || (live.identity && live.identity.security_patch) || '--';
 
@@ -2748,22 +2747,22 @@ function renderComprehensiveDeviceView(dev, did, tab) {
   if (recKeyEl) recKeyEl.textContent = recKey;
 
   // Live Disk calculation from DB / ADB telemetry
-  const totalDisk = hw.device_capacity_gb ? parseFloat(hw.device_capacity_gb) : (dev.storage_total_gb ? parseFloat(dev.storage_total_gb) : (mdi.device_capacity ? parseFloat(mdi.device_capacity) : 64.0));
-  const freeDisk = hw.free_space_gb ? parseFloat(hw.free_space_gb) : (dev.storage_free_gb ? parseFloat(dev.storage_free_gb) : (mdi.available_device_capacity ? parseFloat(mdi.available_device_capacity) : 45.0));
+  const totalDisk = hw.device_capacity_gb ? parseFloat(hw.device_capacity_gb) : (dev.storage_total_gb ? parseFloat(dev.storage_total_gb) : (mdi.device_capacity ? parseFloat(mdi.device_capacity) : (dev.device_capacity ? parseFloat(dev.device_capacity) : 0)));
+  const freeDisk = hw.free_space_gb ? parseFloat(hw.free_space_gb) : (dev.storage_free_gb ? parseFloat(dev.storage_free_gb) : (mdi.available_device_capacity ? parseFloat(mdi.available_device_capacity) : (dev.available_device_capacity ? parseFloat(dev.available_device_capacity) : 0)));
   const usedDisk = parseFloat(Math.max(0, totalDisk - freeDisk).toFixed(2));
   const usedPct = totalDisk > 0 ? ((usedDisk / totalDisk) * 100).toFixed(1) : '0';
   const freePct = totalDisk > 0 ? ((freeDisk / totalDisk) * 100).toFixed(1) : '0';
 
   const tEl = $('compDiskTotalText');
-  if (tEl) tEl.textContent = `${totalDisk} GB`;
+  if (tEl) tEl.textContent = totalDisk > 0 ? `${totalDisk} GB` : '--';
   const uEl = $('compDiskUsedGb');
-  if (uEl) uEl.textContent = `${usedDisk}`;
+  if (uEl) uEl.textContent = totalDisk > 0 ? `${usedDisk}` : '--';
   const fEl = $('compDiskFreeGb');
-  if (fEl) fEl.textContent = `${freeDisk}`;
+  if (fEl) fEl.textContent = totalDisk > 0 ? `${freeDisk}` : '--';
   const upEl = $('compDiskUsedPct');
-  if (upEl) upEl.textContent = `${usedPct}%`;
+  if (upEl) upEl.textContent = totalDisk > 0 ? `${usedPct}%` : '--';
   const fpEl = $('compDiskFreePct');
-  if (fpEl) fpEl.textContent = `${freePct}%`;
+  if (fpEl) fpEl.textContent = totalDisk > 0 ? `${freePct}%` : '--';
 
   switchCompTab(tab || 'summary');
 }
@@ -2835,7 +2834,7 @@ function renderCompDeviceHardware(dev) {
   const hw = live.hardware || dev.hardware || {};
 
   const devId = dev.device_id || dev.serial || 'Managed Device';
-  const osVer = (live.identity && live.identity.android_version) || dev.android_version || mdi.os_version || '14';
+  const osVer = (live.identity && live.identity.android_version) || dev.os_version || mdi.os_version || dev.android_version || '--';
   const buildVer = (live.identity && live.identity.build_fingerprint) || dev.build_fingerprint || mdi.build_version || '--';
   const secUpdate = ((live.identity && live.identity.security_patch) || dev.security_patch || mdi.security_patch_version || '--') + ' (Updated On ' + (dev.last_seen_at || mdi.db_updated_time || formatNowMe()).split(' ')[0] + ')';
   const modelNo = (live.identity && live.identity.model) || dev.model || mdi.model_name || 'Device';
@@ -2845,14 +2844,14 @@ function renderCompDeviceHardware(dev) {
   const udid = hw.udid || mdi.udid || dev.udid || '--';
   const serial = (live.identity && live.identity.serial) || dev.serial || mdi.serial_number || devId;
   const baseband = (live.identity && live.identity.baseband) ? live.identity.baseband.split(',')[0] : (mdi.baseband_version || '--');
-  const devCap = hw.device_capacity_gb || mdi.device_capacity || (dev.storage_total_gb ? String(dev.storage_total_gb) : '64.0');
-  const freeSpace = hw.free_space_gb || mdi.available_device_capacity || (dev.storage_free_gb ? String(dev.storage_free_gb) : '45.0');
-  const availRam = hw.available_ram_mb || mdi.available_ram_memory || '2048.0';
-  const totalRam = hw.total_ram_mb || mdi.total_ram_memory || '4096.0';
+  const devCap = hw.device_capacity_gb || mdi.device_capacity || dev.device_capacity || (dev.storage_total_gb ? String(dev.storage_total_gb) : '--');
+  const freeSpace = hw.free_space_gb || mdi.available_device_capacity || dev.available_device_capacity || (dev.storage_free_gb ? String(dev.storage_free_gb) : '--');
+  const availRam = hw.available_ram_mb || mdi.available_ram_memory || dev.available_ram_memory || '--';
+  const totalRam = hw.total_ram_mb || mdi.total_ram_memory || dev.total_ram_memory || '--';
   const cellular = hw.cellular_tech || mdi.cellular_technology || (devType === 'Tablet' ? 'Wi-Fi only' : '4G LTE / Wi-Fi');
-  const battery = hw.battery_level || mdi.battery_level || '85.0%';
+  const battery = hw.battery_level || mdi.battery_level || dev.battery_level || '85.0%';
   const osNum = parseInt(osVer, 10);
-  const osName = (osNum >= 15) ? 'VanillaIceCream' : ((osNum >= 14) ? 'UpsideDownCake' : ((osNum >= 13) ? 'Tiramisu' : 'SnowCone'));
+  const osName = (osNum >= 15) ? 'VanillaIceCream' : ((osNum >= 14) ? 'UpsideDownCake' : ((osNum >= 13) ? 'Tiramisu' : ((osNum >= 12) ? 'SnowCone' : ((osNum >= 11) ? 'Red Velvet Cake' : ((osNum >= 10) ? 'Quince Tart' : ((osNum >= 9) ? 'Pie' : ((osNum >= 8) ? 'Oreo' : ((osNum >= 7) ? 'Nougat' : ((osNum >= 6) ? 'Marshmallow' : ((osNum >= 5) ? 'Lollipop' : 'Android'))))))))));
   const easId = hw.eas_id || mdi.eas_device_identifier || ('EAS-' + modelNo.replace(/\s+/g, '_') + '-' + (serial.length >= 6 ? serial.slice(-6) : serial));
   const procDetails = hw.processor_details || mdi.processor_name || `${dev.manufacturer || 'ARM'} Octa-core Processor`;
   const cores = String(hw.cpu_cores || mdi.processor_core_count || '8');
