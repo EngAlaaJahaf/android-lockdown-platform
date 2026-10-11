@@ -3398,16 +3398,37 @@ function renderCompDeviceRestrictions(dev) {
   const observed = live.observed || {};
   const compDetails = (dev.compliance && dev.compliance.details) || {};
 
+  const dpc = (dev.dpc_state && typeof dev.dpc_state === 'object') ? dev.dpc_state : (live.dpc || {});
+  const dpcApplied = Array.isArray(dpc.applied) ? dpc.applied : [];
+
+  // Gather restrictions from assigned MDM profiles/policies
+  const profileRestrs = new Set();
+  const profileAllows = new Set();
+  if (Array.isArray(dev.profiles)) {
+    dev.profiles.forEach(p => {
+      const reqs = p.requirements || [];
+      if (Array.isArray(reqs)) {
+        reqs.forEach(r => {
+          if (r.desired_state === 'RESTRICT' || r.desired_state === 'BLOCK' || r.desired_state === 'OFF') {
+            profileRestrs.add(r.feature);
+          } else if (r.desired_state === 'ALLOW' || r.desired_state === 'ON') {
+            profileAllows.add(r.feature);
+          }
+        });
+      }
+    });
+  }
+
   function checkRestricted(probeKeys, compKeys) {
     if (typeof probeKeys === 'string') probeKeys = [probeKeys];
     if (typeof compKeys === 'string') compKeys = [compKeys];
-    for (const pk of probeKeys) {
-      if (probeRestr[pk]) return true;
-      if (observed[pk] === 'RESTRICTED' || observed[pk] === 'BLOCKED' || observed[pk] === false) return true;
-    }
-    for (const ck of compKeys) {
-      const cd = compDetails[ck];
-      if (cd && (cd.actual === 'RESTRICTED' || cd.actual === 'RESTRICT')) return true;
+    const allKeys = [...probeKeys, ...compKeys];
+    for (const k of allKeys) {
+      if (dpcApplied.includes(k) && !profileAllows.has(k)) return true;
+      if (probeRestr[k] === 'RESTRICTED' || probeRestr[k] === true) return true;
+      if (observed[k] === 'RESTRICTED' || observed[k] === 'BLOCKED' || observed[k] === false) return true;
+      if (compDetails[k] && (compDetails[k].actual === 'RESTRICTED' || compDetails[k].actual === 'RESTRICT')) return true;
+      if (profileRestrs.has(k)) return true;
     }
     return false;
   }

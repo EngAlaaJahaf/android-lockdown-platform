@@ -158,6 +158,24 @@ def fetch_device_details(did: str) -> dict:
     did = dev["device_id"]
     serial = dev.get("serial")
 
+    # Parse stored dpc_state and synthesize live_probe from DB
+    dpc_data = dev.get("dpc_state")
+    if isinstance(dpc_data, str):
+        try:
+            dpc_data = json.loads(dpc_data)
+            dev["dpc_state"] = dpc_data
+        except Exception:
+            dpc_data = {}
+    elif not isinstance(dpc_data, dict):
+        dpc_data = {}
+
+    applied_list = dpc_data.get("applied") or []
+    dev["live_probe"] = {
+        "restrictions": {k: "RESTRICTED" for k in applied_list},
+        "observed": {k: "RESTRICTED" for k in applied_list},
+        "dpc": dpc_data,
+    }
+
     # 1. ALWAYS retrieve stored inventory from SQLite immediately (0ms delay)
     inv = device_inventory.get_device_inventory(did)
 
