@@ -2521,7 +2521,15 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true,
   CURRENT_COMP_DID = did;
   CURRENT_DETAILS_DID = did;
   window.CURRENT_COMP_DID = did;
-  window.CURRENT_COMP_TAB = tab;
+
+  if (!silent) {
+    if (tab) {
+      CURRENT_COMP_TAB = tab;
+      window.CURRENT_COMP_TAB = tab;
+    }
+  } else {
+    tab = CURRENT_COMP_TAB || window.CURRENT_COMP_TAB || tab || 'summary';
+  }
 
   if (!window.COMP_DEVICE_DETAILS_CACHE) window.COMP_DEVICE_DETAILS_CACHE = {};
 
@@ -2556,7 +2564,7 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true,
 
   if (immediateDev && !silent) {
     CURRENT_COMP_DEVICE = immediateDev;
-    renderComprehensiveDeviceView(immediateDev, did, tab);
+    renderComprehensiveDeviceView(immediateDev, did, tab, false);
   } else if (!silent) {
     // Only if cold navigation with zero cache
     const breadName = $('compDevBreadName'); if (breadName) breadName.textContent = did;
@@ -2584,12 +2592,12 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true,
   }
   if (dev) {
     CURRENT_COMP_DEVICE = dev;
-    renderComprehensiveDeviceView(dev, did, tab);
+    renderComprehensiveDeviceView(dev, did, tab, silent);
   }
 }
 window.openComprehensiveDeviceDetails = openComprehensiveDeviceDetails;
 
-function renderComprehensiveDeviceView(dev, did, tab) {
+function renderComprehensiveDeviceView(dev, did, tab, silent) {
 
   const live = dev.live_probe || {};
   const mdi = dev.mddeviceinfo || {};
@@ -2768,10 +2776,27 @@ function renderComprehensiveDeviceView(dev, did, tab) {
   const fpEl = $('compDiskFreePct');
   if (fpEl) fpEl.textContent = totalDisk > 0 ? `${freePct}%` : '--';
 
-  switchCompTab(tab || 'summary');
+  const targetTab = CURRENT_COMP_TAB || tab || 'summary';
+  if (!silent) {
+    switchCompTab(targetTab);
+    if (targetTab === 'device') {
+      renderCompDeviceHardware(dev);
+    } else if (targetTab === 'restrictions') {
+      renderCompDeviceRestrictions(dev);
+    } else if (targetTab === 'installedApps') {
+      renderCompDeviceApps(dev);
+    } else if (targetTab === 'certificates') {
+      renderCompDeviceCertificates(dev);
+    } else if (targetTab === 'alerts') {
+      renderCompDeviceAlerts(dev);
+    }
+  }
 }
 
 function switchCompTab(tabName) {
+  if (!tabName) tabName = 'summary';
+  CURRENT_COMP_TAB = tabName;
+  window.CURRENT_COMP_TAB = tabName;
   const tabs = ['summary', 'device', 'installedApps', 'certificates', 'restrictions', 'alerts', 'geo-tracking', 'audit-logs'];
   tabs.forEach(t => {
     const pane = $('compPane_' + t);
@@ -7598,15 +7623,5 @@ setInterval(function () {
       populateDevices();
     }
   }
-  // 4. Comprehensive Device 360 Inventory live update
-  const wsComp = $('workspaceComprehensiveDeviceDetails');
-  if (wsComp && wsComp.style.display !== 'none' && CURRENT_COMP_DID) {
-    openComprehensiveDeviceDetails(CURRENT_COMP_DID, CURRENT_COMP_TAB || 'summary', false, true);
-  }
-  // 5. Basic Device Details live update
-  const wsDD = $('workspaceDeviceDetails');
-  if (wsDD && wsDD.style.display !== 'none' && CURRENT_DETAILS_DID) {
-    openDeviceDetails(CURRENT_DETAILS_DID, false, CURRENT_DETAILS_TAB || 'groups', true);
-  }
-}, 3000);
+}, 10000);
 
