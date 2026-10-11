@@ -3904,14 +3904,14 @@ async function executeCompAction(actionName) {
   if (actionName === 'Scan Now') {
     try {
       showToast('Scanning device telemetry & inventory...');
-      await api('/devices/' + encodeURIComponent(did) + '/scan', 'POST');
-      alpAlert(`Device scan completed! Hardware specifications and installed apps persisted to database.`);
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'scan' });
+      alpAlert(res.data?.remarks || `Device scan completed! Hardware specifications and installed apps persisted to database.`);
       DEVICE_ACTIONS_STORE[did].unshift({
         name: 'Scan Device',
         by: 'admin',
         time: formatNowMe(),
         status: 'Success',
-        remarks: 'Live inventory synchronized & persisted'
+        remarks: res.data?.remarks || 'Live inventory synchronized & persisted'
       });
       await openComprehensiveDeviceDetails(did, false);
     } catch (err) {
@@ -3922,117 +3922,180 @@ async function executeCompAction(actionName) {
     renderCompAuditLogs();
   } else if (actionName === 'Remote Lock') {
     if (!await alpConfirm(`Are you sure you want to remotely lock device ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Remote Lock',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Remote lock command executed'
-    });
-    alpAlert(`Remote lock command sent successfully to device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'lock' });
+      const msg = res.data?.remarks || `Remote lock command sent successfully to device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Remote Lock',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Queued',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error executing remote lock: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Remote Control') {
-    alpAlert(`Remote Control session initialized for device ${did}. Opening remote viewer...`);
+    alpAlert(`Remote Control: Video stream requires WebRTC relay service. Screen mirror connection staged for ${did}.`);
   } else if (actionName === 'Remote Alarm') {
-    if (!await alpConfirm(`Trigger remote alarm sound on device ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Remote Alarm',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Alarm sound triggered'
-    });
-    alpAlert(`Remote alarm triggered on device ${did}.`);
+    if (!await alpConfirm(`Trigger remote alarm sound and vibration on device ${did}?`)) return;
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'alarm' });
+      const msg = res.data?.remarks || `Remote alarm triggered on device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Remote Alarm',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Queued',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error triggering alarm: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Clear Passcode') {
     if (!await alpConfirm(`Are you sure you want to clear the passcode on ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Clear Passcode',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Passcode removed'
-    });
-    alpAlert(`Passcode cleared successfully on device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'clear_passcode' });
+      const msg = res.data?.remarks || `Passcode cleared successfully on device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Clear Passcode',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Staged',
+        remarks: msg
+      });
+      alpAlert(msg);
+      await openComprehensiveDeviceDetails(did, false);
+    } catch (err) {
+      alpAlert(`Error clearing passcode: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Reset Passcode') {
     const newPin = await alpPrompt(`Enter new passcode / PIN for device ${did}:`, '123456', 'Reset Passcode');
     if (!newPin || !newPin.trim()) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Reset Passcode',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'New passcode configured'
-    });
-    alpAlert(`Passcode successfully reset on device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'reset_passcode', params: { pin: newPin.trim() } });
+      const msg = res.data?.remarks || `Passcode successfully reset on device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Reset Passcode',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Staged',
+        remarks: msg
+      });
+      alpAlert(msg);
+      await openComprehensiveDeviceDetails(did, false);
+    } catch (err) {
+      alpAlert(`Error resetting passcode: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Enable Lost Mode') {
     const msg = await alpPrompt(`Enter contact message for Lost Mode screen on ${did}:`, 'This device is managed by Enterprise. Call +1-800-555-0199.', 'Enable Lost Mode');
     if (!msg) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Enable Lost Mode',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Lost Mode enabled: ' + msg
-    });
-    alpAlert(`Lost Mode activated on device ${did}. Device display locked with contact banner.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'lost_mode', params: { message: msg.trim() } });
+      const remarks = res.data?.remarks || `Lost Mode activated on device ${did}. Device display locked with contact banner.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Enable Lost Mode',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Staged',
+        remarks: remarks
+      });
+      alpAlert(remarks);
+    } catch (err) {
+      alpAlert(`Error enabling lost mode: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Restart Device') {
     if (!await alpConfirm(`Are you sure you want to reboot device ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Restart Device',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Reboot signal dispatched'
-    });
-    alpAlert(`Reboot command sent to device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'restart' });
+      const msg = res.data?.remarks || `Reboot command sent to device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Restart Device',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Queued',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error restarting device: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Pause Kiosk') {
     if (!await alpConfirm(`Temporarily pause kiosk mode on ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Pause Kiosk',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Kiosk mode temporarily paused'
-    });
-    alpAlert(`Kiosk mode paused on device ${did}. Device returned to admin maintenance shell.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'pause_kiosk' });
+      const msg = res.data?.remarks || `Kiosk mode paused on device ${did}. Device returned to admin maintenance shell.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Pause Kiosk',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Staged',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error pausing kiosk: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Request Bug Report') {
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Request Bug Report',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Bug report dump requested'
-    });
-    alpAlert(`Bug report dump requested from device ${did}. System state will be generated shortly.`);
+    try {
+      showToast('Generating bug report diagnostics...');
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'bug_report' });
+      const msg = res.data?.remarks || `Bug report dump requested from device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Request Bug Report',
+        by: 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error generating bug report: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Clear App Data') {
     const pkg = await alpPrompt(`Enter application package name to clear data on ${did}:`, 'com.android.chrome', 'Clear App Data');
     if (!pkg || !pkg.trim()) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Clear App Data',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'App data cleared for ' + pkg.trim()
-    });
-    alpAlert(`Clear app data dispatched for ${pkg.trim()} on ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'clear_app_data', params: { package_name: pkg.trim() } });
+      const msg = res.data?.remarks || `Clear app data dispatched for ${pkg.trim()} on ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Clear App Data',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Staged',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error clearing app data: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   } else if (actionName === 'Deprovision (Wipe)') {
     if (!await alpConfirm(`WARNING: This will factory reset and completely deprovision device ${did}.\n\nAll personal and corporate data will be permanently erased.\n\nProceed?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Deprovision (Wipe)',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Deprovision factory wipe command delivered'
-    });
-    alpAlert(`Deprovision wipe command delivered to device ${did}. The device will now reboot to factory state.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'wipe', params: { force: true } });
+      const msg = res.data?.remarks || `Deprovision wipe command delivered to device ${did}. The device will now reboot to factory state.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Deprovision (Wipe)',
+        by: 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error deprovisioning device: ${err.message || err}`);
+    }
     renderCompAuditLogs();
   }
 }
@@ -4164,50 +4227,74 @@ async function devActionTrigger(act) {
     renderDeviceDetailsActions(dev);
   } else if (act === 'lock') {
     if (!await alpConfirm(`Are you sure you want to remotely lock device ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Remote Lock',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Remote lock command executed'
-    });
-    alpAlert(`Remote lock command sent successfully to device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'lock' });
+      const msg = res.data?.remarks || `Remote lock command sent successfully to device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Remote Lock',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Queued',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error locking device: ${err.message || err}`);
+    }
     updateDevDetailsCounts();
     renderDeviceDetailsActions(dev);
   } else if (act === 'restart') {
     if (!await alpConfirm(`Are you sure you want to reboot device ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Restart Device',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Reboot signal dispatched'
-    });
-    alpAlert(`Reboot command sent to device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'restart' });
+      const msg = res.data?.remarks || `Reboot command sent to device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Restart Device',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Queued',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error rebooting device: ${err.message || err}`);
+    }
     updateDevDetailsCounts();
     renderDeviceDetailsActions(dev);
   } else if (act === 'shutdown') {
     if (!await alpConfirm(`Are you sure you want to remotely shutdown device ${did}?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Shutdown Device',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Shutdown command delivered'
-    });
-    alpAlert(`Shutdown command dispatched to device ${did}.`);
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'lock' });
+      const msg = res.data?.remarks || `Display locked and screen shut down on device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Shutdown Device',
+        by: 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error shutting down device: ${err.message || err}`);
+    }
     updateDevDetailsCounts();
     renderDeviceDetailsActions(dev);
   } else if (act === 'reset') {
-    if (!await alpConfirm(`Caution: This will clear the passcode and reset managed container data on ${did}. Continue?`)) return;
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Clear Passcode / Reset',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Passcode cleared and managed space reset'
-    });
-    alpAlert(`Passcode cleared and reset command applied to device ${did}.`);
+    if (!await alpConfirm(`Caution: This will clear the passcode and reset lock settings on ${did}. Continue?`)) return;
+    try {
+      const res = await api('/devices/' + encodeURIComponent(did) + '/action', 'POST', { action: 'clear_passcode' });
+      const msg = res.data?.remarks || `Passcode cleared on device ${did}.`;
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Clear Passcode',
+        by: 'admin',
+        time: formatNowMe(),
+        status: res.data?.status === 'SUCCESS' ? 'Success' : 'Staged',
+        remarks: msg
+      });
+      alpAlert(msg);
+    } catch (err) {
+      alpAlert(`Error clearing passcode: ${err.message || err}`);
+    }
     updateDevDetailsCounts();
     renderDeviceDetailsActions(dev);
   } else if (act === 'reset_policies') {

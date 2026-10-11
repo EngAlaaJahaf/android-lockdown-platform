@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import sys
 import time
-from typing import Optional
+from typing import Optional, Any, Dict
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel
 
@@ -217,6 +217,12 @@ class DeleteDeviceRequest(BaseModel):
     force: Optional[bool] = False
 
 
+class DeviceActionRequest(BaseModel):
+    action: str
+    params: Optional[Dict[str, Any]] = None
+    mfa: Optional[str] = ""
+
+
 # ---- Endpoints ----
 @router.get("/devices")
 def list_devices(sess: dict = Depends(get_current_session)):
@@ -303,6 +309,26 @@ def scan_device_endpoint(did: str, sess: dict = Depends(get_current_session)):
     from backend import device_inventory
     inv = device_inventory.probe_and_persist_device_inventory(did)
     return {"ok": True, "data": inv}
+
+
+@router.post("/devices/{did}/action")
+def trigger_device_action(
+    did: str,
+    req: DeviceActionRequest,
+    sess: dict = Depends(get_current_session)
+):
+    authorize_action(sess, "APPLY", mfa=req.mfa or "")
+    from backend import device_actions
+    actor = sess.get("username") or "admin"
+    role = sess.get("role") or "SUPER_ADMIN"
+    result = device_actions.execute_device_action(
+        device_id=did,
+        action=req.action,
+        params=req.params or {},
+        actor=actor,
+        role=role
+    )
+    return {"ok": result.get("ok", True), "data": result}
 
 
 @router.delete("/devices/{did}")

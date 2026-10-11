@@ -57,3 +57,5 @@ gnirehtet-rust-win64/
 mdm/
 backend/reports/
 reports/WEB-*/
+reports/AVD-*/
+reports/*/
