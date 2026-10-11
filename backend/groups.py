@@ -76,18 +76,31 @@ def _device_pk(c, device_id: str) -> int:
     Deliberately NOT an INSERT OR IGNORE placeholder: group membership must never
     invent a device that no enrollment produced.
     """
-    r = c.execute("SELECT id FROM devices WHERE device_id=?", (device_id,)).fetchone()
+    did_str = str(device_id)
+    r = c.execute(
+        "SELECT id FROM devices WHERE device_id=? OR serial=? OR id=?",
+        (did_str, did_str, int(did_str) if did_str.isdigit() else -1)
+    ).fetchone()
     if not r:
         raise GroupError("device %r is not registered" % device_id)
     return r["id"]
 
 
 def _group_pk(c, group_id) -> int:
-    gid = int(group_id)
-    r = c.execute("SELECT id FROM device_groups WHERE id=?", (gid,)).fetchone()
+    r = None
+    try:
+        gid = int(group_id)
+        r = c.execute("SELECT id FROM device_groups WHERE id=?", (gid,)).fetchone()
+    except (ValueError, TypeError):
+        pass
+    if not r:
+        r = c.execute(
+            "SELECT id FROM device_groups WHERE name=? OR group_key=?",
+            (str(group_id), str(group_id))
+        ).fetchone()
     if not r:
         raise GroupError("group %r not found" % group_id)
-    return gid
+    return r["id"]
 
 
 def _policy_pk(c, policy_id: str) -> int:

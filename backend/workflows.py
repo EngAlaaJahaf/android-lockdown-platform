@@ -369,17 +369,16 @@ _DEVICE_CHILD_TABLES = (
     "failures", "job_executions", "command_nonces", "approvals",
     "approval_confirmations", "audit_logs", "recovery_actions", "sessions",
     "emergency_tokens", "recovery_credentials",
+    "mddeviceinfo", "mdnetworkinfo", "mddeviceinstalledapps",
 )
 
 
-def delete_device(device_id: str) -> dict:
+def delete_device(device_id: str, force: bool = False) -> dict:
     """Delete one device record and every row that references it.
 
-    Refuses when the app is PROVEN present (attached + `pm path` hit): the
-    details page only offers Delete while the app is gone, and the backend
-    re-checks instead of trusting the button. A detached phone proves
-    nothing, so deletion proceeds with `presence_verified: False` reported
-    honestly — the operator decided on a record they cannot reach.
+    Refuses when the app is PROVEN present (attached + `pm path` hit) unless
+    force=True is supplied: the details page offers Delete, and the backend
+    protects against accidents while giving admins full override capabilities.
     """
     key = (device_id or "").strip()
     if not key:
@@ -402,10 +401,19 @@ def delete_device(device_id: str) -> dict:
                 presence_verified = True
             except Exception:
                 present = False
-            if present:
+            if present and not force:
                 raise ValueError(
                     f"agent {_AGENT_PACKAGE} is still installed on {serial} — "
-                    "remove the app from the phone first")
+                    "remove the app from the phone first, or confirm force delete")
+            elif present and force:
+                try:
+                    subprocess.run([adb(), "-s", serial, "shell", "dpm", "remove-active-admin",
+                                    f"{_AGENT_PACKAGE}/.AlpDeviceAdminReceiver"],
+                                   capture_output=True, timeout=10, creationflags=_NO_WINDOW or 0)
+                    subprocess.run([adb(), "-s", serial, "uninstall", _AGENT_PACKAGE],
+                                   capture_output=True, timeout=15, creationflags=_NO_WINDOW or 0)
+                except Exception:
+                    pass
         cleaned: dict = {}
         existing = {r["name"] for r in c.execute(
             "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}

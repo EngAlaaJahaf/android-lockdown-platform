@@ -434,7 +434,7 @@ class Handler(BaseHTTPRequestHandler):
                                          and body.get("approver2"))})
             try:
                 from backend.workflows import delete_device
-                return self._ok(delete_device(did))
+                return self._ok(delete_device(did, force=bool(body.get("force", False))))
             except ValueError as ex:
                 raise ApiError(409, str(ex))
 

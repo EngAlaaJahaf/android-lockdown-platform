@@ -1881,17 +1881,35 @@
 </div>
 </div>
 </div>
-<!-- Right: Actions Dropdown Button -->
+<!-- Right: Action Buttons & Actions Dropdown -->
+<div style="display:flex; align-items:center; gap:8px;">
+<button class="secondaryActionBtn buttonnew1 button-secondary-form" id="devHeaderInstallAppBtn" onclick="devDetailsInstallApp()" style="padding:6px 14px; font-size:13px; font-weight:500; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:3px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.04);" type="button" title="تثبيت أو تحديث تطبيق المنصة على هذا الجهاز">
+<svg fill="none" height="14" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24" width="14">
+<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+<polyline points="7 10 12 15 17 10"></polyline>
+<line x1="12" x2="12" y1="15" y2="3"></line>
+</svg>
+<span>تثبيت التطبيق</span>
+</button>
+<button class="secondaryActionBtn buttonnew1 button-secondary-form" id="devHeaderDeleteDeviceBtn" onclick="devDetailsDeleteDevice()" style="padding:6px 14px; font-size:13px; font-weight:500; border:1px solid #fecaca; background:#fff; color:#dc2626; border-radius:3px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.04);" type="button" title="حذف سجل الجهاز نهائياً من المنصة">
+<svg fill="none" height="14" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" width="14">
+<polyline points="3 6 5 6 21 6"></polyline>
+<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+<line x1="10" x2="10" y1="11" y2="17"></line>
+<line x1="14" x2="14" y1="11" y2="17"></line>
+</svg>
+<span>حذف الجهاز نهائياً</span>
+</button>
 <div class="actionsButton ember-view ucs-pos-relative" id="devActionsDropdownWrap" style="position:relative;">
 <button class="primaryActionBtn button-primary-form" id="devActionsDropdownBtn" onclick="toggleDevActionsDropdown(event)" style="background:#2563eb; color:#fff; border:none; border-radius:3px; padding:6px 16px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.06);" type="button">
 <span>Actions</span>
-<svg fill="none" height="12" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="12">
+<svg fill="none" height="12" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="12">
 <polyline points="6 9 12 15 18 9"></polyline>
 </svg>
 </button>
-<div class="menu actionPopUp ui-menu ui-widget ui-widget-content actionsDropMenu dropdown-actions actionListInnerViewUl menu actionPopUp ui-menu ui-widget ui-widget-content actionsDropMenu dropdown-actions actionListInnerViewUl" id="devActionsDropdownMenu" style="position:absolute; right:0; top:36px; min-width:190px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.12); z-index:100; display:none;">
+<div class="menu actionPopUp ui-menu ui-widget ui-widget-content actionsDropMenu dropdown-actions actionListInnerViewUl menu actionPopUp ui-menu ui-widget ui-widget-content actionsDropMenu dropdown-actions actionListInnerViewUl" id="devActionsDropdownMenu" style="position:absolute; right:0; top:36px; min-width:210px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.12); z-index:100; display:none;">
 <div class="ui-menu-item action-element cursor-pointer" onclick="redirectToDeviceInventory()" style="padding:8px 14px; font-size:13px; color:#2563eb; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:500; border-bottom:1px solid #f1f5f9;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
 <polyline points="15 3 21 3 21 9"></polyline>
 <line x1="10" x2="21" y1="14" y2="3"></line>
@@ -1899,15 +1917,23 @@
 <span>Device 360° Inventory</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer" onclick="openRecoveryKeyGenerateDialog(CURRENT_DETAILS_DID)" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px; border-bottom:1px solid #f1f5f9;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <circle cx="7.5" cy="15.5" r="5.5"></circle>
 <path d="m21 2-9.6 9.6"></path>
 <path d="m15.5 7.5 3 3"></path>
 </svg>
 <span>Generate Recovery Key</span>
 </div>
+<div class="ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('install_app')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px; border-bottom:1px solid #f1f5f9;">
+<svg fill="none" height="14" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24" width="14">
+<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+<polyline points="7 10 12 15 17 10"></polyline>
+<line x1="12" x2="12" y1="15" y2="3"></line>
+</svg>
+<span>تثبيت التطبيق (Install Agent)</span>
+</div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('associate_profile')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 <polyline points="14 2 14 8 20 8"></polyline>
 <line x1="12" x2="12" y1="18" y2="12"></line>
@@ -1916,7 +1942,7 @@
 <span>Associate Profile</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('distribute_apps')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <rect height="7" width="7" x="3" y="3"></rect>
 <rect height="7" width="7" x="14" y="3"></rect>
 <rect height="7" width="7" x="14" y="14"></rect>
@@ -1925,7 +1951,7 @@
 <span>Distribute Apps</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('distribute_docs')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
 <polyline points="13 2 13 9 20 9"></polyline>
 </svg>
@@ -1933,34 +1959,34 @@
 </div>
 <div style="height:1px; background:#e2e8f0; margin:4px 0;"></div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('scan')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
 </svg>
 <span>Scan Device</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('lock')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect>
 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
 </svg>
 <span>Remote Lock</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('restart')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <polyline points="23 4 23 10 17 10"></polyline>
 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
 </svg>
 <span>Restart</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('shutdown')" style="padding:8px 14px; font-size:13px; color:#334155; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14">
 <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
 <line x1="12" x2="12" y1="2" y2="12"></line>
 </svg>
 <span>Shutdown</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('reset')" style="padding:8px 14px; font-size:13px; color:#dc2626; cursor:pointer; display:flex; align-items:center; gap:8px;">
-<svg fill="none" height="14" stroke="#dc2626" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" width="14">
 <circle cx="12" cy="12" r="10"></circle>
 <line x1="15" x2="9" y1="9" y2="15"></line>
 <line x1="9" x2="15" y1="9" y2="15"></line>
@@ -1968,11 +1994,21 @@
 <span>Clear Passcode / Reset</span>
 </div>
 <div class="ui-menu-item action-element cursor-pointer ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('reset_policies')" style="padding:8px 14px; font-size:13px; color:#7c3aed; cursor:pointer; display:flex; align-items:center; gap:8px; border-top:1px solid #f1f5f9;">
-<svg fill="none" height="14" stroke="#7c3aed" stroke-width="2" viewbox="0 0 24 24" width="14">
+<svg fill="none" height="14" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24" width="14">
 <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
 </path>
 </svg>
 <span>⚡ Reset &amp; Redeploy Policies</span>
+</div>
+<div class="ui-menu-item action-element cursor-pointer" onclick="devActionTrigger('delete_device')" style="padding:8px 14px; font-size:13px; color:#dc2626; cursor:pointer; display:flex; align-items:center; gap:8px; border-top:1px solid #fee2e2; background:#fff5f5;">
+<svg fill="none" height="14" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" width="14">
+<polyline points="3 6 5 6 21 6"></polyline>
+<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+<line x1="10" x2="10" y1="11" y2="17"></line>
+<line x1="14" x2="14" y1="11" y2="17"></line>
+</svg>
+<span style="font-weight:600;">حذف الجهاز نهائياً (Delete Device)</span>
+</div>
 </div>
 </div>
 </div>
@@ -6893,7 +6929,7 @@
   </div>
   <!-- JS moved to alp-console.js (block 3) -->
   <script src="assets/alp-restrictions-data.js"></script>
-  <script src="assets/alp-console.js?v=20261010_rec_key_dialogs_v3"></script>
+  <script src="assets/alp-console.js?v=20261011_inv_persist_v1"></script>
   <script src="assets/alp-dialog.js?v=20261010_dialog_fix"></script>
   <script src="assets/alp-enrollment.js?v=20261005e"></script>
   <script src="assets/alp-table.js?v=20261004f"></script>

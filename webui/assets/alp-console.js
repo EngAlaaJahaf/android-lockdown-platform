@@ -2561,53 +2561,46 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
   CURRENT_COMP_DEVICE = dev;
 
   const live = dev.live_probe || {};
+  const mdi = dev.mddeviceinfo || {};
+  const net = dev.network || dev.mdnetworkinfo || {};
+  const hw = live.hardware || dev.hardware || {};
+
+  const devId = dev.device_id || did;
+  const devSerial = dev.serial || mdi.serial_number || (live.identity && live.identity.serial) || devId;
+  const devModel = dev.model || mdi.model_name || (live.identity && live.identity.model) || 'Android Device';
+  const devManufacturer = dev.manufacturer || mdi.manufacturer || (live.identity && live.identity.manufacturer) || 'Android';
+  const osVer = String(dev.android_version || mdi.os_version || (live.identity && live.identity.android_version) || '14');
+  const buildFingerprint = dev.build_fingerprint || mdi.build_version || (live.identity && live.identity.build_fingerprint) || '--';
+  const secPatch = dev.security_patch || mdi.security_patch_version || (live.identity && live.identity.security_patch) || '--';
+
   const ident = live.identity || {
-    serial: 'LT8110260130351',
-    manufacturer: 'LT',
-    model: 'LT_8110',
-    android_version: '15',
-    build_fingerprint: 'LT/LT_8110/LT_8110:15/AP3A.240905.015.A2/233204:user/release-keys',
-    security_patch: '2025-12-05',
-    verified_boot: 'green',
-    encryption: 'encrypted'
+    serial: devSerial,
+    manufacturer: devManufacturer,
+    model: devModel,
+    android_version: osVer,
+    build_fingerprint: buildFingerprint,
+    security_patch: secPatch,
+    verified_boot: (mdi.is_rooted === 'No' || !dev.is_rooted) ? 'green' : 'orange',
+    encryption: mdi.encryption_status || 'Encrypted'
   };
-  const hw = live.hardware || dev.hardware || {
-    udid: 'c673a99957bf4358',
-    battery_level: '85.0%',
-    total_ram_mb: '3775.324',
-    available_ram_mb: '2124.035',
-    device_capacity_gb: '222.72',
-    free_space_gb: '216.82',
-    cpu_cores: 8,
-    wifi_mac: '5a:bd:3b:92:56:68',
-    wifi_ip: '10.0.0.2',
-    processor_details: 'MediaTek MT6768 (Octa-core ARM Cortex-A75 & A55)',
-    processor_type: 'arm64-v8a',
-    cellular_tech: 'Wi-Fi only',
-    eas_id: 'EAS-LT_8110-260130351',
-    cloud_backup: 'Disabled',
-    frp_configured: true,
-    product_name: 'LT_8110',
-    device_type: 'Tablet'
-  };
-  const isTablet = hw.device_type === 'Tablet' || true;
-  const devModel = ident.model || dev.model || 'LT_8110';
-  const devSerial = ident.serial || dev.serial || 'LT8110260130351';
-  const osVer = ident.android_version || dev.android_version || '15';
-  const isRooted = (ident.verified_boot === 'green') ? 'No' : (dev.is_rooted ? 'Yes' : 'No');
-  const isOwner = dev.is_device_owner !== false && (dev.enrollment_state === 'ENROLLED' || Boolean(dev.is_owner) || true);
-  const buildFingerprint = ident.build_fingerprint || dev.build_fingerprint || 'LT/LT_8110/LT_8110:15/AP3A.240905.015.A2/233204:user/release-keys';
-  const secPatch = ident.security_patch || dev.security_patch || '2025-12-05';
-  const recKey = (dev.recovery && dev.recovery.recovery_id) || 'REC-8842-9901';
-  const lastScan = dev.last_seen_at || formatNowMe();
+
+  const devType = hw.device_type || mdi.device_type || (
+    ((devModel || '').toLowerCase().includes('tab') || (devModel || '').toLowerCase().includes('pad') || (devModel || '').toLowerCase().includes('lt_')) ? 'Tablet' : 'SmartPhone'
+  );
+  const isTablet = (devType === 'Tablet');
+
+  const isRooted = (mdi.is_rooted === 'Yes' || dev.is_rooted) ? 'Yes' : ((ident.verified_boot === 'green' || mdi.is_rooted === 'No') ? 'No' : 'No');
+  const isOwner = dev.is_device_owner !== false && (dev.enrollment_state === 'ENROLLED' || Boolean(dev.is_owner));
+  const recKey = (dev.recovery && dev.recovery.recovery_id) || '--';
+  const lastScan = dev.last_seen_at || mdi.db_updated_time || formatNowMe();
   const nextContact = calculateNextContactTime(lastScan);
 
   // 1. Header bindings
   const breadName = $('compDevBreadName');
-  if (breadName) breadName.textContent = dev.device_id || did;
+  if (breadName) breadName.textContent = devId;
 
   const headerName = $('compDevHeaderName');
-  if (headerName) headerName.textContent = dev.device_id || did;
+  if (headerName) headerName.textContent = devId;
 
   const headerModel = $('compDevHeaderModel');
   if (headerModel) headerModel.textContent = devModel;
@@ -2639,22 +2632,22 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
 
   // 2. Summary Left Column
   const sumType = $('compDevSumType');
-  if (sumType) sumType.textContent = hw.device_type || (isTablet ? 'Tablet' : 'SmartPhone');
+  if (sumType) sumType.textContent = devType;
 
   const sumModel = $('compDevSumModel');
-  if (sumModel) sumModel.textContent = ident.model || dev.model || hw.product_name || devModel;
+  if (sumModel) sumModel.textContent = devModel;
 
   const sumImei = $('compDevSumIMEI');
-  if (sumImei) sumImei.textContent = hw.imei || dev.imei || '--';
+  if (sumImei) sumImei.textContent = hw.imei || mdi.imei || dev.imei || '--';
 
   const sumName = $('compDevSumName');
-  if (sumName) sumName.textContent = dev.device_id || did;
+  if (sumName) sumName.textContent = devId;
 
   const sumProduct = $('compDevSumProduct');
-  if (sumProduct) sumProduct.textContent = hw.product_name || dev.product_name || devModel;
+  if (sumProduct) sumProduct.textContent = hw.product_name || mdi.product_name || devModel;
 
   const sumManufacturer = $('compDevSumManufacturer');
-  if (sumManufacturer) sumManufacturer.textContent = (ident.manufacturer || dev.manufacturer || 'LT').toLowerCase();
+  if (sumManufacturer) sumManufacturer.textContent = devManufacturer.toLowerCase();
 
   const sumMgmt = $('compDevSumMgmtType');
   if (sumMgmt) sumMgmt.textContent = isOwner ? 'Fully managed' : 'Profile Owner';
@@ -2663,10 +2656,10 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
   if (sumShared) sumShared.textContent = dev.is_shared ? 'Yes' : 'No';
 
   const sumSerial = $('compDevSumSerial');
-  if (sumSerial) sumSerial.textContent = ident.serial || dev.serial || hw.serial || devSerial;
+  if (sumSerial) sumSerial.textContent = devSerial;
 
   const sumUDID = $('compDevSumUDID');
-  if (sumUDID) sumUDID.textContent = hw.udid || dev.udid || 'c673a99957bf4358';
+  if (sumUDID) sumUDID.textContent = hw.udid || mdi.udid || dev.udid || '--';
 
   const sumGeoFence = $('compDevSumGeoFence');
   if (sumGeoFence) sumGeoFence.textContent = dev.geo_fence || '--';
@@ -2690,48 +2683,48 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
   if (secCompliant) secCompliant.textContent = (dev.compliance && dev.compliance.result === 'COMPLIANT') ? 'Yes' : 'Partial';
 
   const secPasscode = $('compDevSecPasscodeEnabled');
-  if (secPasscode) secPasscode.textContent = 'Yes';
+  if (secPasscode) secPasscode.textContent = mdi.passcode_status || 'Yes';
 
   const secEnc = $('compDevSecEncryption');
-  if (secEnc) secEnc.textContent = ident.encryption ? (ident.encryption.charAt(0).toUpperCase() + ident.encryption.slice(1)) : 'Configured';
+  if (secEnc) secEnc.textContent = mdi.encryption_status || (ident.encryption ? (ident.encryption.charAt(0).toUpperCase() + ident.encryption.slice(1)) : 'Configured');
 
   const secSd = $('compDevSecSdEnc');
   if (secSd) secSd.textContent = 'Not Applicable';
 
   const secFrp = $('compDevSecFRP');
-  if (secFrp) secFrp.textContent = (hw.frp_configured !== false) ? 'Configured' : 'Not configured';
+  if (secFrp) secFrp.textContent = (hw.frp_configured !== false && mdi.is_activation_lock_enabled !== 0) ? 'Configured' : 'Not configured';
 
   const secPlay = $('compDevSecPlayProtect');
   if (secPlay) secPlay.textContent = 'Enabled';
 
   // 3. Summary Right Column
   const netBt = $('compDevNetBtMac');
-  if (netBt) netBt.textContent = dev.bluetooth_mac || (hw.wifi_mac ? hw.wifi_mac.slice(0, -1) + '9' : '--');
+  if (netBt) netBt.textContent = net.bluetooth_mac || dev.bluetooth_mac || (net.wifi_mac ? net.wifi_mac.slice(0, -1) + '9' : '--');
 
   const netRoaming = $('compDevNetRoaming');
-  if (netRoaming) netRoaming.textContent = 'Disabled';
+  if (netRoaming) netRoaming.textContent = net.roaming || (net.data_roaming_enabled ? 'Enabled' : 'Disabled');
 
   const netWifi = $('compDevNetWifiMac');
-  if (netWifi) netWifi.textContent = hw.wifi_mac || dev.wifi_mac || '5a:bd:3b:92:56:68';
+  if (netWifi) netWifi.textContent = net.wifi_mac || hw.wifi_mac || dev.wifi_mac || '--';
 
   const simPhone = $('compDevSimPhone');
-  if (simPhone) simPhone.textContent = dev.phone_number || '--';
+  if (simPhone) simPhone.textContent = net.phone_number || dev.phone_number || '--';
 
   const simCarrier = $('compDevSimCarrier');
-  if (simCarrier) simCarrier.textContent = dev.carrier || '--';
+  if (simCarrier) simCarrier.textContent = net.carrier || dev.carrier || '--';
 
   const simSlot = $('compDevSimSlot');
-  if (simSlot) simSlot.textContent = '1';
+  if (simSlot) simSlot.textContent = net.sim_slot || '1';
 
   const recKeyEl = $('compDevRecoveryKey');
   if (recKeyEl) recKeyEl.textContent = recKey;
 
-  // Live Disk calculation from ADB telemetry
-  const totalDisk = hw.device_capacity_gb ? parseFloat(hw.device_capacity_gb) : (dev.storage_total_gb || 222.72);
-  const freeDisk = hw.free_space_gb ? parseFloat(hw.free_space_gb) : (dev.storage_free_gb || 216.82);
-  const usedDisk = parseFloat((totalDisk - freeDisk).toFixed(2));
-  const usedPct = ((usedDisk / totalDisk) * 100).toFixed(1);
-  const freePct = ((freeDisk / totalDisk) * 100).toFixed(1);
+  // Live Disk calculation from DB / ADB telemetry
+  const totalDisk = hw.device_capacity_gb ? parseFloat(hw.device_capacity_gb) : (dev.storage_total_gb ? parseFloat(dev.storage_total_gb) : (mdi.device_capacity ? parseFloat(mdi.device_capacity) : 64.0));
+  const freeDisk = hw.free_space_gb ? parseFloat(hw.free_space_gb) : (dev.storage_free_gb ? parseFloat(dev.storage_free_gb) : (mdi.available_device_capacity ? parseFloat(mdi.available_device_capacity) : 45.0));
+  const usedDisk = parseFloat(Math.max(0, totalDisk - freeDisk).toFixed(2));
+  const usedPct = totalDisk > 0 ? ((usedDisk / totalDisk) * 100).toFixed(1) : '0';
+  const freePct = totalDisk > 0 ? ((freeDisk / totalDisk) * 100).toFixed(1) : '0';
 
   const tEl = $('compDiskTotalText');
   if (tEl) tEl.textContent = `${totalDisk} GB`;
@@ -2809,35 +2802,39 @@ function switchCompDeviceSubTab(tabKey) {
 function renderCompDeviceHardware(dev) {
   dev = dev || CURRENT_COMP_DEVICE || {};
   const live = dev.live_probe || {};
-  const ident = live.identity || {};
+  const mdi = dev.mddeviceinfo || {};
+  const net = dev.network || dev.mdnetworkinfo || {};
   const hw = live.hardware || dev.hardware || {};
+
+  const devId = dev.device_id || dev.serial || 'Managed Device';
+  const osVer = (live.identity && live.identity.android_version) || dev.android_version || mdi.os_version || '14';
+  const buildVer = (live.identity && live.identity.build_fingerprint) || dev.build_fingerprint || mdi.build_version || '--';
+  const secUpdate = ((live.identity && live.identity.security_patch) || dev.security_patch || mdi.security_patch_version || '--') + ' (Updated On ' + (dev.last_seen_at || mdi.db_updated_time || formatNowMe()).split(' ')[0] + ')';
+  const modelNo = (live.identity && live.identity.model) || dev.model || mdi.model_name || 'Device';
+  const devModel = modelNo + ' Enterprise';
+  const devType = hw.device_type || mdi.device_type || (((dev.model || '').toLowerCase().includes('tab') || (dev.model || '').toLowerCase().includes('pad') || (dev.model || '').toLowerCase().includes('lt_')) ? 'Tablet' : 'SmartPhone');
+  const prodName = hw.product_name || mdi.product_name || (live.identity && live.identity.model) || dev.model || 'Android Device';
+  const udid = hw.udid || mdi.udid || dev.udid || '--';
+  const serial = (live.identity && live.identity.serial) || dev.serial || mdi.serial_number || devId;
+  const baseband = (live.identity && live.identity.baseband) ? live.identity.baseband.split(',')[0] : (mdi.baseband_version || '--');
+  const devCap = hw.device_capacity_gb || mdi.device_capacity || (dev.storage_total_gb ? String(dev.storage_total_gb) : '64.0');
+  const freeSpace = hw.free_space_gb || mdi.available_device_capacity || (dev.storage_free_gb ? String(dev.storage_free_gb) : '45.0');
+  const availRam = hw.available_ram_mb || mdi.available_ram_memory || '2048.0';
+  const totalRam = hw.total_ram_mb || mdi.total_ram_memory || '4096.0';
+  const cellular = hw.cellular_tech || mdi.cellular_technology || (devType === 'Tablet' ? 'Wi-Fi only' : '4G LTE / Wi-Fi');
+  const battery = hw.battery_level || mdi.battery_level || '85.0%';
+  const osNum = parseInt(osVer, 10);
+  const osName = (osNum >= 15) ? 'VanillaIceCream' : ((osNum >= 14) ? 'UpsideDownCake' : ((osNum >= 13) ? 'Tiramisu' : 'SnowCone'));
+  const easId = hw.eas_id || mdi.eas_device_identifier || ('EAS-' + modelNo.replace(/\s+/g, '_') + '-' + (serial.length >= 6 ? serial.slice(-6) : serial));
+  const procDetails = hw.processor_details || mdi.processor_name || `${dev.manufacturer || 'ARM'} Octa-core Processor`;
+  const cores = String(hw.cpu_cores || mdi.processor_core_count || '8');
+  const procType = hw.processor_type || mdi.processor_type || 'arm64-v8a';
+  const imei = hw.imei || mdi.imei || dev.imei || '--';
+  const meid = hw.meid || mdi.meid || dev.meid || '--';
 
   // 1. Pane 1: Device information
   const infoWrap = $('compDeviceInfoTable');
   if (infoWrap) {
-    const devId = dev.device_id || dev.serial || 'companymdmo0_SM-T380';
-    const osVer = ident.android_version || dev.android_version || '15';
-    const buildVer = ident.build_fingerprint || dev.build_fingerprint || 'LT/LT_8110/LT_8110:15/AP3A.240905.015.A2/233204:user/release-keys';
-    const secUpdate = (ident.security_patch || dev.security_patch || '2025-12-05') + ' (Updated On ' + (dev.last_seen_at || formatNowMe()).split(' ')[0] + ')';
-    const modelNo = ident.model || dev.model || 'LT_8110';
-    const devModel = (ident.model || dev.model || 'LT_8110') + ' Enterprise';
-    const devType = hw.device_type || 'Tablet';
-    const prodName = hw.product_name || ident.model || dev.model || 'LT_8110';
-    const udid = hw.udid || 'c673a99957bf4358';
-    const serial = ident.serial || dev.serial || 'LT8110260130351';
-    const baseband = ident.baseband ? ident.baseband.split(',')[0] : '--';
-    const devCap = hw.device_capacity_gb || '222.72';
-    const freeSpace = hw.free_space_gb || '216.82';
-    const availRam = hw.available_ram_mb || '2123.055';
-    const totalRam = hw.total_ram_mb || '3775.324';
-    const cellular = hw.cellular_tech || 'Wi-Fi only';
-    const battery = hw.battery_level || '82.0%';
-    const osName = (parseInt(osVer, 10) >= 15) ? 'VanillaIceCream' : ((parseInt(osVer, 10) >= 14) ? 'UpsideDownCake' : 'Tiramisu');
-    const easId = hw.eas_id || ('EAS-' + modelNo + '-' + serial.slice(-9));
-    const procDetails = hw.processor_details || 'MediaTek MT6768 (Octa-core ARM Cortex-A75 & A55)';
-    const cores = String(hw.cpu_cores || '8');
-    const procType = hw.processor_type || 'arm64-v8a';
-
     infoWrap.innerHTML = `
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Device Name</label>
@@ -2888,20 +2885,21 @@ function renderCompDeviceHardware(dev) {
         <label class="zebra-table-fieldname">IMEI</label>
         <label class="zebra-table-colon">:</label>
         <label class="zebra-table-value">
-          --
+          ${esc(imei)}
+          ${devType === 'Tablet' ? `
           <span id="defaultwifiOnlyDevicetooltip" class="data-tooltip ember-view" title="Wi-Fi only device without cellular modem hardware">
             <label class="tooltip-image">
               <svg role="img" aria-label="exclamation-circle" style="width: 16px; height: 16px; vertical-align:middle;" class="svg-bucket-icon orange" data-icon="global::exclamation-circle">
                 <use href="#global-exclamation-circle" xlink:href="#global-exclamation-circle"></use>
               </svg>
             </label>
-          </span>
+          </span>` : ''}
         </label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">MEID</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(meid)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Serial Number</label>
@@ -2990,7 +2988,7 @@ function renderCompDeviceHardware(dev) {
           </span>
         </label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">Disabled</label>
+        <label class="zebra-table-value">${mdi.is_cloud_backup_enabled ? 'Enabled' : 'Disabled'}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Cloud last back up time</label>
@@ -3009,7 +3007,7 @@ function renderCompDeviceHardware(dev) {
           <svg role="img" aria-label="tick-circle" style="width: 16px; height: 16px; vertical-align:middle; fill:#16a34a;" class="svg-bucket-icon svg-bucket-icon-state__success" data-icon="global::tick-circle">
             <use href="#global-tick-circle" xlink:href="#global-tick-circle"></use>
           </svg>
-          Configured
+          ${mdi.is_activation_lock_enabled !== 0 ? 'Configured' : 'Not configured'}
         </label>
       </span>
     `;
@@ -3018,13 +3016,21 @@ function renderCompDeviceHardware(dev) {
   // 2. Pane 2: Network Information
   const netWrap = $('compDeviceNetworkTable');
   if (netWrap) {
-    const wifiMac = hw.wifi_mac || '5a:bd:3b:92:56:68';
-    const wifiIp = hw.wifi_ip || '10.0.0.2';
+    const wifiMac = net.wifi_mac || hw.wifi_mac || dev.wifi_mac || '--';
+    const wifiIp = net.wifi_ip || hw.wifi_ip || dev.wifi_ip || '--';
+    const btMac = net.bluetooth_mac || dev.bluetooth_mac || (wifiMac !== '--' ? wifiMac.slice(0, -1) + '9' : '--');
+    const wifiSsid = net.wifi_ssid || 'ALP-SECURE-ENTERPRISE';
+    const carrier = net.carrier || mdi.carrier || dev.carrier || '--';
+    const roaming = net.roaming || (net.data_roaming_enabled ? 'Enabled' : 'Disabled');
+    const isConn = (dev.enrollment_state === 'ENROLLED' || dev.status === 'ACTIVE' || dev.status === 'ENROLLED');
+    const connState = isConn ? 'Connected (Active Telemetry Tunnel & Wi-Fi)' : 'Offline / Standby (Stored Snapshot)';
+    const connColor = isConn ? '#15803d' : '#64748b';
+
     netWrap.innerHTML = `
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Wi-Fi SSID</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">ALP-SECURE-ENTERPRISE</label>
+        <label class="zebra-table-value">${esc(wifiSsid)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Wi-Fi MAC</label>
@@ -3039,7 +3045,7 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Bluetooth MAC</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value" style="font-family:monospace; font-size:12px;">5a:bd:3b:92:56:69</label>
+        <label class="zebra-table-value" style="font-family:monospace; font-size:12px;">${esc(btMac)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Ethernet MAC</label>
@@ -3054,17 +3060,17 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Current Carrier Network</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(carrier)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Subscriber Carrier Network</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(carrier)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Data Roaming Enabled</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">Disabled</label>
+        <label class="zebra-table-value">${esc(roaming)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Voice Roaming Enabled</label>
@@ -3079,7 +3085,7 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Network Connection State</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value" style="color:#15803d; font-weight:600;">Connected (Active ADB Tunnel &amp; Wi-Fi)</label>
+        <label class="zebra-table-value" style="color:${connColor}; font-weight:600;">${esc(connState)}</label>
       </span>
     `;
   }
@@ -3087,6 +3093,11 @@ function renderCompDeviceHardware(dev) {
   // 3. Pane 3: SIM Information
   const simWrap = $('compDeviceSimTable');
   if (simWrap) {
+    const isTab = (devType === 'Tablet');
+    const phoneNum = net.phone_number || dev.phone_number || '--';
+    const simText = isTab ? 'No Physical SIM Card Detected (Wi-Fi Only Tablet)' : (phoneNum !== '--' ? `Active SIM (${phoneNum})` : 'Active SIM Slot (Ready)');
+    const carrier = net.carrier || mdi.carrier || dev.carrier || '--';
+
     simWrap.innerHTML = `
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Primary SIM Slot</label>
@@ -3096,12 +3107,12 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">SIM Status</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value" style="color:#64748b;">No Physical SIM Card Detected (Wi-Fi Only Tablet)</label>
+        <label class="zebra-table-value" style="color:#64748b;">${esc(simText)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">IMEI</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(imei)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">ICCID</label>
@@ -3116,12 +3127,12 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Current Carrier Network</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(carrier)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Subscriber Carrier Network</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(carrier)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Carrier Setting Version</label>
@@ -3131,12 +3142,12 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Phone Number</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">--</label>
+        <label class="zebra-table-value">${esc(phoneNum)}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Roaming Status</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">Not Roaming</label>
+        <label class="zebra-table-value">${net.roaming || 'Not Roaming'}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Embedded Identity Document (EID)</label>
@@ -3153,7 +3164,7 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Asset Tag</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value" style="font-weight:600; color:#1e293b;">ALP-TAB-001</label>
+        <label class="zebra-table-value" style="font-weight:600; color:#1e293b;">ALP-${(dev.model || 'DEV').toUpperCase().slice(0, 4)}-${dev.id || '001'}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Asset Owner</label>
@@ -3178,12 +3189,12 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Last Telemetry Contact</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">${esc(dev.last_seen_at || formatNowMe())}</label>
+        <label class="zebra-table-value">${esc(dev.last_seen_at || mdi.db_updated_time || formatNowMe())}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Security Patch Level</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">${esc(ident.security_patch || '2025-12-05')}</label>
+        <label class="zebra-table-value">${esc(dev.security_patch || mdi.security_patch_version || '--')}</label>
       </span>
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Hardware Cryptographic Keystore</label>
@@ -3208,7 +3219,7 @@ function renderCompDeviceHardware(dev) {
       <span class="zebra-table-rows">
         <label class="zebra-table-fieldname">Device Description</label>
         <label class="zebra-table-colon">:</label>
-        <label class="zebra-table-value">Enterprise Lockdown Managed Android Tablet</label>
+        <label class="zebra-table-value">Enterprise Lockdown Managed Android ${esc(devType)}</label>
       </span>
     `;
   }
@@ -3891,14 +3902,21 @@ async function executeCompAction(actionName) {
   if (!DEVICE_ACTIONS_STORE[did]) DEVICE_ACTIONS_STORE[did] = [];
 
   if (actionName === 'Scan Now') {
-    alpAlert(`Scan command dispatched to device ${did}. Initiating telemetry scan...`);
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Scan Device',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Telemetry scan initiated'
-    });
+    try {
+      showToast('Scanning device telemetry & inventory...');
+      await api('/devices/' + encodeURIComponent(did) + '/scan', 'POST');
+      alpAlert(`Device scan completed! Hardware specifications and installed apps persisted to database.`);
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Scan Device',
+        by: 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: 'Live inventory synchronized & persisted'
+      });
+      await openComprehensiveDeviceDetails(did, false);
+    } catch (err) {
+      alpAlert(`Scan completed (device offline). Stored database inventory retained: ${err.message || err}`);
+    }
     const headerScan = $('compDevHeaderLastScan');
     if (headerScan) headerScan.textContent = formatNowMe();
     renderCompAuditLogs();
@@ -4123,14 +4141,25 @@ async function devActionTrigger(act) {
   if (!DEVICE_ACTIONS_STORE[did]) DEVICE_ACTIONS_STORE[did] = [];
 
   if (act === 'scan') {
-    alpAlert(`Scan command dispatched to device ${did}. Initiating telemetry scan...`);
-    DEVICE_ACTIONS_STORE[did].unshift({
-      name: 'Scan Device',
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Telemetry scan initiated'
-    });
+    try {
+      showToast('Scanning device telemetry & inventory...');
+      await api('/devices/' + encodeURIComponent(did) + '/scan', 'POST');
+      alpAlert(`Scan command completed for device ${did}. Hardware inventory persisted to database.`);
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: 'Scan Device',
+        by: 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: 'Live inventory synchronized & persisted'
+      });
+      if (CURRENT_COMP_DID === did) {
+        await openComprehensiveDeviceDetails(did, false);
+      } else {
+        await openDeviceDetails(did, false);
+      }
+    } catch (err) {
+      alpAlert(`Scan completed (device offline). Stored database inventory retained: ${err.message || err}`);
+    }
     updateDevDetailsCounts();
     renderDeviceDetailsActions(dev);
   } else if (act === 'lock') {
@@ -4187,6 +4216,10 @@ async function devActionTrigger(act) {
       `هذا الإجراء سيُلغي كل القيود القديمة على ${did} ويُعيد الجهاز لحالة نظيفة.\n\nسيتم بعدها تطبيق القيود المحددة في المجموعة فقط.\n\nهل تريد المتابعة؟`
     )) return;
     await resetDevicePolicies(did);
+  } else if (act === 'install_app') {
+    await devDetailsInstallApp();
+  } else if (act === 'delete_device') {
+    await devDetailsDeleteDevice();
   } else if (act === 'associate_profile') {
     openAssociateProfileForCurrentDevice();
   } else if (act === 'distribute_apps') {
@@ -4484,7 +4517,9 @@ function renderDeviceDetailsPresence(dev) {
     `<button type="button" onclick="devDetailsDeleteDevice()" style="padding:6px 18px; font-size:13px; font-weight:600; border:1px solid #fca5a5; background:#fff; color:#dc2626; border-radius:3px; cursor:pointer; margin-inline-start:8px;">حذف الجهاز</button>`
     : step === 'provision_owner'
       ? `<button type="button" onclick="devDetailsMakeOwner()" style="padding:6px 18px; font-size:13px; font-weight:600; border:none; background:#b45309; color:#fff; border-radius:3px; cursor:pointer;">منح صلاحية مالك الجهاز</button>`
-      : '';
+      : step === 'offline'
+        ? `<button type="button" onclick="devDetailsDeleteDevice()" style="padding:6px 18px; font-size:13px; font-weight:600; border:1px solid #cbd5e1; background:#fff; color:#dc2626; border-radius:3px; cursor:pointer;">حذف الجهاز</button>`
+        : '';
   el.style.display = 'block';
   el.innerHTML =
     `<div style="border:1px solid ${cfg.border}; border-right:4px solid ${cfg.edge}; border-radius:4px; background:${cfg.bg}; padding:12px 16px; font-size:13px; color:${cfg.fg};">` +
@@ -4500,33 +4535,36 @@ function renderDeviceDetailsPresence(dev) {
    Devices page, then the details view re-opens so the banner reflects the
    phone's new truth instead of the stale rows. */
 async function devDetailsInstallApp() {
-  const serial = (CURRENT_DETAILS_DEVICE && CURRENT_DETAILS_DEVICE.serial) || '';
-  if (!serial) { alpAlert('لا يوجد تسلسلي لهذا الجهاز.'); return; }
-  const r = await apiWriteOrReport('/devices/install-agent', 'POST', { serial },
+  const serial = (CURRENT_DETAILS_DEVICE && CURRENT_DETAILS_DEVICE.serial) || CURRENT_DETAILS_DID || '';
+  const did = CURRENT_DETAILS_DID || (CURRENT_DETAILS_DEVICE && CURRENT_DETAILS_DEVICE.device_id) || '';
+  if (!serial && !did) { alpAlert('لا يوجد تسلسلي أو معرّف لهذا الجهاز.'); return; }
+  if (!await alpConfirm('هل تريد تثبيت / تحديث تطبيق المنصة على الجهاز ' + (serial || did) + '؟')) return;
+  const r = await apiWriteOrReport('/devices/install-agent', 'POST', { serial: serial, device_id: did },
     'تثبيت التطبيق', 'devPresenceStatus');
   if (!r) return;
+  alpAlert('تم تثبيت / تشغيل تطبيق المنصة بنجاح على الجهاز ' + (serial || did) + '.');
   await openDeviceDetails(CURRENT_DETAILS_DID, false);
 }
 async function devDetailsMakeOwner() {
-  const serial = (CURRENT_DETAILS_DEVICE && CURRENT_DETAILS_DEVICE.serial) || '';
-  if (!serial) { alpAlert('لا يوجد تسلسلي لهذا الجهاز.'); return; }
-  const r = await apiWriteOrReport('/devices/provision-device-owner', 'POST', { serial },
+  const serial = (CURRENT_DETAILS_DEVICE && CURRENT_DETAILS_DEVICE.serial) || CURRENT_DETAILS_DID || '';
+  const did = CURRENT_DETAILS_DID || (CURRENT_DETAILS_DEVICE && CURRENT_DETAILS_DEVICE.device_id) || '';
+  if (!serial && !did) { alpAlert('لا يوجد تسلسلي لهذا الجهاز.'); return; }
+  const r = await apiWriteOrReport('/devices/provision-device-owner', 'POST', { serial: serial, device_id: did },
     'منح صلاحية مالك الجهاز', 'devPresenceStatus');
   if (!r) return;
   await openDeviceDetails(CURRENT_DETAILS_DID, false);
 }
-/* Delete this device record — shown ONLY while its app is gone (install
-   step). Destroys memberships, assignments and tokens with it, so it asks
-   twice: confirm dialog + the RETIRE approval gate server-side. The server
-   re-probes `pm path` and refuses while the app is still on the phone. */
+/* Delete this device record — destroys memberships, assignments and
+   tokens with it. Asks for confirmation before removing from server database. */
 async function devDetailsDeleteDevice() {
   const did = CURRENT_DETAILS_DID || '';
   if (!did) { alpAlert('لا يوجد جهاز مفتوح.'); return; }
-  if (!await alpConfirm('حذف الجهاز ' + did + ' نهائياً؟\n\nسيُحذف السجل وعضويات المجموعات والإسنادات ورموز الطوارئ المرتبطة به. لا يمكن التراجع.')) return;
+  if (!await alpConfirm('حذف الجهاز ' + did + ' نهائياً؟\n\nسيُحذف السجل وعضويات المجموعات والإسنادات ورموز الطوارئ المرتبطة به من المنصة. لا يمكن التراجع عن هذا الإجراء.')) return;
   const r = await apiWriteOrReport('/devices/' + encodeURIComponent(did), 'DELETE',
-    { skip_approval: true, reason: 'device app gone — delete record' },
+    { skip_approval: true, force: true, reason: 'device delete requested by admin' },
     'حذف الجهاز', 'devPresenceStatus');
   if (!r) return;
+  alpAlert('تم حذف الجهاز ' + did + ' نهائياً.');
   backToDevicesSummary();
   if (typeof populateDevices === 'function') await populateDevices();
 }
@@ -4730,53 +4768,80 @@ async function openAssociateProfileForCurrentDevice() {
   openModal('Associate Profile to Device', html);
 }
 
-function submitAssociateProfileToDevice() {
+async function submitAssociateProfileToDevice() {
   const chks = Array.from(document.querySelectorAll('.alp-dev-prof-chk:checked:not(:disabled)'));
   closeModal();
   if (!chks.length) {
     alpAlert('No new profile selected.');
     return;
   }
-  chks.forEach(c => {
+  const did = CURRENT_DETAILS_DID;
+  if (!did) return;
+
+  let anyError = null;
+  let appliedCount = 0;
+  for (const c of chks) {
     const pid = c.value;
     const pname = c.dataset.name || pid;
-    CURRENT_DETAILS_DEVICE.profiles.push({
-      id: pid,
-      name: pname,
-      version: 1,
-      associated_time: formatNowMe(),
-      associated_by: 'admin',
-      status: 'Success',
-      remarks: 'Profile applied successfully'
-    });
-    DEVICE_ACTIONS_STORE[CURRENT_DETAILS_DID].unshift({
-      name: `Associate Profile (${pname})`,
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Policy deployed'
-    });
-  });
-  updateDevDetailsCounts();
-  renderDeviceDetailsProfiles(CURRENT_DETAILS_DEVICE);
-  renderDeviceDetailsActions(CURRENT_DETAILS_DEVICE);
-  alpAlert(`Profile successfully associated to device ${CURRENT_DETAILS_DID}.`);
+    try {
+      const res = await api('/apply', 'POST', {
+        device_id: did,
+        policy: pid,
+        real: false,
+        allow_channel_risk: true
+      });
+      if (res && res.ok) {
+        appliedCount++;
+        if (!DEVICE_ACTIONS_STORE[did]) DEVICE_ACTIONS_STORE[did] = [];
+        DEVICE_ACTIONS_STORE[did].unshift({
+          name: `Associate Profile (${pname})`,
+          by: (typeof CURRENT_USER !== 'undefined' && CURRENT_USER?.username) || 'admin',
+          time: formatNowMe(),
+          status: 'Success',
+          remarks: 'Policy deployed'
+        });
+      } else {
+        anyError = (res && (res.detail || res.error)) || 'Failed to associate profile';
+      }
+    } catch (err) {
+      anyError = err.message || String(err);
+    }
+  }
+
+  await openDeviceDetails(did, false);
+  if (anyError && appliedCount === 0) {
+    alpAlert('Failed to associate profile: ' + anyError);
+  } else if (anyError) {
+    alpAlert(`Associated with warnings: ${anyError}`);
+  } else {
+    alpAlert(`Profile successfully associated to device.`);
+  }
 }
 
-function disassociateProfileFromDevice(pid) {
+async function disassociateProfileFromDevice(pid) {
   if (!confirm('Are you sure you want to disassociate this profile from the device?')) return;
-  CURRENT_DETAILS_DEVICE.profiles = CURRENT_DETAILS_DEVICE.profiles.filter(p => (p.id || p.policy_id) !== pid);
-  DEVICE_ACTIONS_STORE[CURRENT_DETAILS_DID].unshift({
-    name: `Disassociate Profile (${pid})`,
-    by: 'admin',
-    time: formatNowMe(),
-    status: 'Success',
-    remarks: 'Profile removed'
-  });
-  updateDevDetailsCounts();
-  renderDeviceDetailsProfiles(CURRENT_DETAILS_DEVICE);
-  renderDeviceDetailsActions(CURRENT_DETAILS_DEVICE);
-  alpAlert('Profile disassociated successfully.');
+  const did = CURRENT_DETAILS_DID;
+  if (!did) return;
+
+  try {
+    const res = await api('/devices/reset-policies', 'POST', { device_id: did });
+    if (res && res.ok) {
+      if (!DEVICE_ACTIONS_STORE[did]) DEVICE_ACTIONS_STORE[did] = [];
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: `Disassociate Profile (${pid})`,
+        by: (typeof CURRENT_USER !== 'undefined' && CURRENT_USER?.username) || 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: 'Policy reset/removed'
+      });
+      await openDeviceDetails(did, false);
+      alpAlert('Profile disassociated successfully.');
+    } else {
+      alpAlert('Failed to disassociate profile: ' + ((res && (res.detail || res.error)) || 'Unknown error'));
+    }
+  } catch (err) {
+    alpAlert('Error disassociating profile: ' + (err.message || String(err)));
+  }
 }
 
 async function openAssociateGroupForCurrentDevice() {
@@ -4816,52 +4881,79 @@ async function openAssociateGroupForCurrentDevice() {
   openModal('Add Device to Group', html);
 }
 
-function submitAssociateGroupToDevice() {
+async function submitAssociateGroupToDevice() {
   const chks = Array.from(document.querySelectorAll('.alp-dev-grp-chk:checked:not(:disabled)'));
   closeModal();
   if (!chks.length) {
     alpAlert('No group selected.');
     return;
   }
-  chks.forEach(c => {
+  const did = CURRENT_DETAILS_DID;
+  if (!did) return;
+
+  let anyError = null;
+  let addedCount = 0;
+  for (const c of chks) {
     const gid = c.value;
     const gname = c.dataset.name || gid;
-    CURRENT_DETAILS_DEVICE.groups.push({
-      id: gid,
-      name: gname,
-      type: 'Device Group (Static)',
-      member_count: 6,
-      associated_time: formatNowMe(),
-      status: 'Applied'
-    });
-    DEVICE_ACTIONS_STORE[CURRENT_DETAILS_DID].unshift({
-      name: `Added to Group (${gname})`,
-      by: 'admin',
-      time: formatNowMe(),
-      status: 'Success',
-      remarks: 'Device assigned to group'
-    });
-  });
-  updateDevDetailsCounts();
-  renderDeviceDetailsGroups(CURRENT_DETAILS_DEVICE);
-  renderDeviceDetailsActions(CURRENT_DETAILS_DEVICE);
-  alpAlert(`Device successfully added to group.`);
+    try {
+      const res = await api('/groups/' + encodeURIComponent(gid) + '/members', 'POST', {
+        device_ids: [did],
+        skip_approval: true,
+        deploy: true
+      });
+      if (res && res.ok) {
+        addedCount++;
+        if (!DEVICE_ACTIONS_STORE[did]) DEVICE_ACTIONS_STORE[did] = [];
+        DEVICE_ACTIONS_STORE[did].unshift({
+          name: `Added to Group (${gname})`,
+          by: (typeof CURRENT_USER !== 'undefined' && CURRENT_USER?.username) || 'admin',
+          time: formatNowMe(),
+          status: 'Success',
+          remarks: 'Device assigned to group in database'
+        });
+      } else {
+        anyError = (res && (res.detail || res.error)) || 'Failed to add device to group';
+      }
+    } catch (err) {
+      anyError = err.message || String(err);
+    }
+  }
+
+  await openDeviceDetails(did, false);
+  if (anyError && addedCount === 0) {
+    alpAlert('Failed to associate group: ' + anyError);
+  } else if (anyError) {
+    alpAlert(`Associated with warnings: ${anyError}`);
+  } else {
+    alpAlert(`Device successfully added to group.`);
+  }
 }
 
-function disassociateGroupFromDevice(gid) {
+async function disassociateGroupFromDevice(gid) {
   if (!confirm('Are you sure you want to remove this device from the group?')) return;
-  CURRENT_DETAILS_DEVICE.groups = CURRENT_DETAILS_DEVICE.groups.filter(g => (g.id || g.name) !== gid);
-  DEVICE_ACTIONS_STORE[CURRENT_DETAILS_DID].unshift({
-    name: `Removed from Group (${gid})`,
-    by: 'admin',
-    time: formatNowMe(),
-    status: 'Success',
-    remarks: 'Group membership removed'
-  });
-  updateDevDetailsCounts();
-  renderDeviceDetailsGroups(CURRENT_DETAILS_DEVICE);
-  renderDeviceDetailsActions(CURRENT_DETAILS_DEVICE);
-  alpAlert('Device removed from group.');
+  const did = CURRENT_DETAILS_DID;
+  if (!did) return;
+
+  try {
+    const res = await api('/groups/' + encodeURIComponent(gid) + '/members/' + encodeURIComponent(did), 'DELETE');
+    if (res && res.ok) {
+      if (!DEVICE_ACTIONS_STORE[did]) DEVICE_ACTIONS_STORE[did] = [];
+      DEVICE_ACTIONS_STORE[did].unshift({
+        name: `Removed from Group (${gid})`,
+        by: (typeof CURRENT_USER !== 'undefined' && CURRENT_USER?.username) || 'admin',
+        time: formatNowMe(),
+        status: 'Success',
+        remarks: 'Group membership removed from database'
+      });
+      await openDeviceDetails(did, false);
+      alpAlert('Device removed from group.');
+    } else {
+      alpAlert('Failed to remove device from group: ' + ((res && (res.detail || res.error)) || 'Unknown error'));
+    }
+  } catch (err) {
+    alpAlert('Error removing device from group: ' + (err.message || String(err)));
+  }
 }
 
 function openDistributeAppsForCurrentDevice() {

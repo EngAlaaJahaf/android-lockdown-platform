@@ -73,15 +73,18 @@ def fetch_device_details(did: str) -> dict:
         profile_rows = c.execute(
             """
             SELECT p.id, p.policy_id, p.display_name AS name, p.version, p.status, p.requirements,
-                   gpa.assigned_at AS associated_time, gpa.assigned_by AS associated_by,
+                   COALESCE(gpa.assigned_at, a.applied_at) AS associated_time,
+                   COALESCE(gpa.assigned_by, 'admin') AS associated_by,
                    'Associated' AS association_status
             FROM policies p
-            JOIN group_profile_assignments gpa ON gpa.policy_id = p.id
-            JOIN device_group_members dgm ON dgm.group_id = gpa.group_id
-            WHERE dgm.device_id = ?
+            LEFT JOIN group_profile_assignments gpa ON gpa.policy_id = p.id
+            LEFT JOIN device_group_members dgm ON dgm.group_id = gpa.group_id AND dgm.device_id = ?
+            LEFT JOIN assignments a ON a.policy_id = p.id AND a.device_id = ?
+            WHERE (dgm.device_id IS NOT NULL OR a.device_id IS NOT NULL)
+            GROUP BY p.id
             ORDER BY p.display_name
             """,
-            (dev_id,),
+            (dev_id, dev_id),
         ).fetchall()
         profiles = []
         for pr in profile_rows:
@@ -139,118 +142,37 @@ def fetch_device_details(did: str) -> dict:
         ).fetchall()
         dev["audit_logs"] = [dict(a) for a in audit_rows]
 
+    from backend import device_inventory
+    did = dev["device_id"]
     serial = dev.get("serial")
-    if serial:
-        try:
-            from backend import workflows
-            import subprocess, re
+    try:
+        inv = device_inventory.probe_and_persist_device_inventory(serial or did)
+    except Exception:
+        inv = device_inventory.get_device_inventory(did)
+
+    if not inv:
+        inv = device_inventory.get_device_inventory(did)
+
+    if inv:
+        dev["mddeviceinfo"] = inv.get("mddeviceinfo") or {}
+        dev["mdnetworkinfo"] = inv.get("mdnetworkinfo") or {}
+        dev["hardware"] = inv.get("hardware") or {}
+        dev["network"] = inv.get("network") or {}
+        if inv.get("installed_apps"):
+            dev["apps"] = inv["installed_apps"]
+            dev["installed_packages"] = {
+                "third_party": [a["package_name"] for a in inv["installed_apps"] if a.get("app_type") == "Third-Party App"],
+                "system": [a["package_name"] for a in inv["installed_apps"] if a.get("app_type") != "Third-Party App"]
+            }
+
+    try:
+        from backend import workflows
+        if serial and serial in workflows.attached_serials():
             probe = workflows.live_probe(serial)
             if probe:
                 dev["live_probe"] = probe
-            
-            # Safely query hardware and network telemetry via ADB
-            adb_bin = workflows.adb()
-            def _sh(*args):
-                try:
-                    r = subprocess.run([adb_bin, "-s", serial, "shell"] + list(args), capture_output=True, text=True, timeout=5)
-                    return r.stdout.strip() if r.returncode == 0 else ""
-                except Exception:
-                    return ""
-
-            bat_out = _sh("dumpsys", "battery")
-            bat_m = re.search(r'level:\s*(\d+)', bat_out)
-            battery_level = f"{bat_m.group(1)}.0%" if bat_m else "82.0%"
-
-            mem_out = _sh("cat", "/proc/meminfo")
-            tot_m = re.search(r'MemTotal:\s*(\d+)', mem_out)
-            avail_m = re.search(r'MemAvailable:\s*(\d+)', mem_out)
-            tot_ram_mb = f"{int(tot_m.group(1))/1024:.3f}" if tot_m else "3775.324"
-            avail_ram_mb = f"{int(avail_m.group(1))/1024:.3f}" if avail_m else "2123.055"
-
-            df_out = _sh("df", "-k", "/data")
-            cap_gb = "222.72"
-            free_gb = "216.82"
-            df_lines = df_out.splitlines()
-            if len(df_lines) > 1:
-                p = df_lines[-1].split()
-                if len(p) >= 4:
-                    try:
-                        cap_gb = f"{int(p[1])/(1024*1024):.2f}"
-                        free_gb = f"{int(p[3])/(1024*1024):.2f}"
-                    except Exception:
-                        pass
-
-            udid = _sh("settings", "get", "secure", "android_id") or "c673a99957bf4358"
-            cpu_out = _sh("cat", "/proc/cpuinfo")
-            cores = len(re.findall(r'^processor\s*:', cpu_out, re.M)) or 8
-
-            ip_out = _sh("ip", "link", "show", "wlan0")
-            mac_m = re.search(r'link/ether\s+([0-9a-fA-F:]{17})', ip_out)
-            wifi_mac = mac_m.group(1) if mac_m else "5a:bd:3b:92:56:68"
-
-            ipa_out = _sh("ip", "addr", "show", "tun0")
-            ip_m = re.search(r'inet\s+([0-9.]+)', ipa_out)
-            wifi_ip = ip_m.group(1) if ip_m else "10.0.0.2"
-
-            ident = (probe.get("identity") if probe else {}) or {}
-            hw_dict = {
-                "udid": udid,
-                "battery_level": battery_level,
-                "total_ram_mb": tot_ram_mb,
-                "available_ram_mb": avail_ram_mb,
-                "device_capacity_gb": cap_gb,
-                "free_space_gb": free_gb,
-                "cpu_cores": cores,
-                "wifi_mac": wifi_mac,
-                "wifi_ip": wifi_ip,
-                "processor_details": ident.get("processor") or "MediaTek MT6768 (Octa-core ARM Cortex-A75 & A55)",
-                "processor_type": ident.get("abi") or "arm64-v8a",
-                "cellular_tech": "Wi-Fi only",
-                "eas_id": f"EAS-{ident.get('model') or 'LT8110'}-{serial[-9:]}",
-                "cloud_backup": "Disabled",
-                "frp_configured": True,
-                "product_name": ident.get("model") or "LT_8110",
-                "device_type": "Tablet"
-            }
-            dev["hardware"] = hw_dict
-            if probe:
-                probe["hardware"] = hw_dict
-        except Exception:
-            pass
-
-        try:
-            from backend import workflows
-            apps_inv = workflows.apps(serial)
-            if apps_inv and isinstance(apps_inv, dict):
-                dev["installed_packages"] = apps_inv
-                apps_list = []
-                for pkg in (apps_inv.get("third_party") or []):
-                    parts = pkg.split(".")
-                    simple_name = parts[-1].capitalize() if parts else pkg
-                    apps_list.append({
-                        "name": simple_name,
-                        "pkg": pkg,
-                        "package_name": pkg,
-                        "ver": "Latest",
-                        "type": "Third-Party App",
-                        "status": "Installed"
-                    })
-                for pkg in (apps_inv.get("system") or []):
-                    parts = pkg.split(".")
-                    simple_name = parts[-1].capitalize() if parts else pkg
-                    apps_list.append({
-                        "name": simple_name,
-                        "pkg": pkg,
-                        "package_name": pkg,
-                        "ver": "System",
-                        "type": "System Service / Package",
-                        "status": "Managed"
-                    })
-                dev["apps"] = apps_list
-            elif apps_inv:
-                dev["apps"] = apps_inv
-        except Exception:
-            pass
+    except Exception:
+        pass
 
     return dev
 
@@ -292,6 +214,7 @@ class DeleteDeviceRequest(BaseModel):
     approver1: Optional[str] = None
     approver2: Optional[str] = None
     skip_approval: Optional[bool] = False
+    force: Optional[bool] = False
 
 
 # ---- Endpoints ----
@@ -374,6 +297,14 @@ def device_details(did: str, sess: dict = Depends(get_current_session)):
     return {"ok": True, "data": fetch_device_details(did)}
 
 
+@router.post("/devices/{did}/scan")
+def scan_device_endpoint(did: str, sess: dict = Depends(get_current_session)):
+    authorize_action(sess, "APPLY", require_mfa=False)
+    from backend import device_inventory
+    inv = device_inventory.probe_and_persist_device_inventory(did)
+    return {"ok": True, "data": inv}
+
+
 @router.delete("/devices/{did}")
 def delete_device_endpoint(did: str, req: DeleteDeviceRequest, sess: dict = Depends(get_current_session)):
     authorize_action(
@@ -387,7 +318,7 @@ def delete_device_endpoint(did: str, req: DeleteDeviceRequest, sess: dict = Depe
         },
     )
     try:
-        return {"ok": True, "data": delete_device(did)}
+        return {"ok": True, "data": delete_device(did, force=bool(req.force))}
     except ValueError as ex:
         raise HTTPException(status_code=409, detail=str(ex))
 

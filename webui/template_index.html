@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>ManageEngine Mobile Device Manager Plus</title>
+  <!-- Authentic ManageEngine MDM Themes & Styles -->
+  <link href="themes/styles/sdp-mdm/style.css" rel="stylesheet" />
+  <link href="themes/styles/sdp-mdm/tab_component.css" rel="stylesheet" />
+  <link href="themes/styles/dm-default/tab_component.css" rel="stylesheet" />
+  <link href="themes/styles/loginMDM.css" rel="stylesheet" />
+  <link href="assets/me/vendor.css" rel="stylesheet" />
+  <link href="assets/me/uacc.css" rel="stylesheet" />
+  <link href="assets/me/chunk.524.css" rel="stylesheet" />
+  <link href="assets/me/dummy.css" rel="stylesheet" />
+  <link href="assets/me/svg-bucket.css" rel="stylesheet" />
+  <link href="assets/me/engine.css" rel="stylesheet" />
+  <link href="assets/me/engine-internal.css" rel="stylesheet" />
+  <link href="assets/me/login/login-engine.css" rel="stylesheet" />
+  <link href="assets/alp-console.css?v=20261010_payloads" rel="stylesheet" />
+  <link href="assets/alp-table.css?v=20261008" rel="stylesheet" />
+  <link href="assets/alp-enrollment.css" rel="stylesheet" />
+  <link href="assets/alp-ws.css" rel="stylesheet" />
+  <!-- Authentic ManageEngine Core JavaScript Libraries -->
+  <script src="js/jquery/jquery.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/DMEffects.js"></script>
+</head>
+
+<body class="ember-application" ems-theme="light" id="mdmapp">
+  <!-- Authentic ManageEngine MDM Global Loading Screen Overlay ("Hold on! Loading...") -->
+  <div class="me-global-loader-overlay" id="meGlobalLoader">
+    <div class="loader-wrapper">
+      <div class="loader-icons-wrapper">
+        <svg class="loader-icon loader-icon-1" id="loaderIcon1" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="m32.29,5.72c-.17-1.29-.56-2.53-1.57-3.53-1-1-2.24-1.39-3.53-1.57-1.2-.16-2.71-.16-4.45-.16h-8.13c-1.74,0-3.25,0-4.45.16-1.29.17-2.53.56-3.53,1.57-1,1-1.39,2.24-1.57,3.53-.16,1.2-.16,2.71-.16,4.45v19.93c0,1.74,0,3.25.16,4.45.17,1.29.56,2.53,1.57,3.53,1,1,2.24,1.39,3.53,1.57,1.2.16,2.71.16,4.45.16h8.13c1.74,0,3.25,0,4.45-.16,1.29-.17,2.53-.56,3.53-1.57,1-1,1.39-2.24,1.57-3.53.16-1.2.16-2.71.16-4.45V10.17c0-1.74,0-3.25-.16-4.45Zm-22.17.21c.7-.7,1.82-.7,4.06-.7,1.5,0,2.24,0,2.71.46s.46,1.21.46,2.71v1.59c0,1.5,0,2.24-.46,2.71-.46.46-1.21.46-2.71.46h-1.59c-1.5,0-2.24,0-2.71-.46-.46-.46-.46-1.21-.46-2.71,0-2.24,0-3.36.7-4.06Zm4.06,17.81c-2.24,0-3.36,0-4.06-.7s-.7-1.82-.7-4.06c0-1.5,0-2.24.46-2.71s1.21-.46,2.71-.46h1.59c1.5,0,2.24,0,2.71.46s.46,1.21.46,2.71v1.59c0,1.5,0,2.24-.46,2.71s-1.21.46-2.71.46Zm5.48,10.17h-1.97c-1.09,0-1.97-.88-1.97-1.97s.88-1.97,1.97-1.97h1.97c1.09,0,1.97.88,1.97,1.97s-.88,1.97-1.97,1.97Zm7.57-10.87c-.7.7-1.82.7-4.06.7-1.49,0-2.24,0-2.71-.47s-.46-1.21-.46-2.71v-1.58c0-1.5,0-2.24.46-2.71s1.21-.46,2.71-.46h1.59c1.5,0,2.24,0,2.71.46s.46,1.21.46,2.71c0,2.24,0,3.37-.7,4.06Zm.24-10.34c-.46.46-1.21.46-2.71.46h-1.59c-1.5,0-2.24,0-2.71-.46-.46-.46-.46-1.21-.46-2.71v-1.59c0-1.5,0-2.24.46-2.71s1.21-.46,2.71-.46c2.24,0,3.37,0,4.06.7.7.7.7,1.82.7,4.06,0,1.5,0,2.24-.46,2.71Z">
+          </path>
+        </svg>
+        <svg class="loader-icon loader-icon-2" id="loaderIcon2" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="m20.08,34.15c.56,0,2.34-.74,4.9-3.11,4.06-3.74,8.8-10.31,8.8-16.49,0-7.61-6.17-13.78-13.78-13.78-7.61,0-13.78,6.17-13.78,13.78h0c0,9.72,11.32,19.39,13.86,19.6h0Zm-.08-27.8c3.63,0,6.57,2.94,6.57,6.57s-2.94,6.57-6.57,6.57-6.57-2.94-6.57-6.57,2.94-6.57,6.57-6.57h0Zm14.98,29.1c0,1.28-5.28,3.78-14.98,3.78s-14.98-2.5-14.98-3.78c0-.86,2.47-2.45,7.98-3.28.1-.02.19-.05.27-.09,2.58,2.44,5.11,4.01,6.64,4.12h.19c2.06,0,5.06-2.53,6.27-3.65.15-.14.3-.29.45-.44.05.02.1.03.15.04,5.51.84,7.99,2.43,7.99,3.29Z">
+          </path>
+        </svg>
+        <svg class="loader-icon loader-icon-3" id="loaderIcon3" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="m11.96,39.33c-5.93,0-9.23-3.42-9.23-9.27h0V10.24C2.72,4.29,6.02.95,11.95.95h16.09c5.84,0,9.23,3.34,9.23,9.29h0v19.83c0,5.85-3.4,9.27-9.23,9.27H11.96Zm15.57-26.37c.58.06,1.14-.22,1.44-.71.31-.49.31-1.12,0-1.61-.31-.49-.87-.76-1.44-.69h-15.05c-.83.1-1.43.85-1.33,1.68.08.7.63,1.25,1.33,1.33h15.05s0,0,0,0Zm-15.05,8.75h15.04c.83-.02,1.48-.7,1.46-1.53-.02-.8-.66-1.45-1.46-1.46h-15.05c-.83.02-1.48.7-1.46,1.53.02.8.66,1.45,1.46,1.46h0Zm9.31,8.69h5.74v-.02c.83,0,1.5-.67,1.5-1.5s-.67-1.5-1.5-1.5h-5.74c-.83,0-1.51.67-1.51,1.51s.67,1.51,1.51,1.51h0Z">
+          </path>
+        </svg>
+        <svg class="loader-icon loader-icon-4" id="loaderIcon4" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <g>
+            <path
+              d="m35.19,12.49v-6.93c0-.38-.31-.69-.68-.69-.06,0-.13,0-.19.03l-20.15,5.66c.25.35.38.76.38,1.19v11.01c0,.47-.16.92-.45,1.29l20.18,6.97c.08,0,.15,0,.23,0,.14,0,.28-.04.4-.13.18-.13.29-.34.29-.56v-8.31c2.63-.4,4.44-2.86,4.04-5.49-.32-2.08-1.95-3.72-4.04-4.04h0Zm-22.71-1.43h-5.5c-3.42-.04-6.22,2.7-6.26,6.12-.04,3.42,2.7,6.22,6.12,6.26.05,0,.09,0,.14,0h5.51c.38,0,.69-.31.69-.69h0v-11.01c0-.38-.31-.69-.69-.69h0Zm-.69,13.76h-4.13v9.63c0,.38.31.69.69.69h4.13c.38,0,.69-.31.69-.69h0v-9.76c-.22.08-.45.13-.69.12h-.69Z">
+            </path>
+          </g>
+        </svg>
+        <svg class="loader-icon loader-icon-5" id="loaderIcon5" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="m19.08,38.91c.57.35,1.28.35,1.85,0l6.13-3.82c5.42-3.47,8.69-9.47,8.66-15.91v-10.84c0-.71-.43-1.34-1.08-1.61L20.67.91c-.43-.17-.91-.17-1.34,0L5.36,6.72c-.65.27-1.08.9-1.09,1.61v10.85c-.02,6.44,3.24,12.44,8.66,15.91l6.13,3.82h.02Zm-7.3-21.92c.68-.68,1.78-.68,2.46,0,0,0,0,0,0,0l3.89,3.89,7.51-9.01c.63-.73,1.73-.82,2.47-.2.72.62.82,1.69.22,2.43l-8.73,10.48c-.31.38-.77.61-1.26.63h-.07c-.46,0-.91-.18-1.24-.51l-5.24-5.24c-.68-.68-.68-1.78,0-2.46,0,0,0,0,0,0v-.02Z">
+          </path>
+        </svg>
+        <svg class="loader-icon loader-icon-6" id="loaderIcon6" viewbox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="m33.61,5.72c-.17-1.29-.56-2.53-1.57-3.53-1-1-2.24-1.39-3.53-1.57-1.2-.16-2.71-.16-4.45-.16h-8.13c-1.74,0-3.25,0-4.45.16-1.29.17-2.53.56-3.53,1.57-1,1-1.39,2.24-1.57,3.53-.16,1.2-.16,2.71-.16,4.45v19.93c0,1.74,0,3.25.16,4.45.17,1.29.56,2.53,1.57,3.53,1,1,2.24,1.39,3.53,1.57,1.2.16,2.71.16,4.45.16h8.13c1.74,0,3.25,0,4.45-.16,1.29-.17,2.53-.56,3.53-1.57,1-1,1.39-2.24,1.57-3.53.16-1.2.16-2.71.16-4.45V10.17c0-1.74,0-3.25-.16-4.45Zm-12.63,28.19h-1.97c-1.09,0-1.97-.88-1.97-1.97s.88-1.97,1.97-1.97h1.97c1.09,0,1.97.88,1.97,1.97s-.88,1.97-1.97,1.97Zm6.84-9.84c-.65.65-1.7.65-2.35,0l-2.32-2.32c-1.15.73-2.52,1.15-3.98,1.15-4.13,0-7.48-3.35-7.48-7.48s3.35-7.48,7.48-7.48,7.48,3.35,7.48,7.48c0,1.46-.42,2.83-1.15,3.98l2.32,2.32c.65.65.65,1.7,0,2.35Z">
+          </path>
+          <circle cx="19.17" cy="15.41" r="4.16"></circle>
+        </svg>
+      </div>
+      <div class="loader-text" id="meGlobalLoaderText">
+        Hold on! Loading...
+      </div>
+    </div>
+  </div>
+  <!-- Critical: token bootstrap must run before body renders to prevent view flash -->
+  <script>
+    (function () {
+      var tok = '';
+      try { tok = localStorage.getItem('alp_token') || sessionStorage.getItem('alp_token') || ''; } catch (e) { }
+      window._INITIAL_TOKEN = tok;
+      if (!tok) { document.body.classList.add('preauth'); }
+    })();
+  </script>
+  <div class="mdm-wrapper" id="mdmpapp">
+    <div class="mdmp-app">
+      <div class="uems-main-wrapper ember-view" id="ember7">
+        <div class="app--header lite-BG ember-view" id="ember8">
+          <div class="mdm-top-wrapper">
+            <div class="mdmp-tab-components" id="tab-components">
+              <div class="mdm-tab-components" id="mdmtopNavContainer">
+                <!-- Level 1: ManageEngine Top Header (White) -->
+                <header class="mdmp-tab-components-top">
+                  <div class="left-half">
+                    <div class="tab-component-element product-promo-container flex--common h-100 ember-view"
+                      id="ember11">
+                      <!-- ALP has no "Recommended Products" store, so this ManageEngine chrome
+           element is left inert rather than wired to a fake menu. -->
+                      <div class="top-nav-menu-ham inline-flex--common" id="openProductPromoHam" tabindex="-1"
+                        title="Recommended Products">
+                        <div class="tnmh--box-container">
+                          <span class="tnmh--box"></span><span class="tnmh--box"></span><span class="tnmh--box"></span>
+                          <span class="tnmh--box"></span><span class="tnmh--box"></span><span class="tnmh--box"></span>
+                          <span class="tnmh--box"></span><span class="tnmh--box"></span><span class="tnmh--box"></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="tab-component-element mdmp-logo">
+                      <img alt="ManageEngine Mobile Device Manager Plus" class="product-logo"
+                        src="assets/me/me_mdm_header_logo.png" />
+                    </div>
+                  </div>
+                  <div class="right-half">
+                    <div class="tab-component-element mdm-product-banner" id="ember14">
+                      <span class="banner-text">Your Trial expires in 28 days.</span>
+                      <a class="banner-link" href="javascript:void(0)">License</a> | <a class="banner-link"
+                        href="javascript:void(0)">Get Quote</a>
+                    </div>
+                    <span class="tab-component-element build-version font-sm-3 cursor-pointer ember-view" id="ember16">
+                      <span class="build-version-text"><span class="text">Build Version</span>: <span
+                          class="text">11.2.2508.01</span></span>
+                    </span>
+                    <span class="tab-component-element alp-ws-live-badge offline" id="alpWsStatusBadge"
+                      title="Real-Time WebSocket Control Channel">
+                      <span class="alp-ws-dot" id="alpWsStatusDot"></span>
+                      <span class="alp-ws-label" id="alpWsStatusText">WS Offline</span>
+                    </span>
+                    <div class="tab-component-element" id="ember17">
+                      <div class="quick-actions-list quick-actions font-sm-3 ember-view ucs-pos-relative" id="ember18">
+                        <div class="quick-actions-icon" id="quickActions-ember18" onclick="toggleQuickActions(event)"
+                          title="Help &amp; Support">
+                          <svg aria-label="help" class="svg-bucket-icon" data-icon="global::help" role="img">
+                            <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#help"
+                              xlink:href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#help"></use>
+                          </svg>
+                        </div>
+                        <div class="helpDropDownDiv quick-actions-dropdown" id="quickActionsLinks-ember18">
+                          <ul class="quick-actions-dropdown-lists p-0 m-0">
+                            <li class="quick-actions-dropdown-links"><a href="javascript:void(0)"
+                                style="color:#333;text-decoration:none;font-size:12px;">Create Support File</a></li>
+                            <li class="quick-actions-dropdown-links"><a href="javascript:void(0)"
+                                style="color:#333;text-decoration:none;font-size:12px;">Send Feedback</a></li>
+                            <li class="quick-actions-dropdown-links"><a href="javascript:void(0)"
+                                style="color:#333;text-decoration:none;font-size:12px;">Need Features</a></li>
+                            <li class="quick-actions-dropdown-links"><a href="javascript:void(0)"
+                                style="color:#333;text-decoration:none;font-size:12px;">Visit User Community</a></li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="tab-component-element" id="ember21">
+                      <div
+                        class="uems-components mdm-user-profile-container loggedin-user-image font-sm-3 cursor-pointer"
+                        onclick="toggleUserDropdown(event)">
+                        <span class="inline-flex--common" id="userLoginImage">
+                          <svg aria-label="User_Placeholder" class="svg-bucket-icon"
+                            data-icon="mdm-common::User_Placeholder" role="img">
+                            <use
+                              href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#User_Placeholder"
+                              xlink:href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#User_Placeholder">
+                            </use>
+                          </svg>
+                        </span>
+                        <div class="mdm-user-profile-popover" id="userDropdownMenu">
+                          <div class="mdm-user-details ucs-flex p-10">
+                            <div class="mdm-profile-image-wrapper p-r-15">
+                              <div class="mdm-user-image">
+                                <svg aria-label="User_Placeholder" class="svg-bucket-icon" role="img">
+                                  <use
+                                    href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#User_Placeholder">
+                                  </use>
+                                </svg>
+                              </div>
+                            </div>
+                            <div class="mdm-user-details-wrapper">
+                              <div class="mdm-login-user-name text-bold uems-font-16" id="whoami">admin</div>
+                              <div class="mdm-active-session pt-12">
+                                Active Session(s) : <span class="active-settion-count">1</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="mdm-user-actions flex--common p-10">
+                            <button class="button-secondary-form secondaryActionBtn buttonnew1" id="personalizeUser"
+                              type="button">Personalize</button>
+                            <button class="button-primary-form primaryActionBtn" id="logoutBtn" onclick="doLogout()"
+                              type="button">Sign Out</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </header>
+                <!-- Level 2: ManageEngine Sub-Navigation Bar (Dark Navy Slate) -->
+                <nav class="mdmp-tab-components-bottom">
+                  <div class="uems-nav-bar flex--common">
+                    <div class="utnb__left ucs-flex__nowrap" role="navigation">
+                      <div class="utnb__left--float">
+                        <a class="utnb--tab active" data-v="dashboard" href="#/dashboard"
+                          onclick="showView('dashboard');return false;" role="button" tabindex="0">Home</a>
+                        <a class="utnb--tab" data-v="devices" href="#/devices"
+                          onclick="showView('devices');return false;" role="button" tabindex="0">Device Mgmt</a>
+                        <a class="utnb--tab" data-v="apply" href="#/apply" onclick="showView('apply');return false;"
+                          role="button" tabindex="0">Inventory</a>
+                        <a class="utnb--tab" data-v="restrictions" href="#/restrictions"
+                          onclick="showView('restrictions');return false;" role="button" tabindex="0">Enrollment</a>
+                        <a class="utnb--tab" data-v="reports" href="#/reports"
+                          onclick="showView('reports');return false;" role="button" tabindex="0">Reports</a>
+                        <a class="utnb--tab" data-v="recovery" href="#/recovery"
+                          onclick="showView('recovery');return false;" role="button" tabindex="0">Admin</a>
+                        <a class="utnb--tab" data-v="audit" href="#/audit" onclick="showView('audit');return false;"
+                          role="button" tabindex="0">Support</a>
+                        <a class="utnb--tab" data-v="branding" href="#/branding"
+                          onclick="showView('branding');return false;" role="button" tabindex="0">Branding</a>
+                      </div>
+                    </div>
+                    <div class="utnb__right ucs-flex__nowrap h-100 m-l-25 ucs-align__center">
+                      <div class="tab-actions">
+                        <div class="adv-search-button" title="Advance Search">
+                          <svg class="svg-bucket-icon" style="width:20px;height:20px;">
+                            <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#search"></use>
+                          </svg>
+                        </div>
+                        <div class="training-video-details" title="Training Videos">
+                          <svg class="svg-bucket-icon" style="width:22px;height:22px;">
+                            <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#video"></use>
+                          </svg>
+                        </div>
+                        <div class="getting-started-button" title="Getting Started">
+                          <svg class="svg-bucket-icon" style="width:22px;height:22px;">
+                            <use
+                              href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#gettingstarted">
+                            </use>
+                          </svg>
+                        </div>
+                        <div class="quick-launch" onclick="showView('devices')" title="Quick Launch">
+                          <svg class="svg-bucket-icon" style="width:20px;height:20px;">
+                            <use href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#quick-Links">
+                            </use>
+                          </svg>
+                        </div>
+                        <div class="live-status-indicator" id="livePill" style="display:none">
+                          <span class="live-status-dot"></span>
+                          <span>ALP Online</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </nav>
+              </div><!-- /#mdmtopNavContainer -->
+            </div><!-- /#tab-components -->
+          </div><!-- /.mdm-top-wrapper -->
+        </div><!-- /#ember8.app--header -->
+        <div class="application-wrapper ember-view" id="mdmApplicationWrapper">
+          <div id="mdm-outlet-container">
+            <div class="shell">
+              <main class="contents">
+
+                <!-- INJECT: views/bootstrap.html -->
+                <!-- INJECT: views/login.html -->
+                <div class="view" id="view-main">
+                  <!-- JS moved to alp-console.js (block 2) -->
+                  <section class="vpanel active" id="sub-dashboard">
+                    <div class="mdm-module-root-page">
+                      <div class="mdm-main-page-container left-tree-collapse"
+                        style="width:100%; box-sizing:border-box;">
+                        <div class="mdm-main-page-content" style="padding:15px 25px;">
+                          <div class="homepage mdm-wrapper">
+
+                            <!-- INJECT: views/panels/dashboard.html -->
+
+                            <!-- INJECT: views/panels/devices.html -->
+
+                            <!-- INJECT: views/panels/apply.html -->
+
+                            <!-- INJECT: views/panels/restrictions.html -->
+
+                            <!-- INJECT: views/panels/recovery.html -->
+
+                            <!-- INJECT: views/panels/branding.html -->
+
+                            <!-- INJECT: views/panels/audit.html -->
+
+                            <!-- INJECT: views/panels/reports.html -->
+                            <footer id="alpFooter" style="display:none"></footer>
+                          </div>
+              </main>
+            </div>
+          </div><!-- /#mdm-outlet-container -->
+        </div><!-- /#mdmApplicationWrapper -->
+      </div><!-- /#ember7.uems-main-wrapper -->
+    </div><!-- /.mdmp-app -->
+  </div><!-- /#mdmpapp.mdm-wrapper -->
+  <!-- ManageEngine Authentic Floating Action Button -->
+  <div class="floating-button--container" id="floating-action-button" tabindex="-1">
+    <div class="floating-button floating-menu-item" role="button">
+      <span class="menu-icon-bar bar-one"></span>
+      <span class="menu-icon-bar bar-two"></span>
+      <span class="menu-icon-bar bar-three"></span>
+    </div>
+  </div>
+  <!-- JS moved to alp-console.js (block 3) -->
+  <script src="assets/alp-restrictions-data.js"></script>
+  <script src="assets/alp-console.js?v=20261011_inv_persist_v1"></script>
+  <script src="assets/alp-dialog.js?v=20261010_dialog_fix"></script>
+  <script src="assets/alp-enrollment.js?v=20261005e"></script>
+  <script src="assets/alp-table.js?v=20261004f"></script>
+  <script src="assets/alp-ws.js"></script>
+  <div id="alpToastContainer" class="alp-toast-container"></div>
+</body>
+
+</html>
