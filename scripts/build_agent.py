@@ -78,7 +78,9 @@ def embed_public_key():
     print(f"  embedded Ed25519 public key ({len(pub_hex)} hex chars)")
 
 
-def write_release_manifest() -> str:
+def write_release_manifest(min_sdk: str = "24",
+                           keep_launcher: bool = False,
+                           version_code: str = "1") -> str:
     """Strip android:testOnly AND the launcher icon from the manifest.
 
     A testOnly APK cannot be claimed as Device Owner (`dpm set-device-owner`
@@ -91,6 +93,10 @@ def write_release_manifest() -> str:
     Telephony.SECRET_CODE) or the console (backend/channel.py wakes it with
     `am start` before delivering envelopes — so the activity stays exported;
     a non-exported MainActivity breaks the console apply path).
+
+    min_sdk is written into the manifest copy itself (not left to the aapt
+    flag alone): the legacy build needs minSdk 21 baked in, or old phones
+    keep refusing it with INSTALL_FAILED_OLDER_SDK.
     """
     import re
     src = os.path.join(APP, "AndroidManifest.xml")
@@ -105,12 +111,18 @@ def write_release_manifest() -> str:
     m = activity_re.search(release)
     if not m:
         raise SystemExit("release manifest: MainActivity block not found")
-    block = m.group(0)
-    cleaned = re.sub(
-        r'<intent-filter>\s*<action android:name="android\.intent\.action\.MAIN" />'
-        r'\s*<category android:name="android\.intent\.category\.LAUNCHER" />'
-        r'\s*</intent-filter>', "", block)
-    release = release.replace(block, cleaned)
+    if not keep_launcher:
+        block = m.group(0)
+        cleaned = re.sub(
+            r'<intent-filter>\s*<action android:name="android\.intent\.action\.MAIN" />'
+            r'\s*<category android:name="android\.intent\.category\.LAUNCHER" />'
+            r'\s*</intent-filter>', "", block)
+        release = release.replace(block, cleaned)
+
+    release = re.sub(r'android:minSdkVersion="\d+"',
+                     'android:minSdkVersion="%s"' % min_sdk, release, count=1)
+    release = re.sub(r'android:versionCode="\d+"',
+                     'android:versionCode="%s"' % version_code, release, count=1)
 
     out = os.path.join(BUILD, "AndroidManifest.release.xml")
     os.makedirs(BUILD, exist_ok=True)
@@ -134,11 +146,37 @@ def main() -> None:
                          "Owner (dpm set-device-owner) + plain `adb install`")
     ap.add_argument("--apk", default=OUT_APK,
                     help=f"output APK path (default {OUT_APK})")
+    ap.add_argument("--min-sdk", default="24",
+                    help="minSdkVersion baked into the APK (default 24). Use "
+                         "21 with --apk android-agent/alp-agent-legacy.apk "
+                         "for the Android 5-6 legacy build: same guarded "
+                         "sources, installable where the standard build "
+                         "fails with INSTALL_FAILED_OLDER_SDK.")
+    ap.add_argument("--keep-launcher", action="store_true",
+                    help="keep the MAIN/LAUNCHER entry so the app stays in "
+                         "the app drawer. The standard build hides it (entry "
+                         "via dialer secret code only); the legacy build "
+                         "keeps it because carrier-customized dialers on old "
+                         "phones often never broadcast SECRET_CODE.")
+    ap.add_argument("--version-code", default="1",
+                    help="android:versionCode baked into the APK (default 1). "
+                         "Bump it whenever an update must actually replace "
+                         "the installed package: same-version reinstalls may "
+                         "be skipped by old PackageManagers (timestamp moves, "
+                         "components stay frozen).")
     args = ap.parse_args()
+
+    # build_agent chdirs into android-agent/ below: resolve a relative
+    # --apk against the REPO root now, or apksigner silently writes into
+    # android-agent/android-agent/ (or fails) instead of the requested path.
+    if not os.path.isabs(args.apk):
+        args.apk = os.path.normpath(os.path.join(ROOT, args.apk))
 
     ensure_keystore()
     embed_public_key()
-    manifest = write_release_manifest() if args.release else os.path.join(
+    manifest = write_release_manifest(args.min_sdk,
+                                      args.keep_launcher,
+                                      args.version_code) if args.release else os.path.join(
         APP, "AndroidManifest.xml")
 
     res_zip = os.path.join(BUILD, "res.zip")
@@ -151,9 +189,9 @@ def main() -> None:
          "-o", base_apk,
          "-I", ANDROID_JAR,
          "--manifest", manifest,
-         "--min-sdk-version", "24",
+         "--min-sdk-version", args.min_sdk,
          "--target-sdk-version", "35",
-         "--version-code", "1",
+         "--version-code", args.version_code,
          "--version-name", "0.1.0",
          "--java", gen,
          "--auto-add-overlay",
@@ -171,7 +209,7 @@ def main() -> None:
 
     dex_out = os.path.join(BUILD, "dex")
     os.makedirs(dex_out)
-    run([D8, "--lib", ANDROID_JAR, "--min-api", "24",
+    run([D8, "--lib", ANDROID_JAR, "--min-api", args.min_sdk,
          "--output", dex_out,
          "--release"] + _glob.glob(os.path.join(classes_dir, "**", "*.class"), recursive=True))
 
@@ -195,7 +233,8 @@ def main() -> None:
     run([APKSIGNER, "verify", "--print-certs", args.apk])
 
     size = os.path.getsize(args.apk)
-    print(f"APK built: {args.apk} ({size} bytes, release={bool(args.release)})")
+    print(f"APK built: {args.apk} ({size} bytes, release={bool(args.release)}, "
+          f"minSdk={args.min_sdk})")
 
 
 if __name__ == "__main__":

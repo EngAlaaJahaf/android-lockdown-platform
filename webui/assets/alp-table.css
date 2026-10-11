@@ -1,0 +1,1455 @@
+/* ==========================================================================
+   ALP Table — ManageEngine MDM Plus Authentic Table Styles
+   ========================================================================== */
+
+/* Responsive Horizontal Scrolling & Custom Scrollbar */
+.table-container {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin !important;
+  scrollbar-color: #cbd5e1 #f8fafc !important;
+}
+
+.ember-table-tables-container {
+  min-width: 100% !important;
+  width: max-content !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  display: block !important;
+}
+
+.ember-table-table-container,
+.ember-table-fixed-table-container,
+.ember-table-header-container,
+.ember-table-body-container,
+.ember-table-table-fixed-wrapper,
+.ember-table-right-table-block,
+.antiscroll-wrap,
+.antiscroll-inner {
+  width: max-content !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.ember-table-body-container::-webkit-scrollbar,
+.antiscroll-wrap::-webkit-scrollbar,
+.antiscroll-inner::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Custom modern scrollbars across all table wrappers */
+.table-container::-webkit-scrollbar,
+.tw::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar,
+.me-table-responsive-wrapper::-webkit-scrollbar {
+  height: 8px !important;
+  width: 8px !important;
+}
+
+.table-container::-webkit-scrollbar-track,
+.tw::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track,
+.me-table-responsive-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+.table-container::-webkit-scrollbar-thumb,
+.tw::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb,
+.me-table-responsive-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 4px !important;
+  transition: background 0.15s ease !important;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover,
+.tw::-webkit-scrollbar-thumb:hover,
+.table-responsive::-webkit-scrollbar-thumb:hover,
+.me-table-responsive-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+.tw,
+.table-responsive,
+.me-table-responsive-wrapper {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Header container and wrappers */
+.ember-table-header-container,
+.ember-table-table-fixed-wrapper,
+.ember-table-header-block {
+  height: 40px !important;
+  position: relative !important;
+}
+
+.ember-table-header-row {
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 40px !important;
+  background-color: var(--ecs-container-bg-primary, #f1f2f4) !important;
+  border-bottom: 1px solid #d8dce2 !important;
+  display: flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.ember-table-header-row::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Authentic Ember Table row */
+.ember-table-table-row {
+  position: absolute !important;
+  left: 0 !important;
+  height: 42px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.12s ease;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.ember-table-header-row {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ember-table-table-row.evenRow,
+.ember-table-table-row.oddRow,
+.ember-table-table-row.rowEven,
+.ember-table-table-row.rowOdd {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.ember-table-table-row>div {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.ember-table-table-row>.tbl-devices,
+.ember-table-table-row>.tbl-groups,
+.ember-table-table-row>.tbl-users,
+.ember-table-table-row>.tbl-profiles {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+.ember-table-table-row:hover {
+  background-color: #f1f7fe !important;
+}
+
+/* Authentic Ember Table cell */
+.ember-table-cell {
+  float: left;
+  font-size: 12.5px;
+  height: 42px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0 !important;
+  border-right: none !important;
+}
+
+/* Cell content text */
+.ember-table-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: #17181c;
+  line-height: 1.4;
+  padding: 0 8px;
+  width: 100%;
+}
+
+/* Header cells — exact ME MDM with vertical dividers */
+.ember-table-header-cell {
+  height: 40px !important;
+  background-color: var(--ecs-container-bg-primary, #f1f2f4) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  border-right: 1px solid #d8dce2 !important;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+  position: relative !important;
+  box-sizing: border-box !important;
+}
+
+.ember-table-header-cell .ember-table-content {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ember-table-header-cell.sortable {
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.ember-table-header-cell.sortable:hover {
+  background-color: #e5edf7 !important;
+  color: #0f172a !important;
+}
+
+.ember-table-header-cell.active-sort {
+  background-color: #edf5ff !important;
+  color: #0073b6 !important;
+}
+
+.ember-table-header-cell.active-sort .ember-table-content {
+  color: #0073b6 !important;
+  font-weight: 700 !important;
+}
+
+/* Column resizer drag handle */
+.alp-col-resizer {
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 8px !important;
+  cursor: col-resize !important;
+  z-index: 50 !important;
+  touch-action: none !important;
+}
+
+.alp-col-resizer::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 1px;
+  background: transparent;
+  transition: background 0.15s ease, width 0.15s ease;
+}
+
+.alp-col-resizer:hover::after,
+.alp-col-resizer.is-resizing::after {
+  background: #0073b6 !important;
+  width: 2px !important;
+}
+
+body.alp-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Sort arrow indicator */
+.alp-sort-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: 6px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #0073b6 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+}
+
+/* Sort ascending indicator arrow */
+.ember-table-header-cell.ember-table-column-sort-asc-indicator::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+  right: 6px;
+  top: 50%;
+  background: url("/images/arrow-narrow-up-15e64c1162b9db24fe8671d18c9651b1.svg") center center / 100% auto no-repeat transparent;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+}
+
+/* Sort descending indicator arrow */
+.ember-table-header-cell.ember-table-column-sort-desc-indicator::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+  right: 6px;
+  top: 50%;
+  background: url("/images/arrow-narrow-down-566b48f406a7b113df37d78a3af5dde6.svg") center center / 100% auto no-repeat transparent;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+}
+
+/* Checkbox column — Perfectly centered in both Header & Body */
+.ember-table-cell.rowselection-cell,
+.ember-table-header-cell.rowselection-cell,
+.rowselection-cell,
+.col-selection {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  width: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
+  flex: 0 0 50px !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.ember-table-cell.rowselection-cell .ember-table-content-container,
+.ember-table-header-cell.rowselection-cell .ember-table-content-container,
+.ember-table-cell.rowselection-cell .ember-table-content,
+.ember-table-header-cell.rowselection-cell .ember-table-content,
+.ember-table-cell.rowselection-cell .table-checkbox,
+.ember-table-header-cell.rowselection-cell .table-checkbox,
+.col-selection .ember-table-content-container,
+.col-selection .ember-table-content,
+.col-selection .table-checkbox {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+.rowselection-cell input[type="checkbox"],
+.rowselection-cell .ember-checkbox,
+.table-checkbox input[type="checkbox"],
+.table-checkbox .ember-checkbox,
+.col-selection input[type="checkbox"],
+.col-selection .ember-checkbox {
+  cursor: pointer !important;
+  accent-color: #0073b6 !important;
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  display: block !important;
+  position: relative !important;
+  vertical-align: middle !important;
+}
+
+/* ── Central Table Widths & Full-Width Responsive Stretching ── */
+.tbl-groups {
+  width: 100% !important;
+  min-width: 1290px !important;
+  box-sizing: border-box !important;
+}
+.tbl-devices {
+  width: 100% !important;
+  min-width: 1520px !important;
+  box-sizing: border-box !important;
+}
+.tbl-users {
+  width: 100% !important;
+  min-width: 1000px !important;
+  box-sizing: border-box !important;
+}
+.tbl-profiles {
+  width: 100% !important;
+  min-width: 1530px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Semantic Column Classes for ManageEngine Tables ── */
+
+/* GROUPS COLUMNS */
+.col-grp-name     { width: 180px !important; min-width: 140px !important; flex: 1.2 1 180px !important; }
+.col-grp-type     { width: 130px !important; min-width: 120px !important; flex: 0 0 130px !important; }
+.col-grp-members  { width: 110px !important; min-width: 110px !important; flex: 0 0 110px !important; text-align: center !important; justify-content: center !important; }
+.col-grp-profiles { width: 110px !important; min-width: 110px !important; flex: 0 0 110px !important; text-align: center !important; justify-content: center !important; }
+.col-grp-apps     { width: 110px !important; min-width: 110px !important; flex: 0 0 110px !important; text-align: center !important; justify-content: center !important; }
+.col-grp-content  { width: 120px !important; min-width: 120px !important; flex: 0 0 120px !important; text-align: center !important; justify-content: center !important; }
+.col-grp-modby    { width: 120px !important; min-width: 120px !important; flex: 0 0 120px !important; }
+.col-grp-modtime  { width: 140px !important; min-width: 140px !important; flex: 0 0 140px !important; }
+.col-grp-action   { width: 90px !important;  min-width: 90px !important;  flex: 0 0 90px !important;  text-align: center !important; justify-content: center !important; }
+.col-grp-category { width: 160px !important; min-width: 140px !important; flex: 1 1 160px !important; }
+
+/* DEVICES COLUMNS */
+.col-dev-user     { width: 130px !important; min-width: 130px !important; flex: 0 0 130px !important; }
+.col-dev-name     { width: 190px !important; min-width: 170px !important; flex: 1.2 1 190px !important; }
+.col-dev-email    { width: 190px !important; min-width: 170px !important; flex: 1.2 1 190px !important; }
+.col-dev-type     { width: 100px !important; min-width: 100px !important; flex: 0 0 100px !important; }
+.col-dev-platform { width: 110px !important; min-width: 110px !important; flex: 0 0 110px !important; }
+.col-dev-lastseen { width: 160px !important; min-width: 160px !important; flex: 0 0 160px !important; }
+.col-dev-groups   { width: 130px !important; min-width: 130px !important; flex: 0 0 130px !important; text-align: center !important; justify-content: center !important; }
+.col-dev-profiles { width: 100px !important; min-width: 100px !important; flex: 0 0 100px !important; text-align: center !important; justify-content: center !important; }
+.col-dev-action   { width: 70px !important;  min-width: 70px !important;  flex: 0 0 70px !important;  text-align: center !important; justify-content: center !important; }
+.col-dev-serial   { width: 140px !important; min-width: 140px !important; flex: 0 0 140px !important; }
+.col-dev-os       { width: 90px !important;  min-width: 90px !important;  flex: 0 0 90px !important;  text-align: center !important; justify-content: center !important; }
+.col-dev-dispname { width: 150px !important; min-width: 140px !important; flex: 1 1 150px !important; }
+
+/* USERS COLUMNS */
+.col-usr-name     { width: 200px !important; min-width: 160px !important; flex: 1 1 200px !important; }
+.col-usr-role     { width: 200px !important; min-width: 160px !important; flex: 1 1 200px !important; }
+.col-usr-devices  { width: 140px !important; min-width: 130px !important; flex: 0 0 140px !important; text-align: center !important; justify-content: center !important; }
+.col-usr-email    { width: 260px !important; min-width: 200px !important; flex: 1.5 1 260px !important; }
+.col-usr-status   { width: 120px !important; min-width: 110px !important; flex: 0 0 120px !important; text-align: center !important; justify-content: center !important; }
+.col-usr-action   { width: 80px !important;  min-width: 80px !important;  flex: 0 0 80px !important;  text-align: center !important; justify-content: center !important; }
+
+/* PROFILES COLUMNS */
+.col-prof-name        { width: 240px !important; min-width: 200px !important; flex: 1.5 1 240px !important; }
+.col-prof-platform    { width: 110px !important; min-width: 110px !important; flex: 0 0 110px !important; }
+.col-prof-createdby   { width: 120px !important; min-width: 120px !important; flex: 0 0 120px !important; }
+.col-prof-createdtime { width: 160px !important; min-width: 160px !important; flex: 0 0 160px !important; }
+.col-prof-modtime     { width: 160px !important; min-width: 160px !important; flex: 0 0 160px !important; }
+.col-prof-ver         { width: 90px !important;  min-width: 90px !important;  flex: 0 0 90px !important;  text-align: center !important; justify-content: center !important; }
+.col-prof-groups      { width: 120px !important; min-width: 120px !important; flex: 0 0 120px !important; text-align: center !important; justify-content: center !important; }
+.col-prof-devices     { width: 120px !important; min-width: 120px !important; flex: 0 0 120px !important; text-align: center !important; justify-content: center !important; }
+.col-prof-status      { width: 130px !important; min-width: 120px !important; flex: 0 0 130px !important; }
+.col-prof-action      { width: 70px !important;  min-width: 70px !important;  flex: 0 0 70px !important;  text-align: center !important; justify-content: center !important; }
+.col-prof-type        { width: 140px !important; min-width: 130px !important; flex: 1 1 140px !important; }
+
+/* Centered cell content alignments for both header and rows */
+.col-grp-members .ember-table-content,
+.col-grp-profiles .ember-table-content,
+.col-grp-apps .ember-table-content,
+.col-grp-content .ember-table-content,
+.col-grp-action .ember-table-content,
+.col-dev-groups .ember-table-content,
+.col-dev-profiles .ember-table-content,
+.col-dev-action .ember-table-content,
+.col-dev-os .ember-table-content,
+.col-usr-devices .ember-table-content,
+.col-usr-status .ember-table-content,
+.col-usr-action .ember-table-content,
+.col-prof-ver .ember-table-content,
+.col-prof-groups .ember-table-content,
+.col-prof-devices .ember-table-content,
+.col-prof-action .ember-table-content {
+  text-align: center !important;
+  justify-content: center !important;
+  display: flex !important;
+  width: 100% !important;
+}
+
+.ember-table-header-cell.col-grp-members .ember-table-content,
+.ember-table-header-cell.col-grp-profiles .ember-table-content,
+.ember-table-header-cell.col-grp-apps .ember-table-content,
+.ember-table-header-cell.col-grp-content .ember-table-content,
+.ember-table-header-cell.col-grp-action .ember-table-content,
+.ember-table-header-cell.col-dev-groups .ember-table-content,
+.ember-table-header-cell.col-dev-profiles .ember-table-content,
+.ember-table-header-cell.col-dev-action .ember-table-content,
+.ember-table-header-cell.col-dev-os .ember-table-content,
+.ember-table-header-cell.col-usr-devices .ember-table-content,
+.ember-table-header-cell.col-usr-status .ember-table-content,
+.ember-table-header-cell.col-usr-action .ember-table-content,
+.ember-table-header-cell.col-prof-ver .ember-table-content,
+.ember-table-header-cell.col-prof-groups .ember-table-content,
+.ember-table-header-cell.col-prof-devices .ember-table-content,
+.ember-table-header-cell.col-prof-action .ember-table-content {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* ── Sorted body column ── */
+.sortedColumn .ember-table-content {
+  color: #e07817 !important;
+  /* orange — same as ME MDM sorted column values */
+}
+
+/* ── ME MDM link style ── */
+.alp-link {
+  color: #0073b6 !important;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline;
+}
+
+.alp-link:hover {
+  text-decoration: underline;
+  color: #005a8e !important;
+}
+
+/* ── Action icon — ME MDM authentic action-dropdown oval ── */
+.renderMenuPopup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  user-select: none;
+}
+
+.renderMenuPopup:hover {
+  background: transparent !important;
+}
+
+.renderMenuPopup svg {
+  width: 24px !important;
+  height: 30px !important;
+  fill: rgb(80, 85, 100) !important;
+  display: block;
+}
+
+/* ── Fallback horizontal ellipsis action icon ── */
+.me-row-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.me-row-action-icon:hover {
+  background: #e9ecef;
+  border-color: #d1d5db;
+}
+
+.me-row-action-icon .svg-bucket-icon,
+.me-row-action-icon svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: #64748b;
+  display: block;
+}
+
+/* ── ME MDM Authentic actionPopUp ── */
+.actionPopUp {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #d5d7dd;
+  box-shadow: 0 0 4px 2px rgba(85, 85, 85, 0.12);
+  border-radius: 0;
+  padding: 4px 0;
+  min-width: 175px;
+  list-style: none;
+  margin: 2px 0 0 0;
+}
+
+.actionPopUp.show,
+.actionPopUp.open {
+  display: block;
+}
+
+.actionPopUp .ui-menu-item {
+  padding: 7px 18px 7px 22px;
+  font-size: 13px;
+  color: #17181c;
+  cursor: pointer;
+  line-height: 20px;
+  white-space: nowrap;
+  list-style: none;
+  text-align: left;
+}
+
+.actionPopUp .ui-menu-item:hover {
+  background: #edf0f5;
+  color: #0073b6;
+}
+
+/* ── Authentic ManageEngine MDM actionPopUp ── */
+.menu.actionPopUp.ui-menu,
+.me-row-popup-menu {
+  display: none;
+  position: fixed;
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 0 2px 2px rgba(85, 85, 85, 0.1) !important;
+  border-radius: 2px !important;
+  padding: 0 !important;
+  min-width: 150px !important;
+  width: 150px !important;
+  list-style: none !important;
+  margin: 0 !important;
+  z-index: 99999 !important;
+}
+
+.menu.actionPopUp.ui-menu.show,
+.me-row-popup-menu.show,
+.me-row-popup-menu.open {
+  display: block !important;
+}
+
+.menu.actionPopUp.ui-menu .ui-menu-item,
+.me-row-popup-menu .ui-menu-item,
+.me-row-popup-item {
+  padding: 7px 17px 7px 25px !important;
+  font-size: 13px !important;
+  color: rgb(23, 24, 28) !important;
+  cursor: pointer !important;
+  height: 28px !important;
+  line-height: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.menu.actionPopUp.ui-menu .ui-menu-item:hover,
+.me-row-popup-menu .ui-menu-item:hover,
+.me-row-popup-item:hover {
+  background: #f0f7ff !important;
+  color: #0073b6 !important;
+}
+
+.menu.actionPopUp.ui-menu .dropDownPointer,
+.me-row-popup-menu .dropDownPointer {
+  position: absolute;
+  top: 10px;
+  right: 0px;
+  width: 0;
+  height: 0;
+}
+
+.menu.actionPopUp.ui-menu .dropDownPointer:before,
+.me-row-popup-menu .dropDownPointer:before,
+.menu.actionPopUp.ui-menu .dropDownPointer:after,
+.me-row-popup-menu .dropDownPointer:after {
+  content: "";
+  position: absolute;
+  border-style: solid;
+}
+
+/* Default: menu is placed to the left of button, arrow points right towards button */
+.menu.actionPopUp.ui-menu .dropDownPointer:before,
+.me-row-popup-menu .dropDownPointer:before {
+  border-color: transparent transparent transparent #d1d5db;
+  border-width: 8px;
+  margin-top: 0px;
+  margin-left: 0px;
+  left: 0px;
+  top: 0px;
+}
+
+.menu.actionPopUp.ui-menu .dropDownPointer:after,
+.me-row-popup-menu .dropDownPointer:after {
+  border-color: transparent transparent transparent #ffffff;
+  border-width: 8px;
+  margin-top: 0px;
+  margin-left: -1px;
+  left: 0px;
+  top: 0px;
+}
+
+/* If menu is flipped to the right of button, arrow points left towards button */
+.menu.actionPopUp.ui-menu[data-align="right"] .dropDownPointer,
+.me-row-popup-menu[data-align="right"] .dropDownPointer {
+  left: -8px;
+  right: auto;
+}
+
+.menu.actionPopUp.ui-menu[data-align="right"] .dropDownPointer:before,
+.me-row-popup-menu[data-align="right"] .dropDownPointer:before {
+  border-color: transparent #d1d5db transparent transparent;
+  left: auto;
+  right: 0px;
+}
+
+.menu.actionPopUp.ui-menu[data-align="right"] .dropDownPointer:after,
+.me-row-popup-menu[data-align="right"] .dropDownPointer:after {
+  border-color: transparent #ffffff transparent transparent;
+  left: auto;
+  right: -1px;
+}
+
+.alp-danger-item {
+  color: #dc2626 !important;
+}
+
+.alp-danger-item:hover {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+/* ── Dropdown wrap (relative positioning for popup) ── */
+.me-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── ME MDM Submenu Toolbar (Create Group, Action, etc.) ── */
+.sub-menu-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 0 0 12px 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.devices-menu {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.table-display-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 30px !important;
+  padding: 5px 10px !important;
+  margin: 0 !important;
+  background: #e3e4e9 !important;
+  border: 0.8px solid #d5d7dd !important;
+  border-radius: 3px !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: #17181c !important;
+  cursor: pointer !important;
+  box-shadow: 1px 1px 3px 0px rgba(85, 85, 85, 0.1) !important;
+  user-select: none !important;
+  transition: background 0.15s, border-color 0.15s !important;
+}
+
+.table-display-button:hover {
+  background: #dadbe1 !important;
+  border-color: #c2c5cd !important;
+}
+
+.table-display-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: #475569 !important;
+}
+
+.table-display-button svg.dropDownSvg {
+  width: 12px !important;
+  height: 12px !important;
+  margin-left: 2px !important;
+}
+
+/* ── Middle Roadmap link ── */
+.road-map-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  color: #0073b6 !important;
+}
+
+.road-map-link a {
+  color: #0073b6 !important;
+  text-decoration: none !important;
+  font-size: 13px !important;
+}
+
+.road-map-link a:hover {
+  text-decoration: underline !important;
+}
+
+.road-map-link svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: #0073b6 !important;
+}
+
+/* ── Right side tools & total count ── */
+.sub-menu-container-right {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.total-count {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #334155 !important;
+}
+
+.mdm-mc-menu-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 27px !important;
+  border: 0.8px solid #d5d7dd !important;
+  border-radius: 3px !important;
+  overflow: hidden !important;
+  background: #e3e4e9 !important;
+}
+
+.mdm-mc-menu-btn .tableBtn-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 27px !important;
+  cursor: pointer !important;
+  background: #e3e4e9 !important;
+  border-right: 0.8px solid #d5d7dd !important;
+  transition: background 0.15s !important;
+}
+
+.mdm-mc-menu-btn .tableBtn-primary:last-child {
+  border-right: none !important;
+}
+
+.mdm-mc-menu-btn .tableBtn-primary:hover {
+  background: #dadbe1 !important;
+}
+
+.mdm-mc-menu-btn .tableBtn-primary svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: #475569 !important;
+}
+
+/* ── Footer pagination ── */
+.navigation-container.footer-pagination {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  height: 35px !important;
+  padding: 0 16px !important;
+  background: #f1f2f4 !important;
+  border: 0.8px solid #e3e4e9 !important;
+  border-top: none !important;
+  border-radius: 0 0 4px 4px !important;
+}
+
+.paginationView {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.pageSummary {
+  font-size: 13px !important;
+  color: #64748b !important;
+  display: inline-block !important;
+  margin-right: 6px !important;
+}
+
+.rows-per-page {
+  font-size: 13px !important;
+  color: #334155 !important;
+  background: #f1f2f4 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 3px !important;
+  padding: 2px 6px !important;
+  height: 24px !important;
+  cursor: pointer !important;
+}
+
+.pagination-count {
+  font-size: 13px !important;
+  color: #334155 !important;
+  white-space: nowrap !important;
+}
+
+.pagination.pageView {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.pagination.pageView li {
+  display: inline-flex !important;
+}
+
+.pagination.pageView li a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  color: #475569 !important;
+  border-radius: 2px !important;
+}
+
+.pagination.pageView li a:hover:not(.disabled) {
+  background: #e2e8f0 !important;
+}
+
+.pagination.pageView li.disabled a {
+  opacity: 0.4 !important;
+  cursor: default !important;
+}
+
+/* ── Empty state ── */
+.alp-empty-row {
+  border-bottom: none !important;
+  background: #fff !important;
+}
+
+.alp-empty-msg {
+  text-align: center;
+  padding: 40px 32px;
+  color: #94a3b8;
+  font-size: 13px;
+  width: 100%;
+}
+
+/* ── Table containers ── */
+.ember-table-tables-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.ember-table-table-container {
+  width: 100%;
+}
+
+.ember-table-body-container {
+  overflow-x: hidden !important;
+  width: 100%;
+}
+
+.ember-table-table-fixed-wrapper {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.ember-table-right-table-block {
+  display: block;
+  width: 100%;
+}
+
+/* ── Loading/error states ── */
+.alp-table-loading {
+  text-align: center;
+  padding: 24px;
+  color: #94a3b8;
+  font-size: 13px;
+  width: 100%;
+}
+
+.alp-table-error {
+  text-align: center;
+  padding: 24px;
+  color: #ef4444;
+  font-size: 13px;
+  width: 100%;
+}
+
+/* ── Hide native scrollbar to match ManageEngine antiscroll ── */
+.ember-table-body-container,
+.ember-table-tables-container,
+.ember-table-table-fixed-wrapper {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ember-table-body-container::-webkit-scrollbar,
+.ember-table-tables-container::-webkit-scrollbar,
+.ember-table-table-fixed-wrapper::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ── ManageEngine Msg Board (Alert banner) ── */
+.msg_board_container {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.msg_board_wrapper {
+  background: #fff8ec;
+  border: 1px solid #ffd599;
+  border-left: 4px solid #e07817;
+  border-radius: 4px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.msg_board_left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.msg_board_warning_icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e07817;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.msg_board_title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1e293b;
+  margin-right: 6px;
+}
+
+.msg_board_desc {
+  font-size: 13px;
+  color: #475569;
+}
+
+/* ── ManageEngine Quick Links & How To's Card ── */
+.quick-links-card {
+  margin-top: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 16px 20px;
+}
+
+.quick-links-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.quick-links-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.quick-links-toggle {
+  font-size: 12px;
+  color: #0073b6;
+  cursor: pointer;
+  user-select: none;
+}
+
+.quick-links-toggle:hover {
+  text-decoration: underline;
+}
+
+.ql-tab-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0073b6;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #0073b6;
+  display: inline-block;
+  padding-bottom: 4px;
+}
+
+.ql-list {
+  margin: 8px 0 0 20px;
+  padding: 0;
+  font-size: 12.5px;
+  color: #334155;
+  line-height: 2.2;
+}
+
+.ql-footer-links {
+  text-align: right;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #0073b6;
+}
+
+/* ── Floating Action Help Button ── */
+.floating-action-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0073b6;
+  box-shadow: 0 4px 12px rgba(0, 115, 182, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 900;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.floating-action-fab:hover {
+  background: #005a8e;
+  transform: scale(1.05);
+}
+
+.floating-action-fab svg {
+  width: 20px;
+  height: 20px;
+  fill: #ffffff;
+}
+
+/* ── ManageEngine Authentic Subtabs Slider ── */
+.summaryTab {
+  position: relative !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  border-bottom: 1px solid #d1d5db !important;
+  height: 32px !important;
+}
+
+.summaryTab li {
+  list-style: none !important;
+  margin-right: 23px !important;
+  padding: 0 !important;
+  display: inline-block !important;
+}
+
+.summaryTab li a {
+  font-size: 14px !important;
+  color: var(--ecs-base-clr-primary, #334155) !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  line-height: 28px !important;
+  padding: 0 2px !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease !important;
+}
+
+.summaryTab li a:hover {
+  color: var(--ecs-base-clr-active, #0073b6) !important;
+}
+
+.summaryTab li a.active {
+  color: var(--ecs-base-clr-active, #0073b6) !important;
+  font-weight: 600 !important;
+}
+
+.summaryTab .slider {
+  position: absolute !important;
+  bottom: -1px !important;
+  height: 2px !important;
+  background-color: #4276e0 !important;
+  transition: left 0.2s ease, width 0.2s ease !important;
+  z-index: 2 !important;
+  display: block !important;
+  border-radius: 1px !important;
+}
+
+
+
+/* ── Scroll frame for standard tables ──────────────────────────────────────
+   The engine wraps a bare <table> in `.tw`, but nothing ever gave that class an
+   overflow rule, so a wide table pushed the whole page sideways instead of
+   scrolling inside its own frame. `.alp-table-scroll` is the frame: it clips
+   horizontally and never lets a column squash the layout. The table inside
+   keeps its natural content width (set by the engine to `max-content`).
+   ------------------------------------------------------------------------- */
+.alp-table-scroll {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.alp-table-scroll>table.tableComponent,
+.alp-table-scroll>table.me-table,
+.alp-table-scroll>table.me-authentic-table {
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+/* ── Universal Authentic ManageEngine Table (.tableComponent) ── */
+.tableComponent,
+.me-table,
+.me-authentic-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #ffffff !important;
+  font-family: 'Lato', sans-serif !important;
+  font-size: 13px !important;
+}
+
+.tableComponent th,
+.tableComponent tr.tableHeader th,
+.me-table th,
+.me-authentic-table th {
+  background-color: var(--ecs-container-bg-primary, #f1f2f4) !important;
+  color: #334155 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 10px 12px !important;
+  border-bottom: 1px solid #d8dce2 !important;
+  border-right: 1px solid #e2e8f0 !important;
+  position: relative !important;
+  user-select: none !important;
+  text-align: left;
+  box-sizing: border-box !important;
+}
+
+.tableComponent th:last-child,
+.me-table th:last-child,
+.me-authentic-table th:last-child {
+  border-right: none !important;
+}
+
+.tableComponent th.sortable,
+.me-table th.sortable,
+.me-authentic-table th.sortable {
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.tableComponent th.sortable:hover,
+.me-table th.sortable:hover,
+.me-authentic-table th.sortable:hover {
+  background-color: #e5edf7 !important;
+  color: #0f172a !important;
+}
+
+.tableComponent th.active-sort,
+.me-table th.active-sort,
+.me-authentic-table th.active-sort {
+  background-color: #edf5ff !important;
+  color: #0073b6 !important;
+}
+
+.tableComponent td,
+.tableComponent tr.evenRow td,
+.tableComponent tr.oddRow td,
+.me-table td,
+.me-authentic-table td {
+  padding: 10px 12px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #1e293b !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+}
+
+.tableComponent tbody tr:hover,
+.tableComponent tr.evenRow:hover,
+.tableComponent tr.oddRow:hover,
+.me-table tbody tr:hover,
+.me-authentic-table tbody tr:hover {
+  background-color: #f1f7fe !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AUTHENTIC TABLE TOOLBAR INTERACTIONS (Search, ColChooser, Export)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Refresh spin animation */
+@keyframes alpSpin {
+  100% { transform: rotate(360deg); }
+}
+.alp-spinning svg {
+  animation: alpSpin 0.75s linear infinite;
+}
+
+/* Inline Table Search Box */
+.alp-table-search-bar {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin-right: 8px;
+  background: #ffffff;
+  border: 1px solid #0073b6;
+  border-radius: 3px;
+  padding: 2px 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+.alp-table-search-bar.alp-search-hidden {
+  display: none !important;
+}
+.alp-table-search-bar input.alp-search-input {
+  border: none !important;
+  outline: none !important;
+  font-size: 12px !important;
+  font-family: 'Lato', sans-serif !important;
+  padding: 3px 6px !important;
+  width: 170px !important;
+  color: #1e293b !important;
+  background: transparent !important;
+}
+.alp-table-search-bar .alp-search-clear {
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 0 4px;
+  line-height: 1;
+  user-select: none;
+}
+.alp-table-search-bar .alp-search-clear:hover {
+  color: #dc2626;
+}
+
+/* ManageEngine Column Chooser Popover */
+.alp-cc-popover {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 9999;
+  width: 250px;
+  max-height: 380px;
+  font-family: 'Lato', sans-serif;
+  font-size: 12.5px;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: alpFadeIn 0.15s ease-out;
+}
+@keyframes alpFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.alp-cc-header {
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 12px;
+  color: #334155;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.alp-cc-header span {
+  font-weight: 700;
+}
+.alp-cc-close {
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1;
+}
+.alp-cc-close:hover {
+  color: #0f172a;
+}
+.alp-cc-list {
+  padding: 8px 12px;
+  overflow-y: auto;
+  max-height: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.alp-cc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+.alp-cc-item:hover {
+  background: #f1f5f9;
+}
+.alp-cc-item input[type="checkbox"] {
+  cursor: pointer;
+  margin: 0;
+  accent-color: #0073b6;
+}
+.alp-cc-footer {
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+}
+.alp-cc-btn {
+  font-size: 11.5px;
+  color: #0073b6;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 2px 4px;
+}
+.alp-cc-btn:hover {
+  text-decoration: underline;
+}
+
+/* ManageEngine Export Dropdown Menu */
+.alp-export-menu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  z-index: 9999;
+  width: 170px;
+  padding: 4px 0;
+  font-family: 'Lato', sans-serif;
+  font-size: 12.5px;
+  animation: alpFadeIn 0.12s ease-out;
+}
+.alp-export-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.alp-export-item:hover {
+  background: #f1f7fe;
+  color: #0073b6;
+}
+.alp-export-item svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}

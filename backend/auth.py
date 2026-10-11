@@ -91,7 +91,7 @@ def _b32_decode(s: str) -> bytes:
 # Sessions
 # ---------------------------------------------------------------------------
 
-def create_session(admin_id: int, ttl_seconds: int = 1800) -> str:
+def create_session(admin_id: int, ttl_seconds: int = 86400 * 7) -> str:
     token = secrets.token_urlsafe(32)
     with connect() as c:
         c.execute(
@@ -109,8 +109,15 @@ def resolve_session(token: str) -> Optional[dict]:
             "JOIN roles r ON r.id=a.role_id WHERE s.token=? AND s.revoked=0", (token,)).fetchone()
     if not r:
         return None
-    if r["expires_at"] < time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()):
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    if r["expires_at"] < now_iso:
         return None
+    try:
+        new_exp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 86400 * 7))
+        with connect() as c:
+            c.execute("UPDATE sessions SET expires_at=? WHERE token=?", (new_exp, token))
+    except Exception:
+        pass
     return dict(r)
 
 

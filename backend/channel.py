@@ -24,6 +24,9 @@ REMOTE_FILES = {
     "CLEAR_POLICY": "/data/local/tmp/alp_rollback.json",
     "GET_STATE": "/data/local/tmp/alp_req_state.json",
     "WITHDRAW_DO": "/data/local/tmp/alp_withdraw.json",
+    "PROVISION_PIN": "/data/local/tmp/alp_pin.json",
+    "EMERGENCY_TOKEN": "/data/local/tmp/alp_emergency.json",
+    "EMERGENCY_SECRET": "/data/local/tmp/alp_offline_secret.json",
 }
 
 

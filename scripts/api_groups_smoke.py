@@ -161,11 +161,18 @@ try:
         # The frontend gates Install/Register/Group behind agent_installed and
         # renders next_step verbatim; every entry must carry the full key set
         # even with no ADB attached.
-        for key in ("serial", "state", "model", "ready", "registered",
-                    "agent_installed", "next_step", "next_step_reason"):
+for key in ("serial", "state", "model", "ready", "registered",
+                     "agent_installed", "device_owner", "device_owner_state",
+                     "next_step", "next_step_reason"):
             assert key in d, "detected entry is missing %r" % key
         assert isinstance(d["agent_installed"], bool)
-        assert d["next_step"] in ("authorize", "install", "register", "group")
+        assert isinstance(d["device_owner"], bool)
+        assert d["next_step"] in ("authorize", "install", "register",
+                                  "provision_owner", "group")
+        if d["next_step"] == "group":
+            assert d["device_owner"], (
+                "Group is only offered once Android proved device ownership — "
+                "otherwise policies deploy on paper and enforce nothing")
     print("  detected entries: %d (all carry agent_installed + next_step)"
           % len(p["data"]))
 

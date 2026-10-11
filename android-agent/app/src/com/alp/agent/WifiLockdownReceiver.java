@@ -45,8 +45,27 @@ public class WifiLockdownReceiver extends BroadcastReceiver {
         if (dpm == null || !dpm.isDeviceOwnerApp(context.getPackageName())) {
             return;
         }
-        Bundle cur = dpm.getUserRestrictions(admin);
-        if (cur != null && cur.getBoolean(UserManager.DISALLOW_CONFIG_WIFI)) {
+        boolean blocked;
+        if (android.os.Build.VERSION.SDK_INT >= 24) {
+            // getUserRestrictions() does not exist before API 24.
+            boolean seen = false;
+            blocked = false;
+            try {
+                Bundle cur = dpm.getUserRestrictions(admin);
+                seen = true;
+                blocked = cur != null
+                        && cur.getBoolean(UserManager.DISALLOW_CONFIG_WIFI);
+            } catch (Exception ignored) {
+            }
+            if (!seen) {
+                blocked = AlpOps.wifiBlockCommitted(context);
+            }
+        } else {
+            // Legacy: no reader available — trust the committed definition
+            // (written only from verified envelopes).
+            blocked = AlpOps.wifiBlockCommitted(context);
+        }
+        if (blocked) {
             android.util.Log.d("ALP", "wifi radio ENABLED while blocked — snapping back OFF");
             AlpOps.ensureWifiOff(context);
         }

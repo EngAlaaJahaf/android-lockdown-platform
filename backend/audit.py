@@ -71,17 +71,24 @@ class AuditLog:
         return entry_id
 
     def _last_hash(self) -> str:
+        """Hash of the newest chain link. Legacy/unhashed rows are skipped so a
+        pre-existing NULL never poisons every subsequent entry with a TypeError."""
         with connect(self.db_path) as c:
-            r = c.execute("SELECT hash FROM audit_logs ORDER BY rowid DESC LIMIT 1").fetchone()
-            return r["hash"] if r else "GENESIS"
+            r = c.execute("SELECT hash FROM audit_logs WHERE hash IS NOT NULL "
+                          "AND hash <> '' ORDER BY rowid DESC LIMIT 1").fetchone()
+            return r["hash"] if r and r["hash"] else "GENESIS"
 
     def tamper_check(self) -> dict:
         """Walk the chain; report broken links and modified rows."""
         with connect(self.db_path) as c:
             rows = c.execute("SELECT * FROM audit_logs ORDER BY rowid ASC").fetchall()
         broken = []
+        unhashed = []
         prev_own = "GENESIS"
         for r in rows:
+            if not r["hash"]:
+                unhashed.append(r["entry_id"])
+                continue
             if r["prev_hash"] != prev_own:
                 broken.append(f"{r['entry_id']}: prev pointer mismatch")
             recomputed = hashlib.sha256(
@@ -89,7 +96,8 @@ class AuditLog:
             if recomputed != r["hash"]:
                 broken.append(f"{r['entry_id']}: row modified")
             prev_own = r["hash"]
-        return {"links": len(rows), "broken": len(broken), "detail": broken}
+        return {"links": len(rows) - len(unhashed), "broken": len(broken),
+                "detail": broken, "unhashed_legacy": unhashed}
 
     def tail(self, limit: int = 50) -> list:
         with connect(self.db_path) as c:

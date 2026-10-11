@@ -4,6 +4,7 @@
         <force-lock />
         <limit-password />
         <watch-login />
+        <reset-password />
         <disable-camera />
         <disable-keyguard-features />
     </uses-policies>

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 
 import javax.crypto.SecretKeyFactory;
@@ -110,7 +109,7 @@ final class PinGuard {
             byte[] salt = Base64.decode(p.getString(K_SALT, ""), Base64.NO_WRAP);
             byte[] want = Base64.decode(p.getString(K_HASH, ""), Base64.NO_WRAP);
             byte[] got = pbkdf2(pin, salt, ITERATIONS, KEY_BYTES);
-            if (MessageDigest.isEqual(want, got)) {
+            if (Cmp.equals(want, got)) {
                 p.edit()
                         .putInt(K_FAILS, 0)
                         .putLong(K_LOCK_UNTIL, 0L)

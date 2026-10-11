@@ -193,5 +193,174 @@ class RecoveryFlows(unittest.TestCase):
                         mfa_ok=True, approval={}, serial="")
 
 
+class EmergencyTokenTests(unittest.TestCase):
+    """Offline emergency uninstall tokens: issue-once, hash-only storage,
+    single-use burn, expiry and revocation."""
+
+    def setUp(self):
+        self._prev_env = os.environ.get("ALP_DB")
+        self.db = _fresh_db()
+        with connect() as c:
+            c.execute(
+                "INSERT OR IGNORE INTO devices (device_id, serial, model, "
+                "android_version, api_level) VALUES (?,?,?,?,?)",
+                ("DEV-EMG", "SEREMG1", "Pixel", 14, 34))
+
+    def tearDown(self):
+        if self._prev_env is None:
+            os.environ.pop("ALP_DB", None)
+        else:
+            os.environ["ALP_DB"] = self._prev_env
+
+    def test_issue_shows_plaintext_once_and_stores_hash_only(self):
+        import hashlib
+        from backend import emergency as emg
+        out = emg.issue_token("DEV-EMG", created_by="pytest")
+        self.assertTrue(out["token"].startswith("AE-"))
+        self.assertTrue(out["token_id"].startswith("ET-"))
+        with connect() as c:
+            row = c.execute("SELECT * FROM emergency_tokens WHERE token_id=?",
+                            (out["token_id"],)).fetchone()
+        self.assertIsNotNone(row)
+        self.assertNotIn(out["token"], dict(row).values())
+        self.assertEqual(row["token_sha256"],
+                         hashlib.sha256(out["token"].encode()).hexdigest())
+
+    def test_verify_burns_single_use(self):
+        from backend import emergency as emg
+        tok = emg.issue_token("DEV-EMG")["token"]
+        self.assertTrue(emg.verify_token("DEV-EMG", tok)["ok"])
+        again = emg.verify_token("DEV-EMG", tok)
+        self.assertFalse(again["ok"])
+        self.assertIn("used", again["reason"])
+
+    def test_unknown_device_and_token_refused(self):
+        from backend import emergency as emg
+        with self.assertRaises(ValueError):
+            emg.issue_token("NOPE")
+        bad = emg.verify_token("DEV-EMG", "AE-0000-0000")
+        self.assertFalse(bad["ok"])
+
+    def test_expired_and_revoked_refused(self):
+        from backend import emergency as emg
+        t1 = emg.issue_token("DEV-EMG")["token"]
+        with connect() as c:
+            c.execute("UPDATE emergency_tokens SET expires_at='2000-01-01 "
+                      "00:00:00' WHERE token_sha256=?",
+                      (__import__("hashlib").sha256(t1.encode()).hexdigest(),))
+        self.assertIn("expired", emg.verify_token("DEV-EMG", t1)["reason"])
+        t2 = emg.issue_token("DEV-EMG")
+        emg.revoke_token(t2["token_id"])
+        self.assertIn("revoked",
+                      emg.verify_token("DEV-EMG", t2["token"])["reason"])
+        with self.assertRaises(ValueError):
+            emg.revoke_token("ET-deadbeef")
+
+    def test_list_hides_hashes(self):
+        from backend import emergency as emg
+        emg.issue_token("DEV-EMG", label="spare")
+        rows = emg.list_tokens("DEV-EMG")
+        self.assertEqual(len(rows), 1)
+        self.assertNotIn("token_sha256", rows[0])
+        self.assertEqual(rows[0]["label"], "spare")
+
+    def test_purpose_scoping(self):
+        from backend import emergency as emg
+        out = emg.issue_token("DEV-EMG", purpose="rollback")
+        self.assertEqual(out["purpose"], "rollback")
+        ok = emg.verify_token("DEV-EMG", out["token"])
+        self.assertTrue(ok["ok"])
+        self.assertEqual(ok["purpose"], "rollback")
+        with self.assertRaises(ValueError):
+            emg.issue_token("DEV-EMG", purpose="nuke-everything")
+
+    def test_offline_codes_derive_and_verify(self):
+        """memdm-style offline codes: deterministic per (secret, purpose,
+        window), accepted ±1 step, rejected outside or for wrong purpose."""
+        import time
+        from backend import emergency as emg
+        from backend.recovery_credentials import RecoveryVault
+        RecoveryVault().ensure_for("DEV-EMG")
+        now = time.time()
+        a = emg.offline_code("DEV-EMG", "rollback", when=now)
+        b = emg.offline_code("DEV-EMG", "rollback", when=now)
+        self.assertEqual(a["code"], b["code"])
+        self.assertRegex(a["code"], r"^\d{8}$")
+        self.assertTrue(emg.verify_offline_code("DEV-EMG", "rollback",
+                                                a["code"], when=now))
+        # neighboring windows accepted (wrong phone clocks tolerated)
+        self.assertTrue(emg.verify_offline_code(
+            "DEV-EMG", "rollback", a["code"],
+            when=now + emg.OFFLINE_STEP_SECONDS))
+        # far window rejected
+        self.assertFalse(emg.verify_offline_code(
+            "DEV-EMG", "rollback", a["code"],
+            when=now + 10 * emg.OFFLINE_STEP_SECONDS))
+        # purpose separation: a rollback code never opens withdraw
+        self.assertFalse(emg.verify_offline_code("DEV-EMG",
+                                                 "withdraw_uninstall",
+                                                 a["code"], when=now))
+        self.assertFalse(emg.verify_offline_code("DEV-EMG", "rollback",
+                                                 "00000000", when=now))
+        with self.assertRaises(ValueError):
+            emg.offline_code("DEV-EMG", "nuke-everything", when=now)
+        with self.assertRaises(ValueError):
+            emg.offline_code("NOPE", "rollback", when=now)
+
+    def test_offline_vectors_stable_across_calls(self):
+        """Pinned derivation: same secret+purpose+counter always yields the
+        same code (the agent implements this byte-identically in
+        EmergencyCodes.java; any drift breaks offline verification, so this
+        test guards the formula)."""
+        from backend import emergency as emg
+        secret = bytes(range(32))
+        c1 = emg._offline_code_for(secret, "rollback", 1000)
+        c2 = emg._offline_code_for(secret, "rollback", 1000)
+        c3 = emg._offline_code_for(secret, "rollback", 1001)
+        c4 = emg._offline_code_for(secret, "withdraw_uninstall", 1000)
+        self.assertEqual(c1, c2)
+        self.assertRegex(c1, r"^\d{8}$")
+        self.assertNotEqual(c1, c3)
+        self.assertNotEqual(c1, c4)
+
+    def test_offline_vectors_match_agent_implementation(self):
+        """Cross-implementation vectors: these exact values were produced
+        INDEPENDENTLY by the compiled Java EmergencyCodes.codeFor on the
+        same secret (bytes 0..31). If either side drifts, offline codes die
+        silently on the device — this test catches that."""
+        from backend import emergency as emg
+        secret = bytes(range(32))
+        self.assertEqual(emg._offline_code_for(secret, "rollback", 1000),
+                         "93239682")
+        self.assertEqual(emg._offline_code_for(secret, "rollback", 1001),
+                         "30152190")
+        self.assertEqual(emg._offline_code_for(secret, "withdraw_uninstall",
+                                               1000),
+                         "57816768")
+        # reset_password purpose produces dedicated valid 8-digit code
+        reset_code = emg._offline_code_for(secret, "reset_password", 1000)
+        self.assertRegex(reset_code, r"^\d{8}$")
+        self.assertEqual(reset_code, emg._offline_code_for(secret, "reset_password", 1000))
+        self.assertNotEqual(reset_code, "93239682")
+        self.assertNotEqual(reset_code, "57816768")
+
+    def test_passcode_recovery_profile_threshold_validation(self):
+        """Profile creation and updates properly validate recovery_attempts."""
+        from backend import profiles as P
+        p = P.create_draft("Test Recov Profile", recovery_attempts=5)
+        self.assertEqual(p["recovery_attempts"], 5)
+        # update draft with new valid threshold
+        p2 = P.save_draft(p["policy_id"], recovery_attempts=3)
+        self.assertEqual(p2["recovery_attempts"], 3)
+        # disable threshold with None
+        p3 = P.save_draft(p["policy_id"], recovery_attempts=None)
+        self.assertIsNone(p3["recovery_attempts"])
+        # invalid threshold raises ProfileError
+        with self.assertRaises(P.ProfileError):
+            P.save_draft(p["policy_id"], recovery_attempts=15)
+        with self.assertRaises(P.ProfileError):
+            P.save_draft(p["policy_id"], recovery_attempts=0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -66,6 +66,28 @@ class ParseRestrictions(unittest.TestCase):
         self.assertEqual(active.get("BLUETOOTH"), "no_bluetooth")
         self.assertNotIn("TETHERING", active)
 
+    def test_catalog_tokens(self):
+        dump = """User restrictions:
+  no_mock_location=true
+  no_uninstall_apps=true
+  no_clear_app_data=true
+"""
+        active = _parse_restrictions(dump)
+        self.assertEqual(active.get("MOCK_LOCATIONS"), "no_mock_location")
+        self.assertEqual(active.get("UNINSTALL_APPS"), "no_uninstall_apps")
+        self.assertEqual(active.get("CLEAR_APP_DATA"), "no_clear_app_data")
+
+    def test_token_extra_reports_shared_lanes(self):
+        dump = """User restrictions:
+  no_config_wifi=true
+  no_config_tethering=true
+"""
+        active = _parse_restrictions(dump)
+        self.assertEqual(active.get("WIFI"), "no_config_wifi")
+        self.assertEqual(active.get("WIFI_CONFIG"), "no_config_wifi")
+        self.assertEqual(active.get("TETHERING"), "no_config_tethering")
+        self.assertEqual(active.get("BLUETOOTH_TETHERING"), "no_config_tethering")
+
     def test_explicit_false_beats_token(self):
         dump = "User restrictions:\n  no_config_wifi=false\n"
         self.assertEqual(_parse_restrictions(dump), {})
@@ -131,6 +153,46 @@ class ProbeHonesty(unittest.TestCase):
         # wifi_on setting said ON but a proven restriction must be reported RESTRICTED
         self.assertEqual(bundle["observed"].get("WIFI"), "RESTRICTED")
         self.assertIn("WIFI", bundle["restrictions"])
+
+
+class ReadSettingsLanes(unittest.TestCase):
+    """Settings-backed catalog lanes: RESTRICTED when the value equals the
+    enforcement target, ON otherwise, unreadable skipped."""
+
+    def _patch(self, values: dict):
+        import verification_engine.probe as probe
+        orig = probe._run
+
+        def fake_run(serial, *args):
+            key = args[-1] if len(args) >= 4 else ""
+            return (0, values.get(key, ""))
+        probe._run = fake_run
+        self._orig = orig
+        self._probe = probe
+
+    def tearDown(self):
+        self._probe._run = self._orig
+
+    def test_target_value_reports_restricted(self):
+        self._patch({"nfc_on": "0", "data_saver": "1", "screen_off_timeout": "30000"})
+        s = self._probe._read_settings("LT123")
+        self.assertEqual(s.get("NFC"), "RESTRICTED")
+        self.assertEqual(s.get("DATA_SAVER"), "RESTRICTED")
+        self.assertEqual(s.get("SCREEN_TIMEOUT"), "RESTRICTED")
+
+    def test_open_value_reports_on(self):
+        self._patch({"nfc_on": "1", "data_saver": "0", "auto_time_zone": "1"})
+        s = self._probe._read_settings("LT123")
+        self.assertEqual(s.get("NFC"), "ON")
+        self.assertEqual(s.get("DATA_SAVER"), "ON")
+        self.assertEqual(s.get("SET_TIMEZONE"), "ON")
+        self.assertIsNone(s.get("PLAY_PROTECT"))  # unreadable -> skipped, honest
+
+    def test_roaming_family_shared_key(self):
+        self._patch({"data_roaming": "0"})
+        s = self._probe._read_settings("LT123")
+        for lane in ("ROAMING_DATA", "ROAMING_SYNC", "ROAMING_PUSH", "ROAMING_CALL"):
+            self.assertEqual(s.get(lane), "RESTRICTED")
 
 
 class _patch_run_restricted:

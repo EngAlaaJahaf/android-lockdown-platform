@@ -11,6 +11,8 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -22,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -95,12 +98,43 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         android.util.Log.d("ALP", "MainActivity onResume");
+        // NOTE: the passcode-recovery challenge is deliberately NOT forced here.
+        // It belongs to the lock screen (it arms when the failed-attempt
+        // threshold is crossed) and is re-entered from its own notification.
+        // Hijacking normal app entry with a mandatory recovery screen was
+        // never asked for and made the console unusable while armed.
         // Activity-nudge path: the management app starts this launcher after it
         // drops an envelope; onResume fires both on first launch and when the
         // top-most activity is re-delivered. AlpOps dedupes by cmd_id and
         // EnvelopeGuard validates every signed envelope.
         AlpOps.processPending(this);
         render();
+
+        // First-connect path: a profile published while this handset was away
+        // has to land by itself. Pulling is cheap and idempotent - an unchanged
+        // fingerprint answers "up to date" without re-enforcing anything - so it
+        // runs once per launch, and only when the console already knows this
+        // handset (enrollment exists). The guard is device-owner status, not a
+        // locally committed policy: a device whose rows were all RESTRICT used
+        // to have an empty commit list and would skip syncing forever.
+        if (managed()) {
+            final Handler main = new Handler(Looper.getMainLooper());
+            main.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    PolicyPull.sync(MainActivity.this, new PolicyPull.Callback() {
+                        @Override
+                        public void onResult(boolean applied, String text,
+                                             int rows, int skipped) {
+                            if (applied) {
+                                note(text);
+                            }
+                            render();
+                        }
+                    });
+                }
+            }, 1500);
+        }
     }
 
     @Override
@@ -315,6 +349,26 @@ public class MainActivity extends Activity {
         name.setTypeface(name.getTypeface(), android.graphics.Typeface.BOLD);
         name.setLayoutParams(new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        // Server-driven brand mark (Branding.java): shown when a logo has
+        // been fetched at Sync, otherwise the header stays text-only.
+        File brandLogo = Branding.logoFile(this);
+        if (brandLogo.exists()) {
+            try {
+                android.graphics.Bitmap mark =
+                        android.graphics.BitmapFactory.decodeFile(
+                                brandLogo.getAbsolutePath());
+                if (mark != null) {
+                    ImageView logo = new ImageView(this);
+                    logo.setImageBitmap(mark);
+                    LinearLayout.LayoutParams lp =
+                            new LinearLayout.LayoutParams(dp(40), dp(40));
+                    lp.setMargins(0, 0, dp(12), 0);
+                    logo.setLayoutParams(lp);
+                    bar.addView(logo);
+                }
+            } catch (Exception ignored) {
+            }
+        }
         bar.addView(name);
 
         final TextView pill = pill(managed() ? "MANAGED" : "NOT ENROLLED",
@@ -613,7 +667,12 @@ public class MainActivity extends Activity {
         parent.addView(sep);
     }
 
-    /** Header row with a sync glyph on the leading side (server status). */
+    /**
+     * Sync Server row: reaches the LOCAL control panel over the reverse USB
+     * tether (gnirehtet) - never over Wi-Fi and never over the internet. The
+     * subtitle is the timestamp of the last SUCCESSFUL check; a failed check
+     * leaves it untouched so the displayed time cannot drift forward.
+     */
     private void syncRow(LinearLayout parent) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -631,8 +690,8 @@ public class MainActivity extends Activity {
         k.setTypeface(k.getTypeface(), android.graphics.Typeface.BOLD);
         k.setGravity(Gravity.END);
         txt.addView(k);
-        TextView v = new TextView(this);
-        v.setText(lastSync());
+        final TextView v = new TextView(this);
+        v.setText(syncLabel());
         v.setTextSize(13);
         v.setTextColor(MUTED);
         v.setGravity(Gravity.END);
@@ -646,10 +705,18 @@ public class MainActivity extends Activity {
         d.setCornerRadius(dp(10));
         badge.setBackground(d);
         badge.setLayoutParams(new LinearLayout.LayoutParams(dp(44), dp(44)));
-        ImageView iv = new ImageView(this);
-        iv.setImageResource(R.drawable.ic_server);
-        badge.addView(iv, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
+        final ImageView glyph = new ImageView(this);
+        glyph.setImageResource(R.drawable.ic_sync);
+        badge.addView(glyph, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
         row.addView(badge);
+
+        row.setClickable(true);
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                runSync(v, glyph);
+            }
+        });
 
         parent.addView(row);
         View sep = new View(this);
@@ -659,6 +726,90 @@ public class MainActivity extends Activity {
         parent.addView(sep);
     }
 
+    /**
+     * Render a stored UTC instant ("yyyy-MM-dd'T'HH:mm:ss'Z'") in the
+     * device's own timezone, so the display matches the device clock -
+     * and the server clock whenever both machines keep correct local
+     * time. Storage stays UTC everywhere; only the display converts.
+     */
+    private String localTime(String isoUtc) {
+        if (isoUtc == null || isoUtc.isEmpty()) {
+            return "\u2014";
+        }
+        try {
+            java.text.SimpleDateFormat in =
+                    new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",
+                            java.util.Locale.US);
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date d = in.parse(isoUtc);
+            if (d == null) {
+                return isoUtc.replace("T", " ").replace("Z", " UTC");
+            }
+            java.text.SimpleDateFormat out =
+                    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
+                            java.util.Locale.US);
+            out.setTimeZone(java.util.TimeZone.getDefault());
+            return out.format(d);
+        } catch (Exception e) {
+            return isoUtc.replace("T", " ").replace("Z", " UTC");
+        }
+    }
+
+    /** "\u2014" until the panel has answered once, otherwise that success. */
+    private String syncLabel() {
+        return localTime(SyncCheck.lastSyncAt(this));
+    }
+
+    /**
+     * Ask the panel and report the outcome. PolicyPull records the timestamp
+     * after confirmed application or an up-to-date reply; failures preserve it.
+     */
+    private void runSync(final TextView label, final ImageView glyph) {
+        final String before = label.getText().toString();
+        label.setText("Syncing\u2026");
+        label.setTextColor(MUTED);
+        glyph.setAlpha(140);
+
+        // Pull first: a profile published while this handset was detached has
+        // to reach it here, not only when the console happens to push over ADB.
+        // The reply is a signed envelope and goes through the same guard as a
+        // push, so this cannot apply anything the console would not have sent.
+        PolicyPull.sync(this, new PolicyPull.Callback() {
+            @Override
+            public void onResult(final boolean applied, final String text,
+                                  final int rows, final int skipped) {
+                render();                       // show the new state at once
+                if (applied) {
+                    label.setText(syncLabel());
+                    label.setTextColor(GREEN);
+                    glyph.setAlpha(255);
+                    // Report what the handset actually enforced, including the
+                    // rows it could not, instead of claiming a clean apply.
+                    note("Synced \u00b7 " + rows + " applied"
+                            + (skipped > 0 ? ", " + skipped + " not enforceable" : ""));
+                    if (skipped > 0) {
+                        note("Not enforced here: " + skipped
+                                + " restriction(s) have no mechanism on this device.");
+                    }
+                } else {
+                    label.setText(before);
+                    label.setTextColor(AMBER);
+                    glyph.setAlpha(140);
+                    note(text);
+                }
+                Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT).show();
+                Branding.refresh(MainActivity.this, new Branding.Callback() {
+                    @Override
+                    public void onDone(boolean changed) {
+                        if (changed) {
+                            Toast.makeText(MainActivity.this,
+                                    "Logo updated", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
+        });
+    }
     /** A list row with a real switch widget on the trailing side. */
     private void toggleRow(LinearLayout parent, int iconRes, String label, String sub) {
         LinearLayout row = new LinearLayout(this);
@@ -735,7 +886,7 @@ public class MainActivity extends Activity {
                 return "\u2014";
             }
             String at = new JSONObject(raw).optString("applied_at", "");
-            return at.isEmpty() ? "\u2014" : at.replace("T", " ").replace("Z", " UTC");
+            return localTime(at);
         } catch (Exception ignored) {
             return "\u2014";
         }
@@ -802,13 +953,104 @@ public class MainActivity extends Activity {
     }
 
     private void openAdminUnlock() {
-        if (!PinGuard.configured(MainActivity.this)) {
-            note("\u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062c \u0628\u062f\u0648\u0646 PIN "
-                    + "\u0645\u0639\u0631\u0641 \u2014 \u0648\u062d\u062f\u0629 \u0627\u0644\u062a\u062d\u0643\u0645 "
-                    + "\u0647\u064a \u0645\u0646 \u062a\u0646\u0634\u0626\u0647");
+        final boolean pinOk = PinGuard.configured(MainActivity.this);
+        final boolean emgOk = EmergencyCodes.configured(MainActivity.this);
+        if (!pinOk && !emgOk) {
+            note("No unlock method provisioned yet.");
             return;
         }
-        showPinDialog();
+        if (pinOk && !emgOk) {
+            showPinDialog();
+            return;
+        }
+        if (!pinOk && emgOk) {
+            showEmergencyDialog();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Admin unlock")
+                .setItems(new String[]{"Unlock with PIN", "Offline emergency code"},
+                        new android.content.DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(android.content.DialogInterface dialog, int which) {
+                                if (which == 0) {
+                                    showPinDialog();
+                                } else {
+                                    showEmergencyDialog();
+                                }
+                            }
+                        })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+
+
+    private void showEmergencyDialog() {
+        final String[] purposes = {"rollback", "withdraw_uninstall"};
+        final String[] labels = {"\u0631\u0641\u0639 \u0627\u0644\u0642\u064a\u0648\u062f",
+                                 "\u0633\u062d\u0628 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 "
+                                 + "\u0648\u062d\u0630\u0641 \u0627\u0644\u062a\u0637\u0628\u064a\u0642"};
+        new AlertDialog.Builder(this)
+                .setTitle("\u0631\u0645\u0632 \u0627\u0644\u0637\u0648\u0627\u0631\u0626")
+                .setItems(labels,
+                        new android.content.DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(android.content.DialogInterface dialog, int which) {
+                                showEmergencyCodeDialog(purposes[which]);
+                            }
+                        })
+                .setNegativeButton("\u0625\u0644\u063a\u0627\u0621", null)
+                .show();
+    }
+
+    private void showEmergencyCodeDialog(final String purpose) {
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        long lockedFor = EmergencyCodes.lockRemainingSeconds(this);
+        String msg = "\u0623\u062f\u062e\u0644 \u0631\u0645\u0632 \u0627\u0644\u0637\u0648\u0627\u0631\u0626 "
+                + "\u0627\u0644\u0645\u0648\u0644\u062f \u0645\u0646 \u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645 "
+                + "(8 \u0623\u0631\u0642\u0627\u0645)."
+                + (lockedFor > 0
+                        ? "\n\u0645\u0642\u0641\u0644 \u062d\u0627\u0644\u064a\u0627."
+                        : "");
+        new AlertDialog.Builder(this)
+                .setTitle("\u0631\u0645\u0632 \u0627\u0644\u0637\u0648\u0627\u0631\u0626")
+                .setMessage(msg)
+                .setView(input)
+                .setPositiveButton("\u062a\u0623\u0643\u064a\u062f",
+                        new android.content.DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(android.content.DialogInterface dialog, int which) {
+                                String result = EmergencyCodes.verify(MainActivity.this,
+                                        purpose, input.getText().toString());
+                                if (result == null) {
+                                    runEmergencyPurpose(purpose);
+                                } else {
+                                    note(result);
+                                }
+                            }
+                        })
+                .setNegativeButton("\u0625\u0644\u063a\u0627\u0621", null)
+                .show();
+    }
+
+    private void runEmergencyPurpose(String purpose) {
+        AlpOps.localRollback(MainActivity.this);
+        if ("withdraw_uninstall".equals(purpose)) {
+            AlpOps.withdrawDeviceOwnerWithToken(MainActivity.this);
+            try {
+                Intent un = new Intent(Intent.ACTION_DELETE,
+                        android.net.Uri.parse("package:" + getPackageName()));
+                startActivity(un);
+            } catch (Exception e) {
+                note("Withdrawn.");
+                render();
+                return;
+            }
+        }
+        render();
+        note("Emergency code accepted - done offline.");
     }
 
     private void showPinDialog() {
@@ -896,8 +1138,17 @@ public class MainActivity extends Activity {
 
     static void startWifiEnforcementService(Context context) {
         try {
-            context.startForegroundService(
-                    new Intent(context, AlpForegroundService.class));
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                context.startForegroundService(
+                        new Intent(context, AlpForegroundService.class));
+            } else {
+                // startForegroundService does not exist before API 26;
+                // calling it would throw NoSuchMethodError (an Error, not
+                // an Exception) and kill the launch. Plain startService is
+                // the correct legacy entry point.
+                context.startService(
+                        new Intent(context, AlpForegroundService.class));
+            }
         } catch (Exception e) {
             android.util.Log.d("ALP", "startForegroundService failed: "
                     + e.getClass().getSimpleName());

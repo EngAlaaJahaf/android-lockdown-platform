@@ -166,16 +166,20 @@ class ControllerFlows(unittest.TestCase):
     # Capabilities / policy preview / reports / diagnostics (honesty path)
     # ------------------------------------------------------------------
     @staticmethod
-    def _seed_device(ctl, device_id="D-CTRL-1", serial="SERCTRL1") -> str:
+    def _seed_device(ctl, device_id="D-CTRL-1", serial="SERCTRL1",
+                      owner_state="ACTIVE") -> str:
         """Register a device row directly (enroll() requires a live ADB
-        device, so pure-DB seeding keeps these tests hermetic)."""
+        device, so pure-DB seeding keeps these tests hermetic).
+
+        owner_state defaults to ACTIVE so the step-ordering tests are about
+        ordering; pass "NONE" for the registered-but-not-owner case."""
         from backend.db import connect
         with connect(ctl.db_path) as c:
             c.execute(
                 "INSERT INTO devices (device_id, serial, manufacturer, model, "
-                "android_version, api_level, is_lab) "
-                "VALUES (?,?,?,?,?,?,1)",
-                (device_id, serial, "Samsung", "SM-A145P", 15, 35))
+                "android_version, api_level, is_lab, device_owner_state) "
+                "VALUES (?,?,?,?,?,?,1,?)",
+                (device_id, serial, "Samsung", "SM-A145P", 15, 35, owner_state))
         return device_id
 
     def test_capabilities_unknown_device(self):
@@ -238,7 +242,13 @@ class ControllerFlows(unittest.TestCase):
                             {"serial": "XUNA-1", "state": "unauthorized",
                              "model": "", "ready": False},
                         ]) as m:
-            det = self.ctl.detected()
+            with mock.patch("alp_manager.controller.is_agent_installed",
+                            return_value=True):
+                with mock.patch("alp_manager.controller.is_device_owner_active",
+                                return_value=True):
+                    with mock.patch("alp_manager.controller.api_level_of",
+                                    return_value=35):
+                        det = self.ctl.detected()
         m.assert_called_once()
         self.assertEqual(len(det), 4)
         by = {d["serial"]: d for d in det}
@@ -250,6 +260,102 @@ class ControllerFlows(unittest.TestCase):
         self.assertFalse(by["XUNA-1"]["ready"])
         self.assertEqual(by["SERNEW1"]["model"], "SM-J337P")
 
+    def test_detected_reports_agent_presence_and_skips_unready(self):
+        # The New Devices page gates Install/Register/Group behind this flag:
+        # a ready phone without the agent must surface "install first", and an
+        # unready phone must not trigger an adb probe at all.
+        from unittest import mock
+        seen = []
+
+        def _fake_agent(serial):
+            seen.append(serial)
+            return serial == "SERHAVE1"
+
+        with mock.patch("alp_manager.controller.attached_detailed",
+                        return_value=[
+                            {"serial": "SERHAVE1", "state": "device",
+                             "model": "SM-A145P", "ready": True},
+                            {"serial": "SERMISS1", "state": "device",
+                             "model": "SM-J337P", "ready": True},
+                            {"serial": "XOFF1", "state": "offline",
+                             "model": "", "ready": False},
+                        ]):
+            with mock.patch("alp_manager.controller.is_agent_installed",
+                            side_effect=_fake_agent):
+                with mock.patch("alp_manager.controller.is_device_owner_active",
+                                return_value=True):
+                    with mock.patch("alp_manager.controller.api_level_of",
+                                    return_value=35):
+                        det = self.ctl.detected()
+        by = {d["serial"]: d for d in det}
+        self.assertTrue(by["SERHAVE1"]["agent_installed"])
+        self.assertFalse(by["SERMISS1"]["agent_installed"])
+        self.assertFalse(by["XOFF1"]["agent_installed"])
+        self.assertNotIn("XOFF1", seen)
+
+    def test_detected_orders_exactly_one_next_step_per_device(self):
+        # The backend owns the "what now" decision so no console can show a
+        # later step while an earlier one is still pending (the bug where a
+        # phone without the agent was offered "Add to Group" directly).
+        from unittest import mock
+        self._seed_device(self.ctl, "D-STEP-1", "SERREG1")
+        self._seed_device(self.ctl, "D-STEP-2", "SERNOOWN", owner_state="NONE")
+        with mock.patch("alp_manager.controller.attached_detailed",
+                        return_value=[
+                            {"serial": "XOFF1", "state": "offline",
+                             "model": "", "ready": False},
+                            {"serial": "SERMISS1", "state": "device",
+                             "model": "SM-J337P", "ready": True},
+                            {"serial": "SERNEW1", "state": "device",
+                             "model": "SM-A145P", "ready": True},
+                            {"serial": "SERREG1", "state": "device",
+                             "model": "SM-A145P", "ready": True},
+                            {"serial": "SERNOOWN", "state": "device",
+                             "model": "SM-A145P", "ready": True},
+                        ]):
+            with mock.patch("alp_manager.controller.is_agent_installed",
+                            side_effect=lambda s: s != "SERMISS1"):
+                with mock.patch("alp_manager.controller.is_device_owner_active",
+                                return_value=True):
+                    with mock.patch("alp_manager.controller.api_level_of",
+                                    return_value=35):
+                        det = self.ctl.detected()
+        by = {d["serial"]: d for d in det}
+        self.assertEqual(by["XOFF1"]["next_step"], "authorize")
+        self.assertEqual(by["SERMISS1"]["next_step"], "install")
+        self.assertEqual(by["SERNEW1"]["next_step"], "register")
+        self.assertEqual(by["SERREG1"]["next_step"], "group")
+        # Registered but not a device owner: offering "Add to Group" here is
+        # what made policies look deployed while Android enforced nothing.
+        self.assertEqual(by["SERNOOWN"]["next_step"], "provision_owner")
+        self.assertFalse(by["SERNOOWN"]["device_owner"])
+        self.assertTrue(by["SERREG1"]["device_owner"])
+        for d in det:
+            self.assertTrue(d["next_step_reason"],
+                            "every step must explain itself in plain language")
+
+    def test_detected_offers_make_owner_when_grant_removed_on_phone(self):
+        # The package survives (Android forbids uninstalling a device owner)
+        # but dpm lists no owner after the grant is removed on the handset.
+        # The DB column still says ACTIVE — only the live probe tells the
+        # truth, and the Connected tab must offer Make Owner, not Add Group.
+        from unittest import mock
+        self._seed_device(self.ctl, "D-REM-1", "SERREM1")
+        with mock.patch("alp_manager.controller.attached_detailed",
+                        return_value=[
+                            {"serial": "SERREM1", "state": "device",
+                             "model": "SM-A145P", "ready": True},
+                        ]):
+            with mock.patch("alp_manager.controller.is_agent_installed",
+                            return_value=True):
+                with mock.patch("alp_manager.controller.is_device_owner_active",
+                                return_value=False):
+                    with mock.patch("alp_manager.controller.api_level_of",
+                                    return_value=35):
+                        det = self.ctl.detected()
+        self.assertEqual(det[0]["next_step"], "provision_owner")
+        self.assertFalse(det[0]["device_owner"])
+
     def test_detected_normalizes_model_underscore(self):
         # adb -l reports SM_J337P (underscore); the UI must show SM-J337P.
         from unittest import mock
@@ -257,8 +363,31 @@ class ControllerFlows(unittest.TestCase):
                         return_value=[
                             {"serial": "SERN2", "state": "device",
                              "model": "SM_J337P", "ready": True}]):
-            det = self.ctl.detected()
+            with mock.patch("alp_manager.controller.is_agent_installed",
+                            return_value=False):
+                with mock.patch("alp_manager.controller.api_level_of",
+                                return_value=0):
+                    det = self.ctl.detected()
         self.assertEqual(det[0]["model"], "SM-J337P")
+
+    def test_detected_flags_legacy_build_for_android_5_devices(self):
+        # An API-22 handset without the app must be offered the guarded
+        # legacy build (minSdk 21), never the standard button that can only
+        # fail with INSTALL_FAILED_OLDER_SDK.
+        from unittest import mock
+        with mock.patch("alp_manager.controller.attached_detailed",
+                        return_value=[
+                            {"serial": "SEROLD1", "state": "device",
+                             "model": "SM-J3119", "ready": True},
+                        ]):
+            with mock.patch("alp_manager.controller.is_agent_installed",
+                            return_value=False):
+                with mock.patch("alp_manager.controller.api_level_of",
+                                return_value=22):
+                    det = self.ctl.detected()
+        self.assertEqual(det[0]["api_level"], 22)
+        self.assertTrue(det[0]["legacy_build"])
+        self.assertEqual(det[0]["next_step"], "install")
 
     # ------------------------------------------------------------------
     # Pre-flight (#21): honest checklist before a policy apply

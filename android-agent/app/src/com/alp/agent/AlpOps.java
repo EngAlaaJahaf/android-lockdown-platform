@@ -44,6 +44,7 @@ final class AlpOps {
     static final String ENV_STATE = "/data/local/tmp/alp_req_state.json";
     static final String ENV_WITHDRAW = "/data/local/tmp/alp_withdraw.json";
     static final String ENV_PIN = "/data/local/tmp/alp_pin.json";
+    static final String ENV_SECRET = "/data/local/tmp/alp_offline_secret.json";
 
     private static final String PREFS_LAST = "alp_processed";
     private static final String PREFS_COMMITTED = "alp_policy_committed";
@@ -105,8 +106,21 @@ final class AlpOps {
 
     /** Drop wifi quick-tile tokens from a CSV tile spec, preserving order. */
     private static String stripWifiTile(String spec) {
+        return stripTileTokens(spec, new String[]{"wifi"});
+    }
+
+    /** Drop bluetooth quick-tile tokens ("bt") from a CSV tile spec. */
+    private static String stripBtTile(String spec) {
+        return stripTileTokens(spec, new String[]{"bt"});
+    }
+
+    private static String stripTileTokens(String spec, String[] drop) {
         if (spec == null || spec.trim().isEmpty()) {
             return null;
+        }
+        java.util.Set<String> ban = new java.util.HashSet<String>();
+        for (String d : drop) {
+            ban.add(d);
         }
         List<String> keep = new ArrayList<String>();
         for (String tok : spec.split(",")) {
@@ -114,7 +128,8 @@ final class AlpOps {
             if (t.isEmpty()) {
                 continue;
             }
-            if ("wifi".equals(t) || t.startsWith("wifi&")) {
+            String head = t.contains("&") ? t.substring(0, t.indexOf('&')) : t;
+            if (ban.contains(head)) {
                 continue;
             }
             keep.add(t);
@@ -158,6 +173,59 @@ final class AlpOps {
             stats.edit().putBoolean("tiles_prev_applied", true)
                     .putString("tiles_prev_content", prev == null ? "" : prev)
                     .apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * Force the Bluetooth radio off through the app-level channel while the
+     * config lock (DISALLOW_BLUETOOTH) keeps the user from re-enabling it.
+     * Mirrors ensureWifiOff: some vendor builds (vivo Funtouch observed)
+     * toggle the radio through a privileged SystemUI path that ignores the
+     * restriction alone, so the radio must be driven off explicitly and the
+     * tile hidden + watched like Wi-Fi.
+     */
+    static void ensureBluetoothOff(Context context) {
+        try {
+            android.bluetooth.BluetoothAdapter bt =
+                    android.bluetooth.BluetoothAdapter.getDefaultAdapter();
+            if (bt != null && bt.isEnabled()) {
+                bt.disable();
+            }
+        } catch (Exception ignored) {
+            // No adapter (tablet) or vendor refusal — the restriction still
+            // applies; the radio is re-checked later.
+        }
+    }
+
+    /** Hide the bluetooth ("bt") quick-settings tile. Shares the wifi lane's
+     * restore point (first captured spec wins); a full clear restores both.
+     * Same DO secure-setting channel, same API-25 guard. */
+    static void hideBtQSTile(Context context, DevicePolicyManager dpm,
+                             ComponentName admin) {
+        if (Build.VERSION.SDK_INT < 25 || dpm == null
+                || !dpm.isDeviceOwnerApp(context.getPackageName())) {
+            return;
+        }
+        SharedPreferences stats = context.getSharedPreferences("alp_stats",
+                Context.MODE_PRIVATE);
+        try {
+            // Keep the FIRST captured spec: wifi and bt lanes share one
+            // restore point, and a full clear restores both together.
+            String prev = stats.getBoolean("tiles_prev_applied", false)
+                    ? stats.getString("tiles_prev_content", "")
+                    : qsTilesSpec(context);
+            String base = (prev == null || prev.isEmpty()) ? QS_TILES_BASE : prev;
+            String next = stripBtTile(base);
+            if (next == null) {
+                next = QS_TILES_BASE;
+            }
+            dpm.setSecureSetting(admin, "qs_tiles", next);
+            if (!stats.getBoolean("tiles_prev_applied", false)) {
+                stats.edit().putBoolean("tiles_prev_applied", true)
+                        .putString("tiles_prev_content", prev == null ? "" : prev)
+                        .apply();
+            }
         } catch (Exception ignored) {
         }
     }
@@ -211,7 +279,94 @@ final class AlpOps {
         MANAGED.put("MOCK_LOCATIONS", "no_mock_location");
         MANAGED.put("UNINSTALL_APPS", UserManager.DISALLOW_UNINSTALL_APPS);
         MANAGED.put("BLUETOOTH_TETHERING", UserManager.DISALLOW_CONFIG_TETHERING);
+        MANAGED.put("BLUETOOTH_TRANSFER", UserManager.DISALLOW_BLUETOOTH_SHARING);
+        MANAGED.put("BLUETOOTH_PAN", UserManager.DISALLOW_BLUETOOTH);
+        // NFC radio kill + Beam send block (stock DO, verified in android-35).
+        // S_BEAM rides on the NFC radio, so killing the radio enforces it too.
+        MANAGED.put("NFC", UserManager.DISALLOW_NEAR_FIELD_COMMUNICATION_RADIO);
+        MANAGED.put("ANDROID_BEAM", UserManager.DISALLOW_OUTGOING_BEAM);
+        MANAGED.put("S_BEAM", UserManager.DISALLOW_NEAR_FIELD_COMMUNICATION_RADIO);
         MANAGED.put("CLEAR_APP_DATA", "no_clear_app_data");
+    }
+
+    // Package-hiding lanes. BLOCK hides the app (it cannot be launched);
+    // ALLOW unhides it. This is the stock-DO mechanism the backend declares
+    // as package_hide_* — hiding Maps/a browser is the only real way to
+    // "block" them, since AOSP exposes no per-app feature switches.
+    private static final Map<String, String[]> HIDDEN_APPS =
+            new LinkedHashMap<String, String[]>();
+
+    static {
+        HIDDEN_APPS.put("GOOGLE_MAPS", new String[]{"com.google.android.apps.maps"});
+        HIDDEN_APPS.put("GMAIL_APP", new String[]{"com.google.android.gm"});
+        HIDDEN_APPS.put("YOUTUBE_APP", new String[]{"com.google.android.youtube"});
+        HIDDEN_APPS.put("CHROME_APP", new String[]{"com.android.chrome"});
+        HIDDEN_APPS.put("PLAYSTORE_APP", new String[]{"com.android.vending"});
+        HIDDEN_APPS.put("BROWSER", new String[]{"com.android.chrome",
+                "com.sec.android.app.sbrowser"});
+        // Every Google app, one switch — INTERNET-FACING apps only.
+        // Deliberately EXCLUDED:
+        //  - com.google.android.gms / .gsf (core services; hiding them
+        //    breaks the device itself, not just Google apps);
+        //  - keyboards (hiding the active keyboard would lock the operator
+        //    out of typing the rollback PIN);
+        //  - com.google.android.dialer (the secret-code entry to this very
+        //    agent is dialled from a dialer — hiding the only dialer would
+        //    cut the offline recovery path);
+        //  - offline utilities the operator asked to keep: SMS/messaging,
+        //    contacts, files, calendar, clock, calculator.
+        HIDDEN_APPS.put("GOOGLE_APPS", new String[]{
+                "com.android.vending", "com.google.android.apps.maps",
+                "com.google.android.apps.photos", "com.google.android.apps.docs",
+                "com.google.android.apps.docs.editors.docs",
+                "com.google.android.apps.docs.editors.sheets",
+                "com.google.android.apps.docs.editors.slides",
+                "com.google.android.gm", "com.google.android.youtube",
+                "com.google.android.keep", "com.google.android.apps.tachyon",
+                "com.google.android.apps.translate",
+                "com.google.android.apps.podcasts",
+                "com.google.android.apps.youtube.music", "com.google.ar.lens",
+                "com.google.android.googlequicksearchbox",
+                "com.android.chrome"});
+    }
+
+    /**
+     * Every package on THIS handset that can open http(s) links — the static
+     * list above plus whatever the vendor shipped (vivo/OPPO/Xiaomi browsers
+     * etc.), resolved live. Own package is never included.
+     */
+    private static String[] browserPackages(Context context) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<String>();
+        String[] base = HIDDEN_APPS.get("BROWSER");
+        if (base != null) {
+            for (String p : base) {
+                out.add(p);
+            }
+        }
+        try {
+            android.content.pm.PackageManager pm = context.getPackageManager();
+            android.content.Intent[] probes = new android.content.Intent[]{
+                    new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse("http://www.example.com")),
+                    new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse("https://www.example.com"))};
+            for (android.content.Intent probe : probes) {
+                java.util.List<android.content.pm.ResolveInfo> ris =
+                        pm.queryIntentActivities(probe, 0);
+                if (ris == null) {
+                    continue;
+                }
+                for (android.content.pm.ResolveInfo ri : ris) {
+                    if (ri != null && ri.activityInfo != null
+                            && ri.activityInfo.packageName != null) {
+                        out.add(ri.activityInfo.packageName);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        out.remove(context.getPackageName());
+        return out.toArray(new String[out.size()]);
     }
 
     // Settings-backed catalog lanes. Tuple: {scope, key, blocked_value, allowed_value}
@@ -291,13 +446,24 @@ final class AlpOps {
     // via the management-side probe. Returns true when a real transition happened.
     private static boolean setCameraLock(Context context, DevicePolicyManager dpm,
                                          ComponentName admin, boolean disabled) {
-        SharedPreferences prefs = context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE);
-        boolean was = prefs.getBoolean("camera_disabled", false);
-        if (was == disabled) {
+        // Always call through. The old code short-circuited when its own cached
+        // flag already matched, which meant a row that the handset had silently
+        // dropped (or a clear that reset the flag) was never re-issued: the agent
+        // reported "applied" while `dumpsys device_policy` showed no
+        // cameraDisabled. DevicePolicyManager is idempotent for this call, so the
+        // cheap correct thing is to set it every time.
+        // Reflection, not a direct call: the method returns void on API 21-23
+        // and boolean later — a direct call compiled against new SDKs throws
+        // NoSuchMethodError (an Error) on legacy builds.
+        try {
+            DevicePolicyManager.class.getMethod("setCameraDisabled",
+                    ComponentName.class, boolean.class).invoke(dpm, admin, disabled);
+        } catch (Exception e) {
+            AlpStats.record(context, "camera_lock_failed");
             return false;
         }
-        dpm.setCameraDisabled(admin, disabled);
-        prefs.edit().putBoolean("camera_disabled", disabled).apply();
+        context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
+                .edit().putBoolean("camera_disabled", disabled).apply();
         return true;
     }
 
@@ -340,6 +506,12 @@ final class AlpOps {
             android.util.Log.d(TAG, "processPending PROVISION_PIN file pending");
             handle(context, CommandReceiver.ACTION_PROVISION_PIN, pinEnv, ENV_PIN);
         }
+        String secretEnv = readFile(ENV_SECRET);
+        if (secretEnv != null && !alreadyDone(context, ENV_SECRET)) {
+            android.util.Log.d(TAG, "processPending EMERGENCY_SECRET file pending");
+            handle(context, CommandReceiver.ACTION_EMERGENCY_SECRET, secretEnv,
+                    ENV_SECRET);
+        }
         android.util.Log.d(TAG, "processPending exit");
     }
 
@@ -357,14 +529,18 @@ final class AlpOps {
                 android.util.Log.d(TAG, "handle " + action + " already done, skipping");
             }
         }
+        // Resolve the envelope ONCE. The broadcast path carries no envelope in
+        // the intent (files-only by design), so the file must be read here and
+        // the SAME resolved text handed to the gate and to every action below;
+        // passing the original null would verify one payload and act on another.
+        String json = envelopeJson;
+        if (json == null && file != null) {
+            json = readFile(file);
+        }
         if (!done) {
             // Every envelope-driven action must pass the Ed25519 gate first.
             // Only REPORT is broadcast-only (no envelope) and stays ungated.
             if (!CommandReceiver.ACTION_REPORT.equals(action)) {
-                String json = envelopeJson;
-                if (json == null && file != null) {
-                    json = readFile(file);
-                }
                 String reason = EnvelopeGuard.check(context, json,
                         EnvelopeGuardCore.shortAction(action));
                 if (reason != null) {
@@ -374,24 +550,32 @@ final class AlpOps {
                 }
             }
             if (CommandReceiver.ACTION_APPLY_POLICY.equals(action)) {
-                applyPolicy(context, envelopeJson);
+                applyPolicy(context, json);
             } else if (CommandReceiver.ACTION_CLEAR_POLICY.equals(action)) {
-                clearPolicy(context, envelopeJson);
+                clearPolicy(context, json);
             } else if (CommandReceiver.ACTION_GET_STATE.equals(action)) {
-                getState(context, envelopeJson);
+                getState(context, json);
             } else if (CommandReceiver.ACTION_REPORT.equals(action)) {
                 AlpStats.record(context, "report_requested");
             } else if (CommandReceiver.ACTION_WITHDRAW_DO.equals(action)) {
-                withdrawDeviceOwner(context, envelopeJson);
+                withdrawDeviceOwner(context, json);
             } else if (CommandReceiver.ACTION_PROVISION_PIN.equals(action)) {
-                String err = PinGuard.provision(context, envelopeJson);
+                String err = PinGuard.provision(context, json);
                 if (err != null) {
                     android.util.Log.w(TAG, "pin provision failed: " + err);
                     AlpStats.record(context, "pin_provision_rejected");
                 }
+            } else if (CommandReceiver.ACTION_EMERGENCY_SECRET.equals(action)) {
+                String err = EmergencyCodes.storeSecret(context, json);
+                if (err != null) {
+                    android.util.Log.w(TAG, "emergency secret rejected: " + err);
+                    AlpStats.record(context, "emergency_secret_rejected");
+                } else {
+                    AlpStats.record(context, "emergency_secret_provisioned");
+                }
             }
             if (file != null) {
-                markDone(context, file, envelopeJson);
+                markDone(context, file, json);
             }
         }
     }
@@ -416,10 +600,32 @@ final class AlpOps {
         android.util.Log.w(TAG, "reject file=" + file + " reason=" + reason);
         List<String> err = new ArrayList<String>();
         err.add("REJECTED " + shortify(action) + ": " + reason);
+        // A rejection is NOT a sync. Every stale envelope is re-visited on
+        // each app resume (rejected files stay pending on purpose), so stamping
+        // applied_at with utcNow() here made the displayed time march forward
+        // by minutes every time the app was reopened - a rejected envelope
+        // must never rewrite when the last SUCCESSFUL contact happened.
         AlpStats.writeState(context, cmdId, new ArrayList<String>(),
-                            new ArrayList<String>(), err, utcNow(),
+                            new ArrayList<String>(), err,
+                            previousAppliedAt(context, utcNow()),
                             dpm != null && dpm.isAdminActive(admin));
         AlpStats.record(context, "envelope_rejected:" + shortify(action));
+    }
+
+    /** The applied_at of the current state.json, so a reject cannot move it. */
+    private static String previousAppliedAt(Context context, String fallback) {
+        try {
+            String raw = readFile(new File(context.getFilesDir(),
+                    "state.json").getAbsolutePath());
+            if (raw != null) {
+                String prev = new JSONObject(raw).optString("applied_at", "");
+                if (!prev.isEmpty()) {
+                    return prev;
+                }
+            }
+        } catch (JSONException ignored) {
+        }
+        return fallback;
     }
 
     private static String shortify(String action) {
@@ -445,6 +651,9 @@ final class AlpOps {
         }
         if (CommandReceiver.ACTION_PROVISION_PIN.equals(action)) {
             return ENV_PIN;
+        }
+        if (CommandReceiver.ACTION_EMERGENCY_SECRET.equals(action)) {
+            return ENV_SECRET;
         }
         return null;
     }
@@ -487,6 +696,7 @@ final class AlpOps {
     private static boolean isManagedFeature(String feature) {
         return "CAMERA".equals(feature) || "CAMERA_LOCKSCREEN".equals(feature)
                 || "OS_UPGRADE".equals(feature) || "STORAGE_ENCRYPTION".equals(feature)
+                || HIDDEN_APPS.containsKey(feature)
                 || MANAGED.containsKey(feature) || SETTING_TARGETS.containsKey(feature);
     }
 
@@ -517,9 +727,16 @@ final class AlpOps {
                 }
                 String feature = row.optString("feature");
                 String desired = row.optString("desired");
-                if ("BLOCK".equals(desired) && isManagedFeature(feature)) {
+                // RESTRICT enforces exactly like BLOCK (applyRow routes both
+                // down the same branch). Recording only BLOCK meant a profile
+                // written entirely with RESTRICT committed an empty list, which
+                // made the device look unenrolled and skipped the sync path.
+                if (("BLOCK".equals(desired) || "RESTRICT".equals(desired))
+                        && isManagedFeature(feature)) {
                     JSONObject c = new JSONObject();
                     c.put("feature", feature);
+                    // Normalised so restore/clear and re-assert compare like
+                    // with like.
                     c.put("desired", "BLOCK");
                     committed.put(c);
                 }
@@ -534,6 +751,12 @@ final class AlpOps {
     static void clearCommitted(Context context) {
         context.getSharedPreferences(PREFS_COMMITTED, Context.MODE_PRIVATE)
                 .edit().remove("policy").apply();
+    }
+
+    /** How many rows of a policy this device currently has committed. */
+    static int committedCount(Context context) {
+        List<String[]> rows = committedPolicy(context);
+        return rows == null ? 0 : rows.size();
     }
 
     /** @return rows {feature, desired} or null when no policy is committed. */
@@ -573,10 +796,47 @@ final class AlpOps {
         return false;
     }
 
+    /** True when the committed policy locks Bluetooth (snap-back guard). */
+    static boolean btBlockCommitted(Context context) {
+        List<String[]> rows = committedPolicy(context);
+        if (rows == null) {
+            return false;
+        }
+        for (String[] row : rows) {
+            if ("BLUETOOTH".equals(row[0]) && "BLOCK".equals(row[1])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Read the per-admin user restrictions, or null when unreadable.
+     * getUserRestrictions() does not exist before API 24 — calling it
+     * there throws NoSuchMethodError (an Error), which is exactly what
+     * crash-looped legacy builds in the watchdog, clear and state paths.
+     */
+    private static Bundle userRestrictionsOrNull(DevicePolicyManager dpm,
+                                                ComponentName admin) {
+        if (android.os.Build.VERSION.SDK_INT < 24) {
+            return null;
+        }
+        try {
+            return dpm.getUserRestrictions(admin);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private static boolean restrictionActive(DevicePolicyManager dpm, ComponentName admin,
                                              String key) {
-        Bundle cur = dpm.getUserRestrictions(admin);
-        return cur != null && cur.getBoolean(key);
+        Bundle cur = userRestrictionsOrNull(dpm, admin);
+        if (cur == null) {
+            // Unreadable (pre-24): report inactive so the watchdog
+            // re-asserts — addUserRestriction is idempotent, crashing is not.
+            return false;
+        }
+        return cur.getBoolean(key);
     }
 
     /**
@@ -610,6 +870,32 @@ final class AlpOps {
             }
             if ("CAMERA".equals(feature)) {
                 if (setCameraLock(context, dpm, admin, true)) {
+                    changed = true;
+                }
+                continue;
+            }
+            if ("OS_UPGRADE".equals(feature)) {
+                // Postpone/freeze policy lives outside user restrictions; if
+                // something cleared it, re-apply (freeze first, postpone
+                // fallback inside). getSystemUpdatePolicy() does not exist
+                // before API 23, so legacy builds skip the read.
+                if (android.os.Build.VERSION.SDK_INT >= 23) {
+                try {
+                    if (dpm.getSystemUpdatePolicy() == null
+                            && freezeSystemUpdates(dpm, admin)) {
+                        changed = true;
+                    }
+                } catch (Exception ignored) {
+                }
+                }
+                continue;
+            }
+            String[] hidePkgs = HIDDEN_APPS.get(feature);
+            if (hidePkgs != null) {
+                if ("BROWSER".equals(feature)) {
+                    hidePkgs = browserPackages(context);
+                }
+                if (setAppsHidden(context, dpm, admin, hidePkgs, true)) {
                     changed = true;
                 }
                 continue;
@@ -651,6 +937,27 @@ final class AlpOps {
         List<String> skipped = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         String cmdId = "?";
+
+        // Register the reset-password token as the FIRST thing a verified apply
+        // does, outside the JSON try below.
+        //
+        // It was previously placed at the end of that try block, which made it
+        // doubly fragile: any early return or JSONException skipped it silently,
+        // and on this device that left isResetPasswordTokenActive() false, so
+        // every later recovery attempt failed with "reset password token is not
+        // active". The result is now recorded in AlpStats, which the console can
+        // read, instead of only in logcat where it was invisible.
+        try {
+            boolean tokenReady = PasswordRecovery.ensureTokenRegistered(
+                    context, dpm, admin);
+            AlpStats.record(context, tokenReady
+                    ? "reset_token_active"
+                    : "reset_token_unavailable");
+        } catch (Throwable t) {
+            AlpStats.record(context, "reset_token_error:"
+                    + t.getClass().getSimpleName());
+        }
+
         try {
             JSONObject env = new JSONObject(envelopeJson);
             cmdId = env.optString("cmd_id", "?");
@@ -665,6 +972,11 @@ final class AlpOps {
             if (snap == null) {
                 skipped.add("no snapshot in envelope");
             } else {
+                // A reconciled group policy replaces the previous assignment;
+                // omitted lanes must not survive from the removed profile.
+                if (body.optBoolean("replace_policy", false)) {
+                    clearPolicy(context, envelopeJson);
+                }
                 for (int i = 0; i < snap.length(); i++) {
                     JSONObject row = snap.optJSONObject(i);
                     if (row == null) {
@@ -683,16 +995,69 @@ final class AlpOps {
                     }
                 }
             }
+            if (body.has("recovery_attempts")) {
+                int recAtt = body.isNull("recovery_attempts") ? 0 : body.optInt("recovery_attempts", 0);
+                PasswordRecovery.configure(context, recAtt);
+            }
         } catch (JSONException e) {
             errors.add("json: " + e.getMessage());
         }
 
         AlpStats.writeState(context, cmdId, applied, skipped, errors, utcNow(),
-                            dpm.isAdminActive(admin));
+                            dpm.isAdminActive(admin), "APPLY_POLICY");
         // The sweep is the new enforcement truth: only a verified APPLY may
         // (re)define platform behavior.
         commitPolicy(context, envelopeJson != null ? envelopeJson : readFile(ENV_APPLY));
         AlpStats.record(context, "policy_applied:" + applied.size());
+    }
+
+    private static boolean setAppsHidden(Context context, DevicePolicyManager dpm,
+                                           ComponentName admin, String[] pkgs, boolean hidden) {
+        boolean ok = false;
+        java.util.Set<String> rec = hiddenRecord(context);
+        boolean recChanged = false;
+        for (String pkg : pkgs) {
+            try {
+                if (dpm.setApplicationHidden(admin, pkg, hidden)) {
+                    ok = true;
+                    if (hidden) {
+                        if (rec.add(pkg)) {
+                            recChanged = true;
+                        }
+                    } else if (rec.remove(pkg)) {
+                        recChanged = true;
+                    }
+                }
+            } catch (Exception e) {
+                AlpStats.record(context, "hide_failed:" + pkg);
+            }
+        }
+        if (recChanged) {
+            try {
+                context.getSharedPreferences(PREFS_HIDDEN, Context.MODE_PRIVATE)
+                        .edit().putStringSet(K_HIDDEN, rec).apply();
+            } catch (Exception ignored) {
+            }
+        }
+        return ok;
+    }
+
+    // Every package this agent ever hid. The lane lists evolve (a vendor
+    // browser today, a trimmed Google list tomorrow); without this record an
+    // ALLOW could never release a package that left the list — exactly how
+    // stale hides survived. CLEAR_POLICY sweeps this set too.
+    private static final String PREFS_HIDDEN = "alp_hidden_pkgs";
+    private static final String K_HIDDEN = "hidden";
+
+    private static java.util.Set<String> hiddenRecord(Context context) {
+        try {
+            java.util.Set<String> cur = context.getSharedPreferences(
+                    PREFS_HIDDEN, Context.MODE_PRIVATE).getStringSet(K_HIDDEN, null);
+            return cur == null ? new java.util.HashSet<String>()
+                    : new java.util.HashSet<String>(cur);
+        } catch (Exception e) {
+            return new java.util.HashSet<String>();
+        }
     }
 
     private static boolean applyRow(Context context, DevicePolicyManager dpm, ComponentName admin,
@@ -702,9 +1067,24 @@ final class AlpOps {
         }
         switch (desired) {
             case "BLOCK":
+            case "RESTRICT":
+                // RESTRICT means the same enforcement as BLOCK. Treating it as
+                // unknown used to fall through to `default` and be dropped
+                // silently, so a profile full of RESTRICT rows lifted nothing
+                // while the console reported the profile as applied.
                 if ("CAMERA".equals(feature) || "CAMERA_LOCKSCREEN".equals(feature)) {
                     setCameraLock(context, dpm, admin, true);   // device-owner camera control
                     return true;
+                }
+                String[] hidePkgs = HIDDEN_APPS.get(feature);
+                if (hidePkgs != null) {
+                    // Hiding is all-or-nothing per lane: true when at least
+                    // one package was actually hidden. BROWSER resolves live
+                    // (vendor browsers included), the rest use the static list.
+                    if ("BROWSER".equals(feature)) {
+                        hidePkgs = browserPackages(context);
+                    }
+                    return setAppsHidden(context, dpm, admin, hidePkgs, true);
                 }
                 if ("WIFI".equals(feature)) {
                     // Some builds don't power the radio off for the restriction;
@@ -718,6 +1098,20 @@ final class AlpOps {
                     hideWifiQSTile(context, dpm, admin);
                     context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE)
                             .edit().putBoolean("wifi_blocked", true).apply();
+                    return true;
+                }
+                if ("BLUETOOTH".equals(feature)) {
+                    // Same vendor-privilege problem as Wi-Fi (vivo Funtouch
+                    // toggles through a path that ignores the restriction
+                    // alone): lock + radio off + tile hidden + snap-back.
+                    // The committed row (not a pref flag) is the source of
+                    // truth the snap-back reads.
+                    String key = MANAGED.get(feature);
+                    if (key != null) {
+                        dpm.addUserRestriction(admin, key);
+                    }
+                    ensureBluetoothOff(context);
+                    hideBtQSTile(context, dpm, admin);
                     return true;
                 }
                 if ("OS_UPGRADE".equals(feature)) {
@@ -748,6 +1142,9 @@ final class AlpOps {
     // ------------------------------------------------------------------
     // Device Owner SystemUpdatePolicy freeze — a real 90-day freeze window
     // starting today, so "Block OS Update" never depends on vendor knobs.
+    // On API 33+ the freeze classes were removed, so a postpone policy
+    // (30 days, re-settable) is used instead — same DO channel, weaker but
+    // real, and honestly reported either way.
     // ------------------------------------------------------------------
     private static boolean freezeSystemUpdates(DevicePolicyManager dpm, ComponentName admin) {
         if (Build.VERSION.SDK_INT < 29) {
@@ -776,14 +1173,26 @@ final class AlpOps {
             dpm.setSystemUpdatePolicy(admin, (android.app.admin.SystemUpdatePolicy) after);
             return true;
         } catch (Exception ex) {
-            return false;
+            // Freeze classes gone (API 33+) — fall back to a postpone policy:
+            // incoming OTAs wait 30 days, and every re-apply renews it.
+            try {
+                dpm.setSystemUpdatePolicy(admin, android.app.admin.SystemUpdatePolicy
+                        .createPostponeInstallPolicy());
+                return true;
+            } catch (Exception ignored) {
+                return false;
+            }
         }
     }
 
     private static boolean setStorageEncryption(DevicePolicyManager dpm, ComponentName admin,
                                                 boolean on) {
+        // Reflection: the method returns int on API 21-23 and boolean later —
+        // a direct call compiled against new SDKs throws NoSuchMethodError
+        // (an Error) on legacy builds. No exception means dispatched.
         try {
-            dpm.setStorageEncryption(admin, on);
+            DevicePolicyManager.class.getMethod("setStorageEncryption",
+                    ComponentName.class, boolean.class).invoke(dpm, admin, on);
             return true;
         } catch (Exception e) {
             return false;
@@ -796,12 +1205,18 @@ final class AlpOps {
     // Any SecurityException / missing key surfaces as an honest false.
     // ------------------------------------------------------------------
     private static boolean applySettingTarget(Context context, DevicePolicyManager dpm,
-                                              ComponentName admin, String feature, boolean block) {
+                                                ComponentName admin, String feature, boolean block) {
         Object[] t = SETTING_TARGETS.get(feature);
         if (t == null) {
             return false;
         }
         int scope = (Integer) t[0];
+        // setSystemSetting() does not exist before API 23 — calling it would
+        // throw NoSuchMethodError (an Error, uncaught by catch-Exception),
+        // so those lanes honestly refuse on legacy builds.
+        if (scope == 1 && android.os.Build.VERSION.SDK_INT < 23) {
+            return false;
+        }
         String key = (String) t[1];
         String value = block ? (String) t[2] : (String) t[3];
         try {
@@ -844,9 +1259,12 @@ final class AlpOps {
             return;
         }
         if ("OS_UPGRADE".equals(feature)) {
-            try {
-                dpm.setSystemUpdatePolicy(admin, null);
-            } catch (Exception ignored) {
+            // setSystemUpdatePolicy() does not exist before API 23.
+            if (android.os.Build.VERSION.SDK_INT >= 23) {
+                try {
+                    dpm.setSystemUpdatePolicy(admin, null);
+                } catch (Exception ignored) {
+                }
             }
             return;
         }
@@ -854,14 +1272,29 @@ final class AlpOps {
             setStorageEncryption(dpm, admin, false);
             return;
         }
+        // User restrictions first: NFC/ANDROID_BEAM live in BOTH maps, and
+        // the restriction is the real mechanism — the settings write below
+        // is dead on modern builds and must not shadow the clear.
+        String key = MANAGED.get(feature);
+        if (key != null) {
+            try {
+                dpm.clearUserRestriction(admin, key);
+            } catch (Exception ignored) {
+            }
+            return;
+        }
         if (SETTING_TARGETS.containsKey(feature)) {
             // Restore the ALLOW/default value for the lane it actually changed.
             applySettingTarget(context, dpm, admin, feature, false);
             return;
         }
-        String key = MANAGED.get(feature);
-        if (key != null) {
-            dpm.clearUserRestriction(admin, key);
+        String[] unhidePkgs = HIDDEN_APPS.get(feature);
+        if (unhidePkgs != null) {
+            if ("BROWSER".equals(feature)) {
+                unhidePkgs = browserPackages(context);
+            }
+            setAppsHidden(context, dpm, admin, unhidePkgs, false);
+            return;
         }
     }
 
@@ -912,9 +1345,13 @@ final class AlpOps {
         try {
             JSONObject env = new JSONObject(envelopeJson == null ? "{}" : envelopeJson);
             cmdId = env.optString("cmd_id", "?");
-            Bundle cur = dpm.getUserRestrictions(admin);
+            Bundle cur = userRestrictionsOrNull(dpm, admin);
+            // Pre-24 has no reader: clear every managed key blindly instead
+            // of crashing (clearing an absent restriction is a no-op).
+            boolean blind = (cur == null
+                    && android.os.Build.VERSION.SDK_INT < 24);
             for (Map.Entry<String, String> e : MANAGED.entrySet()) {
-                if (cur == null || !cur.getBoolean(e.getValue())) {
+                if (!blind && (cur == null || !cur.getBoolean(e.getValue()))) {
                     continue;
                 }
                 try {
@@ -941,7 +1378,8 @@ final class AlpOps {
             }
             restoreQSTiles(context, dpm, admin);
             // Full rollback also restores every settings-backed catalog lane,
-            // the OS-update freeze window and storage-encryption flag.
+            // every hidden app, the OS-update freeze window and
+            // storage-encryption flag.
             for (String feature : new ArrayList<String>(SETTING_TARGETS.keySet())) {
                 if (applySettingTarget(context, dpm, admin, feature, false)) {
                     if (!cleared.contains(feature)) {
@@ -949,8 +1387,36 @@ final class AlpOps {
                     }
                 }
             }
+            for (Map.Entry<String, String[]> h : HIDDEN_APPS.entrySet()) {
+                if (setAppsHidden(context, dpm, admin, h.getValue(), false)) {
+                    if (!cleared.contains(h.getKey())) {
+                        cleared.add(h.getKey());
+                    }
+                }
+            }
+            // Packages hidden by older lane lists that no row covers any
+            // more: release everything this agent ever hid.
+            java.util.Set<String> leftover = hiddenRecord(context);
+            if (!leftover.isEmpty()) {
+                java.util.Set<String> still = new java.util.HashSet<String>(leftover);
+                for (String pkg : new java.util.ArrayList<String>(leftover)) {
+                    try {
+                        if (dpm.setApplicationHidden(admin, pkg, false)) {
+                            still.remove(pkg);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+                try {
+                    context.getSharedPreferences(PREFS_HIDDEN, Context.MODE_PRIVATE)
+                            .edit().putStringSet(K_HIDDEN, still).apply();
+                } catch (Exception ignored) {
+                }
+            }
             try {
-                dpm.setSystemUpdatePolicy(admin, null);
+                if (android.os.Build.VERSION.SDK_INT >= 23) {
+                    dpm.setSystemUpdatePolicy(admin, null);
+                }
             } catch (Exception ignored) {
             }
             setStorageEncryption(dpm, admin, false);
@@ -959,8 +1425,12 @@ final class AlpOps {
         }
         // No lockdown may remain defined after a verified/pin-authorized clear.
         clearCommitted(context);
+        PasswordRecovery.clear(context);
+        context.getSharedPreferences("alp_stats", Context.MODE_PRIVATE).edit()
+                .remove("alp_policy_fingerprint").remove("alp_policy_id").apply();
         AlpStats.writeState(context, cmdId, cleared, new ArrayList<String>(),
-                            errors, utcNow(), dpm.isAdminActive(admin));
+                            errors, utcNow(), dpm.isAdminActive(admin),
+                            "CLEAR_POLICY");
         AlpStats.record(context, "policy_cleared:" + cleared.size());
     }
 
@@ -985,7 +1455,9 @@ final class AlpOps {
         List<String> active = new ArrayList<>();
         boolean adminActive = dpm != null && dpm.isAdminActive(admin);
         if (adminActive) {
-            Bundle cur = dpm.getUserRestrictions(admin);
+            // Null-safe on legacy (helper returns null pre-24): those rows
+            // are simply unobservable there, never invented.
+            Bundle cur = userRestrictionsOrNull(dpm, admin);
             for (Map.Entry<String, String> e : MANAGED.entrySet()) {
                 if (cur != null && cur.getBoolean(e.getValue())) {
                     if (!active.contains(e.getKey())) {
@@ -996,12 +1468,14 @@ final class AlpOps {
             if (cameraLocked(context)) {
                 active.add("CAMERA");
             }
+            if (android.os.Build.VERSION.SDK_INT >= 23) {
             try {
                 android.app.admin.SystemUpdatePolicy up = dpm.getSystemUpdatePolicy();
                 if (up != null) {
                     active.add("OS_UPGRADE");
                 }
             } catch (Exception ignored) {
+            }
             }
             try {
                 if (dpm.getStorageEncryption(admin)) {
@@ -1028,6 +1502,23 @@ final class AlpOps {
                 } catch (Exception ignored) {
                 }
             }
+            for (Map.Entry<String, String[]> h : HIDDEN_APPS.entrySet()) {
+                try {
+                    String[] pkgs = h.getValue();
+                    if ("BROWSER".equals(h.getKey())) {
+                        pkgs = browserPackages(context);
+                    }
+                    for (String pkg : pkgs) {
+                        if (dpm.isApplicationHidden(admin, pkg)) {
+                            if (!active.contains(h.getKey())) {
+                                active.add(h.getKey());
+                            }
+                            break;
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
         }
         AlpStats.writeState(context, cmdId, active, new ArrayList<String>(),
                             new ArrayList<String>(), utcNow(), adminActive);
@@ -1045,8 +1536,15 @@ final class AlpOps {
     // nothing re-asserts lockdown once the owner role is gone. Claims are
     // honest: state.json only reports restrictions that were actually active.
     // ------------------------------------------------------------------
-    static void withdrawDeviceOwner(Context context, String envelopeJson) {
-        if (envelopeJson == null) {
+    // Token-authorized withdraw: same body as the envelope flow, but the
+    // authorization is a locally verified emergency code (EmergencyCodes)
+    // instead of a USB-delivered file. Called only after verify() succeeds,
+    // so the Ed25519/file gate is replaced by an equally strong local proof.
+    static void withdrawDeviceOwnerWithToken(Context context) {
+        withdrawDeviceOwner(context, "{\"cmd_id\":\"UI-EMERGENCY-WITHDRAW\"}");
+    }
+
+    static void withdrawDeviceOwner(Context context, String envelopeJson) {        if (envelopeJson == null) {
             envelopeJson = readFile(ENV_WITHDRAW);
         }
         if (envelopeJson == null) {
@@ -1070,9 +1568,11 @@ final class AlpOps {
         try {
             JSONObject env = new JSONObject(envelopeJson);
             cmdId = env.optString("cmd_id", "?");
-            Bundle cur = dpm.getUserRestrictions(admin);
+            Bundle cur = userRestrictionsOrNull(dpm, admin);
+            boolean blind = (cur == null
+                    && android.os.Build.VERSION.SDK_INT < 24);
             for (Map.Entry<String, String> e : MANAGED.entrySet()) {
-                if (cur == null || !cur.getBoolean(e.getValue())) {
+                if (!blind && (cur == null || !cur.getBoolean(e.getValue()))) {
                     continue;
                 }
                 try {

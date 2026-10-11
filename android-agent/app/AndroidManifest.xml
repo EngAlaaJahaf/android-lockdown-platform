@@ -7,6 +7,11 @@
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
 
     <uses-permission android:name="android.permission.MANAGE_DEVICE_ADMINS" />
+    <!-- LOCAL only: reverse USB tethering (gnirehtet) to the control panel.
+         No ACCESS_NETWORK_STATE and no wireless path is used or requested. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Device-owner policy pull identifies the enrolled handset by serial. -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
@@ -16,8 +21,27 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Package visibility for the BROWSER lane only: resolve which apps can
+         open http(s) links on THIS handset (vendor browsers included) so all
+         of them are hidden on BLOCK. Narrow <queries> — deliberately NOT
+         QUERY_ALL_PACKAGES, which would be a far broader visibility grant. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 
     <application
         android:label="@string/app_name"
@@ -25,6 +49,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.Material.Light"
         android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:testOnly="true"
         android:debuggable="true">
 
@@ -35,6 +60,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".PasswordRecoveryActivity"
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
         <receiver
             android:name=".AlpDeviceAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
@@ -44,6 +76,11 @@
                 android:resource="@xml/device_admin" />
             <intent-filter>
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+                <action android:name="android.app.action.ACTION_PASSWORD_FAILED" />
+                <action android:name="android.app.action.ACTION_PASSWORD_SUCCEEDED" />
+                <action android:name="android.app.action.ACTION_PASSWORD_CHANGED" />
             </intent-filter>
         </receiver>
 

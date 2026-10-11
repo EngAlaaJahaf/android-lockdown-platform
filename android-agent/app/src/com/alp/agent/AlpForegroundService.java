@@ -74,6 +74,30 @@ public class AlpForegroundService extends Service {
         }
     };
 
+    // Bluetooth twin of the Wi-Fi snap-back: when the radio reports ON while
+    // the committed policy blocks it, drive it back off. Same committed-list
+    // truth, same idempotent call — vendor SystemUI privilege is irrelevant
+    // to an explicit disable() from the device owner.
+    private final BroadcastReceiver btSnapBack = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED
+                    .equals(intent.getAction())) {
+                return;
+            }
+            int state = intent.getIntExtra(
+                    android.bluetooth.BluetoothAdapter.EXTRA_STATE, -1);
+            if (state == android.bluetooth.BluetoothAdapter.STATE_ON) {
+                if (!AlpOps.btBlockCommitted(context)) {
+                    return;
+                }
+                android.util.Log.d(TAG, "snap-back: bluetooth ON while blocked");
+                AlpOps.ensureBluetoothOff(context);
+                AlpStats.record(context, "bt_snapback");
+            }
+        }
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -86,6 +110,8 @@ public class AlpForegroundService extends Service {
         startForeground(NOTIF_ID, buildNotification());
         registerReceiver(snapBack,
                 new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION));
+        registerReceiver(btSnapBack, new IntentFilter(
+                android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED));
         handler.removeCallbacks(reassert);
         handler.post(reassert);
         enforceIfBlocked();
@@ -97,6 +123,10 @@ public class AlpForegroundService extends Service {
         handler.removeCallbacks(reassert);
         try {
             unregisterReceiver(snapBack);
+        } catch (Exception ignored) {
+        }
+        try {
+            unregisterReceiver(btSnapBack);
         } catch (Exception ignored) {
         }
         super.onDestroy();
@@ -123,6 +153,12 @@ public class AlpForegroundService extends Service {
     }
 
     private void setChannel() {
+        // NotificationChannel does not exist before API 26; referencing it
+        // there throws NoClassDefFoundError (an Error), so legacy builds
+        // skip channel creation entirely and post directly.
+        if (android.os.Build.VERSION.SDK_INT < 26) {
+            return;
+        }
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         NotificationChannel ch = new NotificationChannel(CHANNEL_ID,
                 "ALP Lockdown", NotificationManager.IMPORTANCE_LOW);
@@ -131,16 +167,32 @@ public class AlpForegroundService extends Service {
         nm.createNotificationChannel(ch);
     }
 
+    @SuppressWarnings("deprecation")
     private Notification buildNotification() {
         Intent open = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(this, 0, open,
                 PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this, CHANNEL_ID)
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            return new Notification.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_lock_lock)
+                    .setContentTitle("ALP—Lockdown active")
+                    .setContentText("Device is under policy control")
+                    .setContentIntent(pi)
+                    .setOngoing(true)
+                    .build();
+        }
+        // Pre-26 builder: same persistent notification, no channel.
+        Notification n = new Notification.Builder(this)
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
                 .setContentTitle("ALP—Lockdown active")
                 .setContentText("Device is under policy control")
                 .setContentIntent(pi)
                 .setOngoing(true)
                 .build();
+        try {
+            n.priority = Notification.PRIORITY_MIN;
+        } catch (Exception ignored) {
+        }
+        return n;
     }
 }

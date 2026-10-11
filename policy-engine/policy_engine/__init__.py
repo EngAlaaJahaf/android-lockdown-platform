@@ -15,6 +15,11 @@ from typing import Optional
 
 
 # ---- Feature vocabulary (single source; must match capability FEATURES) ----
+# Base lanes (AD-2) + the ManageEngine MDM Plus restriction catalog (profile #904
+# export). Feature keys beyond the base lanes come from backend.restrictions and
+# carry honest tiers there; adding them to the vocabulary lets catalog-derived
+# custom policies flow through creation/apply without silent filtering. Devices
+# whose capability proves a lane NOT_FEASIBLE still refuse that lane at apply.
 FEATURES = (
     "WIFI", "BLUETOOTH", "MOBILE_DATA", "LOCATION", "GPS", "CAMERA", "MICROPHONE",
     "USB", "ADB", "DEVELOPER_OPTIONS", "SAFE_BOOT", "FACTORY_RESET",
@@ -22,6 +27,27 @@ FEATURES = (
     "TETHERING", "ACCOUNTS", "USER_MANAGEMENT", "SCREEN_CAPTURE", "LOCK_TASK",
     "APPLICATIONS", "CALLS", "SMS", "CONTACTS", "ETHERNET", "USB_NETWORKING",
     "VPN", "BLUETOOTH_PAN", "FACTORY_RESET_RECOVERY", "REFLAH_FIRMWARE",
+    # ---- ManageEngine MDM Plus restriction catalog (profile #904 export) ----
+    "ADAPTIVE_BRIGHTNESS", "AIRPLANE_MODE", "AIR_COMMAND", "AIR_VIEW",
+    "AMBIENT_DISPLAY", "ANDROID_BEAM", "APP_PERMISSIONS", "AUTOFILL",
+    "AUTO_SYNC", "BACKGROUND_DATA", "BACKGROUND_PROCESS_LIMIT",
+    "BLUETOOTH_CALL", "BLUETOOTH_DISCOVERY", "BLUETOOTH_PAIRING",
+    "BLUETOOTH_TETHERING", "BLUETOOTH_TRANSFER", "BRIGHTNESS_LOCK",
+    "BROWSER_AUTOFILL", "BROWSER_COOKIES", "BROWSER_FRAUD_WARN",
+    "BROWSER_JAVASCRIPT", "BROWSER_POPUPS", "CAMERA_LOCKSCREEN",
+    "CERT_AUTH_APPS", "CERT_INSTALL", "CLIPBOARD", "CLIPBOARD_SHARE",
+    "DATA_SAVER", "FIRMWARE_RECOVERY", "FORCE_STOP_LOCK", "GOOGLE_APPS",
+    "GOOGLE_MAPS", "GMAIL_APP", "YOUTUBE_APP", "CHROME_APP", "PLAYSTORE_APP",
+    "GOOGLE_VOICE", "MMS", "MOCK_LOCATIONS", "MODIFY_DEFAULT_SETTINGS",
+    "NFC", "NOTIFICATION_MODE", "NOTIFICATION_PREF", "OS_UPGRADE",
+    "PLAY_ACCOUNTS", "PLAY_PROTECT", "POWER_OFF", "PRINTING", "REPORT_CRASH",
+    "ROAMING_CALL", "ROAMING_DATA", "ROAMING_PUSH", "ROAMING_SYNC",
+    "SCREEN_BRIGHTNESS", "SCREEN_TIMEOUT", "SCREEN_TIMEOUT_LOCK",
+    "SD_ENCRYPTION", "SD_MOVE_APPS", "SD_STORE", "SET_TIME", "SET_TIMEZONE",
+    "SET_TIME_ZONE", "SHARE_VIA", "SMART_CLIP", "STOP_SYSTEM_APPS",
+    "STORAGE_ENCRYPTION", "S_BEAM", "S_VOICE", "TERMINATE_APP_ON_EXIT",
+    "UNINSTALL_APPS", "USB_STORAGE", "WIFI_CONFIG", "WIFI_DIRECT",
+    "WIFI_UNSECURE",
 )
 
 
@@ -52,6 +78,7 @@ class Policy:
     created_by: str = ""
     created_at: str = ""
     change_reason: str = ""
+    recovery_attempts: Optional[int] = None
 
     def feature_map(self) -> dict:
         return {r.feature: r for r in self.requirements}

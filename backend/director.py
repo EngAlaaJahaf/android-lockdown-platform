@@ -110,6 +110,14 @@ class Director:
             raise ApplyBlocked(
                 f"policy {policy.policy_id} has {len(snap.exceptions)} unresolved "
                 f"exceptions on {device_id}: {sorted(snap.exceptions)}")
+        if snap.exceptions:
+            # Applied anyway (force / partial-apply consent): the enforceable
+            # lanes below are still sent, but the conflicting lanes are recorded
+            # so the console can name exactly what this device refused.
+            res.notes.append(
+                "partial-apply: %d lane(s) have no enforceable mechanism on this "
+                "device and were skipped: %s"
+                % (len(snap.exceptions), ", ".join(sorted(snap.exceptions))))
 
         # Optional transport-safe lane filter (e.g. exclude ADB/USB lanes whose
         # restrictions would sever the adb channel on lab AVDs).
@@ -145,7 +153,8 @@ class Director:
             expected[r.feature] = "OFF" if r.desired == "BLOCK" else ("ON" if r.desired == "ALLOW" else "RESTRICT")
         env = new_command(job_execution_id, device_id, "APPLY_POLICY",
                           {"policy_id": policy.policy_id, "version": policy.version,
-                           "snapshot": [r.__dict__ for r in effective]},
+                           "snapshot": [r.__dict__ for r in effective],
+                           "recovery_attempts": getattr(policy, "recovery_attempts", None)},
                           key=self.signing_key)
         res.command = env
 
@@ -185,7 +194,8 @@ class Director:
         except Exception:
             new_state = "ENROLLED"
         self._persist(device_id, policy.policy_id, verdict.result, res.evidence_id,
-                      new_state, compliance_details)
+                      new_state, compliance_details,
+                      exceptions=sorted(snap.exceptions))
         res.stage = "COMPLETE"
         res.audit_id = self.audit.record(
             "cli", op_role, "AD4_APPLY", device_id=device_id,
@@ -206,7 +216,8 @@ class Director:
 
     def _persist(self, device_id: str, policy_id: str,
                  result: str, evidence_id: str, new_state: str,
-                 compliance_details: dict = None):
+                 compliance_details: dict = None,
+                 exceptions: Optional[list] = None):
         with connect(self.db_path) as c:
             row = c.execute("SELECT id, enrollment_state FROM devices WHERE device_id=?",
                             (device_id,)).fetchone()
@@ -215,9 +226,17 @@ class Director:
                         "PARTIAL": "PARTIAL", "UNKNOWN": "UNKNOWN"}.get(result, "UNKNOWN")
                 # Enrollment never advances on a failed/unknown verification —
                 # the policy-state vocabulary (COMPLIANT/QUARANTINED/…) is only
-                # recorded once the device actually passed.
+                # recorded once the device actually passed. A PARTIAL verdict,
+                # though, means the profile IS deployed (device under
+                # management) with named gaps: the device leaves
+                # ENROLLMENT_PENDING for ENROLLED while the gap stays visible
+                # in compliance_state=PARTIAL. Enrollment and compliance are
+                # different axes — conflating them is what stranded managed
+                # phones on "Enrollment Pending" forever.
                 dev_state = (_STATE_TO_DEVICE_VOCAB.get(new_state, "COMPLIANT")
-                             if result == "PASS" else row["enrollment_state"])
+                             if result == "PASS"
+                             else ("ENROLLED" if result == "PARTIAL"
+                                   else row["enrollment_state"]))
                 c.execute("UPDATE devices SET enrollment_state=?, compliance_state=?, "
                           "last_verification_at=datetime('now') WHERE device_id=?",
                           (dev_state, comp, device_id))
@@ -229,6 +248,12 @@ class Director:
                 pol_row = c.execute("SELECT id FROM policies WHERE policy_id=?",
                                     (policy_id,)).fetchone()
                 if pol_row:
+                    # unresolved_lanes travels with the compliance snapshot so the
+                    # device page can name which restrictions this handset refused
+                    # instead of only showing a generic non-compliant verdict.
+                    if exceptions:
+                        compliance_details = dict(compliance_details or {})
+                        compliance_details["__unresolved_lanes__"] = sorted(exceptions)
                     c.execute("INSERT INTO compliance (device_id, policy_id, result, details, checked_at) "
                               "VALUES (?,?,?,?,datetime('now'))",
                               (row["id"], pol_row["id"], comp,

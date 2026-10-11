@@ -250,6 +250,19 @@ class RecoveryVault:
             return {"ok": False, "reason": "invalid credential length"}
         return {"ok": True, "reason": ""}
 
+    def offline_secret(self, device_id: str) -> bytes:
+        """Raw per-device secret for OFFLINE emergency-code derivation.
+
+        Same 32 bytes the vault guards; returned only inside this console
+        process (caller: emergency offline-code derivation / provisioning).
+        Never logged, never API-exposed raw. Raises ValueError when missing,
+        revoked or undecryptable — verified by verify_for() first.
+        """
+        gate = self.verify_for(device_id)
+        if not gate["ok"]:
+            raise ValueError(gate["reason"])
+        return self._decrypt(self._row(device_id))
+
     def status(self, device_id: str) -> dict:
         """Display-only status; NEVER includes the secret."""
         row = self._row(device_id)

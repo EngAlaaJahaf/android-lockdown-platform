@@ -20,6 +20,7 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final String ACTION_REPORT = "com.alp.agent.REPORT_CAPABILITY";
     public static final String ACTION_WITHDRAW_DO = "com.alp.agent.WITHDRAW_DO";
     public static final String ACTION_PROVISION_PIN = "com.alp.agent.PROVISION_PIN";
+    public static final String ACTION_EMERGENCY_SECRET = "com.alp.agent.EMERGENCY_SECRET";
 
     @Override
     public void onReceive(Context context, Intent intent) {

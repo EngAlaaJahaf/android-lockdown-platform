@@ -47,7 +47,8 @@ from backend.workflows import (attached_serials, attached_detailed,           # 
                                enroll_device, persist_reference_policies,
                                run_director_apply, resolve_policy, live_probe,
                                vendor_adapter_for_device, classify_device,
-                               is_agent_installed,
+                               is_agent_installed, is_device_owner_active,
+                               api_level_of,
                                apps as apps_inventory,
                                create_custom_policy)
 from backend.channel import adb_channel            # noqa: E402
@@ -199,16 +200,41 @@ class Controller:
         Plug a phone in and the UI polls this (4 s timer) and shows it
         immediately — "يتعرّف عليه مباشرة" — ready to register in one click.
         """
-        reg = {d["serial"] for d in self.devices()}
+        reg = {d["serial"]: d for d in self.devices()}
         out = []
         for d in attached_detailed():
             model = (d["model"] or "").replace("_", "-")   # SM_J337P -> SM-J337P
             ready = bool(d["ready"])
-            registered = d["serial"] in reg
+            row = reg.get(d["serial"])
+            registered = row is not None
             # A device with no agent can never receive a policy: the New
             # Devices page gates every later step behind Install when this
             # is false, so the operator cannot silently skip it.
             agent = is_agent_installed(d["serial"]) if ready else False
+            # API level decides WHICH build installs: Android 5-6 handsets
+            # refuse the standard APK (INSTALL_FAILED_OLDER_SDK), so the UI
+            # offers the guarded legacy build instead of a dead button.
+            try:
+                api = api_level_of(d["serial"]) if ready else 0
+            except Exception:
+                api = 0
+            legacy = bool(ready and 0 < api < 24)
+            # Ownership is read from the DB, and that column is only ever
+            # written from a dumpsys proof (provision_device_owner). An
+            # "ACTIVE" here therefore means the phone really is an owner —
+            # which is exactly what every restriction needs.
+            owner_state = ((row or {}).get("device_owner_state") or "NONE").upper()
+            # ...unless the grant was removed on the handset afterwards (the
+            # package stays — Android forbids uninstalling a device owner —
+            # while dpm lists no owner). Re-read live for attached phones so
+            # the Connected tab offers Make Owner instead of a blind Add.
+            if ready and agent:
+                try:
+                    if not is_device_owner_active(d["serial"]):
+                        owner_state = "NONE"
+                except Exception:
+                    pass
+            owner_active = owner_state == "ACTIVE"
             # The single source of truth for "what now": any console — web or
             # desktop, current or future — renders exactly this step instead
             # of re-implementing the gating logic (and getting it wrong).
@@ -222,6 +248,10 @@ class Controller:
             elif not registered:
                 step = ("register",
                         "التطبيق مثبت — سجّل الجهاز لبدء إدارته")
+            elif not owner_active:
+                step = ("provision_owner",
+                        "الجهاز مسجّل لكنه ليس مالك جهاز — Android لن يطبّق أي "
+                        "قيد قبل ذلك. ثبّت التطبيق كمالك جهاز من الزر المجاور.")
             else:
                 step = ("group",
                         "الجهاز جاهز — أضفه إلى مجموعة لنشر ملفاتها عليه")
@@ -232,6 +262,10 @@ class Controller:
                 "ready": ready,
                 "registered": registered,
                 "agent_installed": agent,
+                "api_level": api,
+                "legacy_build": legacy,
+                "device_owner": owner_active,
+                "device_owner_state": owner_state,
                 "next_step": step[0],
                 "next_step_reason": step[1],
             })
@@ -332,11 +366,13 @@ class Controller:
             logger.log_error("apps", ex, serial=serial)
             return {"ok": False, "error": f"{type(ex).__name__}: {ex}"}
 
-    def create_policy(self, name: str, category: str, features, risk: str = "MEDIUM") -> dict:
+    def create_policy(self, name: str, category: str, features, risk: str = "MEDIUM",
+                      recovery_attempts: int | None = None) -> dict:
         """Create a console-managed custom policy (checkbox builder / wizard)."""
         try:
             p = create_custom_policy(name, category, features, risk=risk,
-                                     created_by="console")
+                                     created_by="console",
+                                     recovery_attempts=recovery_attempts)
             logger.log_event("policy", "created", policy_id=p.policy_id,
                              category=p.category, features=len(p.requirements))
             return {"ok": True, "policy_id": p.policy_id,

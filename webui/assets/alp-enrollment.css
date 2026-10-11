@@ -1,0 +1,89 @@
+/**
+ * alp-enrollment.css — Enrollment section components.
+ *
+ * Every value below is taken from the ManageEngine reference stylesheets
+ * (webui/assets/me/*.css), not invented:
+ *   warning box: .alert-warning-notification  -> bg #FEF8EB, border #FCDD99
+ *   info box:    message-box info vars         -> bg #EAF0FC, border #D5E0F8
+ *   banner box:  radius 5px, padding 10px, font 13px, margin-bottom 15px
+ *   active link blue: --ecs-hyperlink-light    -> #006AFF
+ * Reusable: any new section gets the reference look by using
+ * .enr-tabs/.enr-tab(.active) and .enr-banner(.warn/.info) — no inline
+ * style copies, single source of truth.
+ */
+
+/* Tab strip: plain link-style tabs, active = blue text + blue underline. */
+.enr-tabs {
+  display: flex;
+  gap: 30px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 15px;
+  padding: 0 2px;
+}
+.enr-tab {
+  font-size: 14px;
+  color: #333;
+  padding: 10px 2px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  user-select: none;
+  white-space: nowrap;
+}
+.enr-tab:hover {
+  color: #006AFF;
+}
+.enr-tab.active {
+  color: #006AFF;
+  border-bottom-color: #006AFF;
+}
+
+/* Notice banner: badge + bold title + description (+ optional blue link). */
+.enr-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  color: #333;
+}
+.enr-banner.warn {
+  background: #FEF8EB;
+  border: 1px solid #FCDD99;
+}
+.enr-banner.info {
+  background: #EAF0FC;
+  border: 1px solid #D5E0F8;
+}
+.enr-banner-badge {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f5821f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.enr-banner.info .enr-banner-badge {
+  background: #006AFF;
+}
+.enr-banner-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.enr-banner a {
+  color: #006AFF;
+  text-decoration: none;
+}
+.enr-banner a:hover {
+  text-decoration: underline;
+}

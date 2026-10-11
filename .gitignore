@@ -12,10 +12,29 @@ reports/DEV-1/
 # Local SQLite state (contains runtime device data, never a source artifact)
 database/alp.db
 database/alp.db.*
+backend/db/alp.db*
 # Recovery-Vault encryption key + signed R0/R1 command envelopes (runtime secrets/evidence)
 database/vault.key
 database/audit_r0/
 reports/live_commands/
+reports/phase1/commands/
 # Runtime watcher/diagnostic logs (live files, never packaged)
 *.log
 scripts/restore_watch.log
+# Third-party design-reference assets (ManageEngine/Zoho) — reference only,
+# never publish to GitHub
+/webui/images/
+/webui/mc/
+/webui/fonts/
+/webui/views/
+/webui/assets/me/
+/webui/assets/fonts/Zoho_*
+/webui/auth_bridge.html
+# Professor-supplied reference screenshots (third-party)
+/android-agent/Screen/
+# Local build/runtime artifacts
+android-agent/alp-agent-release.apk*
+android-agent/alp-agent-legacy.apk*
+android-agent/alp_pubkey.hex
+android_lockdown.db*
+database/vault.key.*

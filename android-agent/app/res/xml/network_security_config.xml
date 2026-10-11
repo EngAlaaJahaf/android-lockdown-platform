@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        This agent has no internet path. Cleartext is permitted to exactly one
+        address: 10.0.2.2, which gnirehtet maps to the host's localhost over
+        the USB cable (same convention as the Android emulator). Every other
+        destination stays blocked, so the permission cannot be abused to reach
+        anything beyond the local control panel.
+    -->
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
