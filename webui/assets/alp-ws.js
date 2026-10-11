@@ -68,22 +68,29 @@
   }
 
   function refreshFleetViews() {
+    if (typeof window.populateDevices === 'function') {
+      window.populateDevices();
+    }
+    if (typeof window.populateNewDevices === 'function') {
+      window.populateNewDevices();
+    }
     if (typeof window.dashboard === 'function') {
       window.dashboard();
     }
-    if (typeof window.renderRealDashboard === 'function' && typeof window.api === 'function') {
-      window.api('/devices/detected', 'GET').then(function (res) {
-        if (res && res.ok && typeof window.renderDetected === 'function') {
-          window.renderDetected(res.data);
-        }
-      });
-      window.api('/devices', 'GET').then(function (res) {
-        if (res && res.ok && typeof window.renderRegistered === 'function') {
-          window.renderRegistered(res.data);
-        }
-      });
+    const wsComp = document.getElementById('workspaceComprehensiveDeviceDetails');
+    if (wsComp && wsComp.style.display !== 'none' && window.CURRENT_COMP_DID) {
+      if (typeof window.openComprehensiveDeviceDetails === 'function') {
+        window.openComprehensiveDeviceDetails(window.CURRENT_COMP_DID, window.CURRENT_COMP_TAB || 'summary', false, true);
+      }
+    }
+    const wsDD = document.getElementById('workspaceDeviceDetails');
+    if (wsDD && wsDD.style.display !== 'none' && window.CURRENT_DETAILS_DID) {
+      if (typeof window.openDeviceDetails === 'function') {
+        window.openDeviceDetails(window.CURRENT_DETAILS_DID, false, window.CURRENT_DETAILS_TAB || 'groups', true);
+      }
     }
   }
+  window.refreshFleetViews = refreshFleetViews;
 
   function initWebSocket() {
     if (!window.WebSocket) {

@@ -29,6 +29,7 @@ from backend.workflows import (  # noqa: E402
 )
 from backend.fastapi_core.security import get_current_session, authorize_action  # noqa: E402
 from backend.fastapi_core.routers.auth import get_controller  # noqa: E402
+from backend.fastapi_core.websocket_manager import ws_manager  # noqa: E402
 
 router = APIRouter(prefix="/api/v1", tags=["Devices & ADB"])
 
@@ -237,6 +238,7 @@ def enroll(req: EnrollRequest, sess: dict = Depends(get_current_session)):
     if not serial:
         raise HTTPException(status_code=400, detail="no serial given and no device attached via ADB")
     info = enroll_device(req.device_id, serial, device_owner=bool(req.device_owner), lab=bool(req.lab))
+    ws_manager.broadcast_from_thread("devices", {"device_id": req.device_id, "action": "enroll", "event": "enrolled"})
     return {"ok": True, "data": info}
 
 
@@ -251,6 +253,7 @@ def install_agent(req: InstallAgentRequest, sess: dict = Depends(get_current_ses
     )
     if not info.get("installed"):
         raise HTTPException(status_code=409, detail=info.get("error") or "agent install failed")
+    ws_manager.broadcast_from_thread("devices", {"device_id": req.device_id or req.serial, "action": "install_agent", "event": "installed"})
     return {"ok": True, "data": info}
 
 
@@ -272,6 +275,7 @@ def provision_owner(req: ProvisionOwnerRequest, sess: dict = Depends(get_current
             status_code=409,
             detail=info.get("error") or info.get("hint") or "device-owner provisioning did not complete",
         )
+    ws_manager.broadcast_from_thread("devices", {"device_id": req.device_id or req.serial, "action": "provision_owner", "event": "provisioned"})
     return {"ok": True, "data": info}
 
 
@@ -292,6 +296,7 @@ def reset_policies(req: ResetPoliciesRequest, sess: dict = Depends(get_current_s
     authorize_action(sess, "APPLY", mfa=req.mfa or "")
     try:
         result = reset_device_policies(req.device_id, serial=req.serial)
+        ws_manager.broadcast_from_thread("devices", {"device_id": req.device_id, "action": "reset_policies", "event": "reset"})
         return {"ok": True, "data": result}
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
@@ -308,6 +313,7 @@ def scan_device_endpoint(did: str, sess: dict = Depends(get_current_session)):
     authorize_action(sess, "APPLY", require_mfa=False)
     from backend import device_inventory
     inv = device_inventory.probe_and_persist_device_inventory(did)
+    ws_manager.broadcast_from_thread("devices", {"device_id": did, "action": "scan", "event": "scanned"})
     return {"ok": True, "data": inv}
 
 
@@ -328,6 +334,7 @@ def trigger_device_action(
         actor=actor,
         role=role
     )
+    ws_manager.broadcast_from_thread("devices", {"device_id": did, "action": req.action, "result": result, "event": "action_executed"})
     return {"ok": result.get("ok", True), "data": result}
 
 
@@ -344,7 +351,9 @@ def delete_device_endpoint(did: str, req: DeleteDeviceRequest, sess: dict = Depe
         },
     )
     try:
-        return {"ok": True, "data": delete_device(did, force=bool(req.force))}
+        res = delete_device(did, force=bool(req.force))
+        ws_manager.broadcast_from_thread("devices", {"device_id": did, "action": "delete", "event": "deleted"})
+        return {"ok": True, "data": res}
     except ValueError as ex:
         raise HTTPException(status_code=409, detail=str(ex))
 

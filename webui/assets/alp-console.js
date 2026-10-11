@@ -2516,39 +2516,43 @@ function calculateNextContactTime(lastContact) {
   }
 }
 
-async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true) {
+async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true, silent = false) {
   if (!did) return;
   CURRENT_COMP_DID = did;
   CURRENT_DETAILS_DID = did;
+  window.CURRENT_COMP_DID = did;
+  window.CURRENT_COMP_TAB = tab;
 
-  hideAllDeviceWorkspaces();
-  const wsComp = $('workspaceComprehensiveDeviceDetails');
-  if (wsComp) wsComp.style.display = 'block';
+  if (!silent) {
+    hideAllDeviceWorkspaces();
+    const wsComp = $('workspaceComprehensiveDeviceDetails');
+    if (wsComp) wsComp.style.display = 'block';
 
-  // Keep navigation tab active
-  const sideGD = $('subTab_GroupsAndDevices') || $('sideNavGroupsDevices');
-  if (sideGD) sideGD.classList.add('active', 'common-bg', 'anchor-text__imp');
-  updateNavSlider();
+    // Keep navigation tab active
+    const sideGD = $('subTab_GroupsAndDevices') || $('sideNavGroupsDevices');
+    if (sideGD) sideGD.classList.add('active', 'common-bg', 'anchor-text__imp');
+    updateNavSlider();
 
-  if (push) {
-    history.pushState(null, '', `#/uems/mdm/inventory/devicesList/${encodeURIComponent(did)}/${tab}`);
+    if (push) {
+      history.pushState(null, '', `#/uems/mdm/inventory/devicesList/${encodeURIComponent(did)}/${tab}`);
+    }
+
+    // 1. Immediate placeholder reset so stale or mock data never appears
+    const breadName = $('compDevBreadName'); if (breadName) breadName.textContent = did;
+    const headerName = $('compDevHeaderName'); if (headerName) headerName.textContent = did;
+    const headerModel = $('compDevHeaderModel'); if (headerModel) headerModel.textContent = 'Loading...';
+    const headerUsername = $('compDevHeaderUsername'); if (headerUsername) headerUsername.textContent = 'admin';
+    const headerOsVer = $('compDevHeaderOsVersion'); if (headerOsVer) headerOsVer.textContent = '--';
+    const headerRooted = $('compDevRooted'); if (headerRooted) headerRooted.textContent = '--';
+    const headerLastScan = $('compDevHeaderLastScan'); if (headerLastScan) headerLastScan.textContent = '--';
+    const headerNextContact = $('compDevHeaderNextContact'); if (headerNextContact) headerNextContact.textContent = '--';
+    const sumName = $('compDevSumName'); if (sumName) sumName.textContent = did;
+    const sumModel = $('compDevSumModel'); if (sumModel) sumModel.textContent = 'Loading...';
   }
-
-  // 1. Immediate placeholder reset so stale or mock data never appears
-  const breadName = $('compDevBreadName'); if (breadName) breadName.textContent = did;
-  const headerName = $('compDevHeaderName'); if (headerName) headerName.textContent = did;
-  const headerModel = $('compDevHeaderModel'); if (headerModel) headerModel.textContent = 'Loading...';
-  const headerUsername = $('compDevHeaderUsername'); if (headerUsername) headerUsername.textContent = 'admin';
-  const headerOsVer = $('compDevHeaderOsVersion'); if (headerOsVer) headerOsVer.textContent = '--';
-  const headerRooted = $('compDevHeaderRooted'); if (headerRooted) headerRooted.textContent = '--';
-  const headerLastScan = $('compDevHeaderLastScan'); if (headerLastScan) headerLastScan.textContent = '--';
-  const headerNextContact = $('compDevHeaderNextContact'); if (headerNextContact) headerNextContact.textContent = '--';
-  const sumName = $('compDevSumName'); if (sumName) sumName.textContent = did;
-  const sumModel = $('compDevSumModel'); if (sumModel) sumModel.textContent = 'Loading...';
 
   // 2. Instant render from memory cache if available (0ms)
   const cached = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did) || x.serial === did);
-  if (cached) {
+  if (cached && !silent) {
     CURRENT_COMP_DEVICE = cached;
     renderComprehensiveDeviceView(cached, did, tab);
   }
@@ -2580,6 +2584,7 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
   CURRENT_COMP_DEVICE = dev;
   renderComprehensiveDeviceView(dev, did, tab);
 }
+window.openComprehensiveDeviceDetails = openComprehensiveDeviceDetails;
 
 function renderComprehensiveDeviceView(dev, did, tab) {
 
@@ -4355,10 +4360,15 @@ function updateDevDetailsCounts() {
   if (actEl) actEl.textContent = DEVICE_ACTIONS_STORE[did] ? DEVICE_ACTIONS_STORE[did].length : 0;
 }
 
-async function openDeviceDetails(did, push = true, initialTab = 'groups') {
+async function openDeviceDetails(did, push = true, initialTab = 'groups', silent = false) {
+  if (!did) {
+    backToDevicesSummary();
+    return;
+  }
   CURRENT_DETAILS_DID = did;
-  // The emergency-code panel always belongs to the opened handset: show its
-  // id and drop any code generated for a previously viewed device.
+  window.CURRENT_DETAILS_DID = did;
+  window.CURRENT_DETAILS_TAB = initialTab;
+
   const emgDid = $('devEmergencyDid');
   if (emgDid) emgDid.textContent = did;
   const emgRes = $('devEmergencyResult');
@@ -4366,38 +4376,37 @@ async function openDeviceDetails(did, push = true, initialTab = 'groups') {
   const emgSt = $('devEmergencyStatus');
   if (emgSt) { emgSt.textContent = ''; emgSt.className = 'statusline'; }
 
-  const wsGD = $('workspaceGroupsDevices');
-  const wsProf = $('workspaceProfiles');
-  const wsInsp = $('workspaceInspector');
-  const wsCP = $('workspaceCreateProfile');
-  const wsCfg = $('workspaceConfigureProfile');
-  const wsPD = $('workspaceProfileDetails');
-  const wsDD = $('workspaceDeviceDetails');
+  if (!silent) {
+    hideAllDeviceWorkspaces();
+    const wsDD = $('workspaceDeviceDetails');
+    if (wsDD) wsDD.style.display = 'block';
 
-  document.body.classList.remove('in-profile-editor');
-  if (wsGD) wsGD.style.display = 'none';
-  if (wsProf) wsProf.style.display = 'none';
-  if (wsInsp) wsInsp.style.display = 'none';
-  if (wsCP) wsCP.style.display = 'none';
-  if (wsCfg) wsCfg.style.display = 'none';
-  if (wsPD) wsPD.style.display = 'none';
-  const wsComp = $('workspaceComprehensiveDeviceDetails');
-  if (wsComp) wsComp.style.display = 'none';
-  if (wsDD) wsDD.style.display = 'block';
+    // Ensure left navigation drawer keeps Groups & Devices highlighted
+    const sideGD = $('subTab_GroupsAndDevices') || $('sideNavGroupsDevices');
+    const sideProf = $('subTab_profiles') || $('sideNavProfiles');
+    if (sideGD) sideGD.classList.add('active', 'common-bg', 'anchor-text__imp');
+    if (sideProf) sideProf.classList.remove('active', 'common-bg', 'anchor-text__imp');
+    updateNavSlider();
 
-  // Ensure left navigation drawer keeps Groups & Devices highlighted
-  const sideGD = $('subTab_GroupsAndDevices') || $('sideNavGroupsDevices');
-  const sideProf = $('subTab_profiles') || $('sideNavProfiles');
-  if (sideGD) {
-    sideGD.classList.add('active', 'common-bg', 'anchor-text__imp');
+    // Reset fields immediately so mock text never flashes
+    const bName = $('devDetailsBreadName'); if (bName) bName.textContent = did;
+    const tName = $('devDetailsTitleName'); if (tName) tName.textContent = did;
+    const lContact = $('devDetailsLastContact'); if (lContact) lContact.textContent = '--';
+    const gEl = $('devSumGroupsCount'); if (gEl) gEl.textContent = '0';
+    const pEl = $('devSumProfilesCount'); if (pEl) pEl.textContent = '0';
+    const aEl = $('devSumAppsCount'); if (aEl) aEl.textContent = '0';
+    const dEl = $('devSumDocsCount'); if (dEl) dEl.textContent = '0';
+    const actEl = $('devSumActionsCount'); if (actEl) actEl.textContent = '0';
   }
-  if (sideProf) {
-    sideProf.classList.remove('active', 'common-bg', 'anchor-text__imp');
-  }
-  updateNavSlider();
 
-  // Find device info from server API or memory fallback
-  let dev = null;
+  // 1. Instant render from memory cache if available (0ms)
+  let dev = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did) || x.serial === did);
+  if (dev && !silent) {
+    CURRENT_DETAILS_DEVICE = dev;
+    applyDeviceDetailsDOM(dev, did, initialTab, push);
+  }
+
+  // 2. Fetch full telemetry from API
   try {
     let r = await api('/devices/' + encodeURIComponent(did) + '/details', 'GET');
     if (r && r.ok && r.data) {
@@ -4406,61 +4415,49 @@ async function openDeviceDetails(did, push = true, initialTab = 'groups') {
   } catch (e) {
     console.warn('Failed to load device details from API:', e);
   }
-  if (!dev) {
-    dev = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did));
-  }
+
   if (!dev) {
     dev = {
       device_id: did,
-      model: did.includes('SM') ? 'Samsung Galaxy S21' : 'Pixel 7 Pro',
-      android_version: '13',
-      serial: 'R5CR' + (did.replace(/[^0-9]/g, '') || '7892'),
-      last_seen_at: 'Oct 03, 2026 11:25 AM',
-      user_ref: 'companymdm01'
+      model: 'Managed Device',
+      android_version: '15',
+      serial: did.replace(/^AVD-/, ''),
+      last_seen_at: formatNowMe(),
+      user_ref: 'admin'
     };
   }
 
-  // Ensure arrays exist without fake hardcoded items
-  if (!dev.groups) {
-    dev.groups = [];
-  }
-  if (!dev.profiles) {
-    dev.profiles = [];
-  }
-  if (!dev.apps) {
-    dev.apps = [
-      { name: 'ALP Lockdown Agent', package_name: 'com.android.lockdown.platform', version: '2.4.0', status: 'Installed', type: 'Enterprise App' },
-      { name: 'Enterprise Portal', package_name: 'com.manageengine.mdm.portal', version: '1.8.2', status: 'Installed', type: 'Enterprise App' },
-      { name: 'Google Chrome', package_name: 'com.android.chrome', version: '118.0', status: 'Installed', type: 'Store App' }
-    ];
-  }
-  if (!dev.documents) {
-    dev.documents = [];
-  }
+  if (!Array.isArray(dev.groups)) dev.groups = [];
+  if (!Array.isArray(dev.profiles)) dev.profiles = [];
+  if (!Array.isArray(dev.apps)) dev.apps = [];
+  if (!Array.isArray(dev.documents)) dev.documents = [];
 
-  // Initialize actions store if needed
-  if (!DEVICE_ACTIONS_STORE[did] || !DEVICE_ACTIONS_STORE[did].length) {
-    DEVICE_ACTIONS_STORE[did] = [
-      { name: 'Scan Device', by: 'admin', time: dev.last_seen_at || 'Just now', status: 'Success', remarks: 'Device scanned successfully' },
-      { name: 'Enroll Device', by: 'admin', time: dev.last_seen_at || 'Just now', status: 'Success', remarks: 'QR Enrollment completed' }
-    ];
+  // Bind real audit logs to actions
+  if (Array.isArray(dev.audit_logs) && dev.audit_logs.length > 0) {
+    DEVICE_ACTIONS_STORE[did] = dev.audit_logs.map(a => ({
+      name: a.action,
+      by: a.actor || 'admin',
+      time: a.created_at || 'Recently',
+      status: a.result === 'SUCCESS' ? 'Success' : (a.result || 'Executed'),
+      remarks: a.reason || a.action
+    }));
+  } else if (!DEVICE_ACTIONS_STORE[did]) {
+    DEVICE_ACTIONS_STORE[did] = [];
   }
 
   CURRENT_DETAILS_DEVICE = dev;
+  applyDeviceDetailsDOM(dev, did, initialTab, push && !silent);
+}
+window.openDeviceDetails = openDeviceDetails;
 
-  // Header and breadcrumbs
+function applyDeviceDetailsDOM(dev, did, initialTab, push) {
   const fullName = dev.device_id + (dev.model ? ' - ' + dev.model : '');
-  const bName = $('devDetailsBreadName');
-  if (bName) bName.textContent = fullName;
-  const tName = $('devDetailsTitleName');
-  if (tName) tName.textContent = fullName;
-  const lContact = $('devDetailsLastContact');
-  if (lContact) lContact.textContent = dev.last_seen_at || 'Oct 03, 2026 11:25 AM';
+  const bName = $('devDetailsBreadName'); if (bName) bName.textContent = fullName;
+  const tName = $('devDetailsTitleName'); if (tName) tName.textContent = fullName;
+  const lContact = $('devDetailsLastContact'); if (lContact) lContact.textContent = dev.last_seen_at || '--';
 
-  // Counts
   updateDevDetailsCounts();
 
-  // Render tab contents
   renderDeviceDetailsPresence(dev);
   renderDeviceDetailsEnforcementNote(dev);
   renderDeviceDetailsGroups(dev);
@@ -4469,7 +4466,6 @@ async function openDeviceDetails(did, push = true, initialTab = 'groups') {
   renderDeviceDetailsDocs(dev);
   renderDeviceDetailsActions(dev);
 
-  // Activate requested tab
   switchDeviceDetailsTab(initialTab, false);
 
   if (push) {
@@ -5918,15 +5914,17 @@ function renderDevicesAuthenticTable(list) {
   if (bodyWrap) bodyWrap.style.height = totalH + 'px';
 
   tb.innerHTML = list.map(function (d, idx) {
-    const username = d.user_ref || ('companymdm0' + (idx > 0 ? idx : ''));
-    const email = (d.user_ref ? d.user_ref : ('companymdm0' + (idx > 0 ? idx : ''))) + '@gmail.com';
-    const isTab = (d.model && d.model.toLowerCase().includes('tab')) || idx === 1 || idx === 8;
+    const username = d.user_ref || 'admin';
+    const email = d.user_ref ? (d.user_ref + '@corporate.internal') : 'admin@alp.local';
+    const isTab = (d.model && d.model.toLowerCase().includes('tab'));
     const devType = isTab ? 'Tablet' : 'Smartphone';
-    const osVer = d.android_version || (idx % 2 === 0 ? '11' : (idx === 1 ? '13' : '10'));
-    const lastSeen = d.last_seen_at || d.created_at || 'Sep 30, 2026 05:41 PM';
-    const imsi = d.serial ? d.serial : ('421115' + (8774843 + idx * 1111));
-    const dispName = d.model || ('SM-' + d.device_id);
+    const osVer = d.android_version || '--';
+    const lastSeen = d.last_seen_at || d.created_at || '--';
+    const imsi = d.serial || '--';
+    const dispName = d.model || d.device_id;
     const did = esc(d.device_id);
+    const grpCount = d.group_count !== undefined ? d.group_count : (d.groups ? d.groups.length : 0);
+    const profCount = d.profile_count !== undefined ? d.profile_count : (d.profiles ? d.profiles.length : 0);
 
     return `<div style="top:${idx * 42}px;" class="ember-table-table-row tbl-devices ${idx % 2 === 0 ? 'ember-even-row evenRow rowEven' : 'ember-odd-row oddRow rowOdd'} ember-view">
   <div class="tbl-devices">
@@ -5945,7 +5943,7 @@ function renderDevicesAuthenticTable(list) {
     <!-- Device Name -->
     <div class="ember-table-cell col-dev-name ember-view">
       <span class="ember-table-content">
-        <a class="ember-view link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="openDeviceDetails('${did}')" href="javascript:void(0)">${esc(d.device_id + (d.model ? '_' + d.model : ''))}</a>
+        <a class="ember-view link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="openComprehensiveDeviceDetails('${did}')" href="javascript:void(0)">${esc(d.device_id + (d.model ? '_' + d.model : ''))}</a>
       </span>
     </div>
     <!-- Email -->
@@ -5967,13 +5965,13 @@ function renderDevicesAuthenticTable(list) {
     <!-- Associated Groups -->
     <div class="ember-table-cell col-dev-groups ember-view">
       <span class="ember-table-content">
-        <a class="ember-view link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="switchGDSubtab('groups')" href="javascript:void(0)">${idx === 4 ? 0 : (idx === 5 ? 2 : 1)}</a>
+        <a class="ember-view link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="switchGDSubtab('groups')" href="javascript:void(0)">${grpCount}</a>
       </span>
     </div>
     <!-- Profile Count -->
     <div class="ember-table-cell col-dev-profiles ember-view">
       <span class="ember-table-content">
-        <a class="ember-view link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="switchSidebarView('profiles')" href="javascript:void(0)">${idx === 3 ? 2 : 1}</a>
+        <a class="ember-view link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="switchSidebarView('profiles')" href="javascript:void(0)">${profCount}</a>
       </span>
     </div>
     <!-- Action (ME MDM action-dropdown) -->
@@ -7561,7 +7559,30 @@ document.addEventListener('keydown', function (e) {
 load();
 setInterval(function () {
   if (!TOKEN) return;
-  if ($('sub-dashboard')?.classList.contains('active')) dashboard();
-  if ($('sub-new_devices')?.classList.contains('active')) populateNewDevices();
-}, 4000);
+  // 1. Dashboard live update
+  if ($('sub-dashboard')?.classList.contains('active')) {
+    dashboard();
+  }
+  // 2. New detected USB devices live update
+  if ($('sub-new_devices')?.classList.contains('active')) {
+    populateNewDevices();
+  }
+  // 3. Devices table live update if on devices panel and table is visible
+  if ($('sub-devices')?.classList.contains('active')) {
+    const wsGD = $('workspaceGroupsDevices');
+    if (wsGD && wsGD.style.display !== 'none') {
+      populateDevices();
+    }
+  }
+  // 4. Comprehensive Device 360 Inventory live update
+  const wsComp = $('workspaceComprehensiveDeviceDetails');
+  if (wsComp && wsComp.style.display !== 'none' && CURRENT_COMP_DID) {
+    openComprehensiveDeviceDetails(CURRENT_COMP_DID, CURRENT_COMP_TAB || 'summary', false, true);
+  }
+  // 5. Basic Device Details live update
+  const wsDD = $('workspaceDeviceDetails');
+  if (wsDD && wsDD.style.display !== 'none' && CURRENT_DETAILS_DID) {
+    openDeviceDetails(CURRENT_DETAILS_DID, false, CURRENT_DETAILS_TAB || 'groups', true);
+  }
+}, 3000);
 
