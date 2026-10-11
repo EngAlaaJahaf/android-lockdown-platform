@@ -168,7 +168,20 @@ async def websocket_endpoint(websocket: WebSocket):
 # Serve root index.html and static files from webui/
 @app.get("/", include_in_schema=False)
 def serve_root():
-    return FileResponse(os.path.join(WEBUI_DIR, "index.html"), media_type="text/html")
+    resp = FileResponse(os.path.join(WEBUI_DIR, "index.html"), media_type="text/html")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+
+@app.get("/index.html", include_in_schema=False)
+def serve_index():
+    resp = FileResponse(os.path.join(WEBUI_DIR, "index.html"), media_type="text/html")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 if os.path.isdir(WEBUI_DIR):

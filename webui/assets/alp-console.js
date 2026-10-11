@@ -2512,7 +2512,7 @@ function calculateNextContactTime(lastContact) {
     const mins = String(d.getMinutes()).padStart(2, '0');
     return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} ${String(hours).padStart(2, '0')}:${mins} ${ampm}`;
   } catch(e) {
-    return 'May 14, 2024 11:01 PM';
+    return formatNowMe();
   }
 }
 
@@ -2534,7 +2534,26 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
     history.pushState(null, '', `#/uems/mdm/inventory/devicesList/${encodeURIComponent(did)}/${tab}`);
   }
 
-  // Load telemetry from API
+  // 1. Immediate placeholder reset so stale or mock data never appears
+  const breadName = $('compDevBreadName'); if (breadName) breadName.textContent = did;
+  const headerName = $('compDevHeaderName'); if (headerName) headerName.textContent = did;
+  const headerModel = $('compDevHeaderModel'); if (headerModel) headerModel.textContent = 'Loading...';
+  const headerUsername = $('compDevHeaderUsername'); if (headerUsername) headerUsername.textContent = 'admin';
+  const headerOsVer = $('compDevHeaderOsVersion'); if (headerOsVer) headerOsVer.textContent = '--';
+  const headerRooted = $('compDevHeaderRooted'); if (headerRooted) headerRooted.textContent = '--';
+  const headerLastScan = $('compDevHeaderLastScan'); if (headerLastScan) headerLastScan.textContent = '--';
+  const headerNextContact = $('compDevHeaderNextContact'); if (headerNextContact) headerNextContact.textContent = '--';
+  const sumName = $('compDevSumName'); if (sumName) sumName.textContent = did;
+  const sumModel = $('compDevSumModel'); if (sumModel) sumModel.textContent = 'Loading...';
+
+  // 2. Instant render from memory cache if available (0ms)
+  const cached = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did) || x.serial === did);
+  if (cached) {
+    CURRENT_COMP_DEVICE = cached;
+    renderComprehensiveDeviceView(cached, did, tab);
+  }
+
+  // 3. Load full telemetry from API
   let dev = null;
   try {
     const r = await api('/devices/' + encodeURIComponent(did) + '/details', 'GET');
@@ -2545,20 +2564,24 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true)
     console.warn('Failed to load device details from API:', e);
   }
   if (!dev) {
-    dev = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did));
+    dev = cached || (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did));
   }
   if (!dev) {
     dev = {
       device_id: did,
-      serial: 'LT8110260130351',
-      model: 'LT_8110',
-      manufacturer: 'LT',
+      serial: did.replace(/^AVD-/, ''),
+      model: 'Managed Device',
+      manufacturer: 'Android',
       android_version: '15',
       last_seen_at: formatNowMe(),
       user_ref: 'admin'
     };
   }
   CURRENT_COMP_DEVICE = dev;
+  renderComprehensiveDeviceView(dev, did, tab);
+}
+
+function renderComprehensiveDeviceView(dev, did, tab) {
 
   const live = dev.live_probe || {};
   const mdi = dev.mddeviceinfo || {};
