@@ -14,6 +14,8 @@ import os
 import re
 import subprocess
 import sys
+import threading
+import time
 from typing import Any, Dict, List, Optional
 
 from backend.db import connect
@@ -27,6 +29,26 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _now_str() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _parse_size_str_to_kb(val: str) -> float:
+    val = val.strip()
+    if not val:
+        return 0.0
+    m = re.match(r'^([\d.]+)\s*([kKmMgGtT]?)b?$', val)
+    if not m:
+        return 0.0
+    num = float(m.group(1))
+    unit = m.group(2).upper()
+    if unit == 'K' or unit == '':
+        return num
+    elif unit == 'M':
+        return num * 1024.0
+    elif unit == 'G':
+        return num * 1024.0 * 1024.0
+    elif unit == 'T':
+        return num * 1024.0 * 1024.0 * 1024.0
+    return num
 
 
 def get_device_row(key: str) -> Optional[dict]:
@@ -328,25 +350,6 @@ def probe_and_persist_device_inventory(serial_or_did: str) -> dict:
         avail_ram_mb = round(avail_kb / 1024, 2) if avail_kb > 0 else round(tot_ram_mb * 0.5, 2)
 
     # 4. Storage (/data)
-    def _parse_size_str_to_kb(val: str) -> float:
-        val = val.strip()
-        if not val:
-            return 0.0
-        m = re.match(r'^([\d.]+)\s*([kKmMgGtT]?)b?$', val)
-        if not m:
-            return 0.0
-        num = float(m.group(1))
-        unit = m.group(2).upper()
-        if unit == 'K' or unit == '':
-            return num
-        elif unit == 'M':
-            return num * 1024.0
-        elif unit == 'G':
-            return num * 1024.0 * 1024.0
-        elif unit == 'T':
-            return num * 1024.0 * 1024.0 * 1024.0
-        return num
-
     df_out = _sh("df", "-k", "/data")
     cap_gb = 0.0
     free_gb = 0.0
@@ -662,3 +665,139 @@ def _create_baseline_inventory_for_device(dev: dict):
     }
 
     save_device_inventory(did, info_dict, net_dict)
+
+
+_RECENT_DYNAMIC_CHECKS: Dict[str, float] = {}
+
+
+def refresh_dynamic_stats(serial_or_did: str) -> dict:
+    """Fast, lightweight dynamic probe for fields that change over time:
+    - Free storage space (/data)
+    - Battery level
+    - Available RAM
+
+    Takes ~100ms instead of 6-8 seconds. Updates SQLite mddeviceinfo and returns updated inventory.
+    """
+    dev = get_device_row(serial_or_did)
+    if not dev:
+        return {}
+    serial = dev.get("serial") or serial_or_did
+    did = dev.get("device_id") or serial_or_did
+
+    adb_bin = workflows.adb()
+    cmd = "df -k /data; echo '---ALP_SEP---'; dumpsys battery; echo '---ALP_SEP---'; cat /proc/meminfo"
+    try:
+        r = subprocess.run([adb_bin, "-s", serial, "shell", cmd],
+                           capture_output=True, text=True, timeout=4,
+                           creationflags=_NO_WINDOW or 0)
+        out = r.stdout if r.returncode == 0 else ""
+    except Exception:
+        out = ""
+
+    if not out:
+        return get_device_inventory(did)
+
+    parts = out.split("---ALP_SEP---")
+    df_raw = parts[0] if len(parts) > 0 else ""
+    bat_raw = parts[1] if len(parts) > 1 else ""
+    mem_raw = parts[2] if len(parts) > 2 else ""
+
+    free_gb = None
+    used_gb = None
+    cap_gb = None
+    df_lines = [l.strip() for l in df_raw.splitlines() if l.strip()]
+    data_line = None
+    for line in df_lines:
+        if "/data" in line and not line.lower().startswith("filesystem"):
+            data_line = line
+            break
+    if not data_line and len(df_lines) > 1:
+        data_line = df_lines[-1]
+
+    if data_line:
+        p = data_line.split()
+        if len(p) >= 4:
+            try:
+                cap_kb = _parse_size_str_to_kb(p[1])
+                free_kb = _parse_size_str_to_kb(p[3])
+                if cap_kb > 0:
+                    cap_gb = round(cap_kb / (1024.0 * 1024.0), 2)
+                    free_gb = round(free_kb / (1024.0 * 1024.0), 2)
+                    used_gb = round(max(0.0, cap_gb - free_gb), 2)
+            except Exception:
+                pass
+
+    bat_m = re.search(r'level:\s*(\d+)', bat_raw)
+    battery_level = f"{bat_m.group(1)}.0%" if bat_m else None
+
+    avail_ram_mb = None
+    avail_m = re.search(r'MemAvailable:\s*(\d+)', mem_raw)
+    if avail_m:
+        avail_ram_mb = round(int(avail_m.group(1)) / 1024, 2)
+    else:
+        free_m = re.search(r'MemFree:\s*(\d+)', mem_raw)
+        buf_m = re.search(r'Buffers:\s*(\d+)', mem_raw)
+        cached_m = re.search(r'Cached:\s*(\d+)', mem_raw)
+        free_kb = int(free_m.group(1)) if free_m else 0
+        buf_kb = int(buf_m.group(1)) if buf_m else 0
+        cached_kb = int(cached_m.group(1)) if cached_m else 0
+        avail_kb = free_kb + buf_kb + cached_kb
+        if avail_kb > 0:
+            avail_ram_mb = round(avail_kb / 1024, 2)
+
+    now = _now_str()
+    updates = []
+    params = []
+    if free_gb is not None:
+        updates.append("available_device_capacity = ?")
+        params.append(free_gb)
+    if used_gb is not None:
+        updates.append("used_device_space = ?")
+        params.append(used_gb)
+    if cap_gb is not None and cap_gb > 0:
+        updates.append("device_capacity = ?")
+        params.append(cap_gb)
+    if battery_level is not None:
+        updates.append("battery_level = ?")
+        params.append(battery_level)
+    if avail_ram_mb is not None:
+        updates.append("available_ram_memory = ?")
+        params.append(avail_ram_mb)
+
+    if updates:
+        updates.append("db_updated_time = ?")
+        params.append(now)
+        params.extend([did, serial])
+        sql = f"UPDATE mddeviceinfo SET {', '.join(updates)} WHERE device_id = ? OR serial_number = ?"
+        with connect() as c:
+            c.execute(sql, tuple(params))
+
+    _RECENT_DYNAMIC_CHECKS[serial] = time.time()
+    return get_device_inventory(did)
+
+
+def refresh_dynamic_stats_background(serial: str, did: str):
+    """Spawns asynchronous background thread to update dynamic stats if not checked within the last 30 seconds."""
+    last_check = _RECENT_DYNAMIC_CHECKS.get(serial, 0.0)
+    if time.time() - last_check < 30.0:
+        return
+    _RECENT_DYNAMIC_CHECKS[serial] = time.time()
+
+    def _worker():
+        try:
+            inv = refresh_dynamic_stats(serial)
+            try:
+                from backend.fastapi_core.websocket_manager import ws_manager
+                ws_manager.broadcast_from_thread("devices", {
+                    "device_id": did,
+                    "serial": serial,
+                    "action": "dynamic_update",
+                    "data": inv
+                })
+            except Exception:
+                pass
+        except Exception as e:
+            print(f"[device_inventory] Background dynamic stats error: {e}")
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()

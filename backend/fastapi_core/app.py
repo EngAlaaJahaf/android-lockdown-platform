@@ -41,6 +41,40 @@ CHAN_DIR = os.path.join(PROJECT_ROOT, "reports", "phase1", "commands")
 _LAST_SERIALS: list[str] = []
 
 
+def _handle_device_connection(serial: str):
+    """Ensure newly connected USB device is registered, inventoried once, or dynamically refreshed in the background."""
+    import threading
+    def _worker():
+        try:
+            from backend.db import connect
+            from backend import device_inventory
+            did = f"AVD-{serial}"
+            with connect() as c:
+                row = c.execute("SELECT device_id FROM devices WHERE serial=? OR device_id=?", (serial, did)).fetchone()
+                if not row:
+                    c.execute(
+                        "INSERT INTO devices (device_id, serial, enrollment_state, compliance_state) VALUES (?, ?, 'UNENROLLED', 'UNKNOWN')",
+                        (did, serial)
+                    )
+                inv_row = c.execute("SELECT 1 FROM mddeviceinfo WHERE serial_number=? OR device_id=? LIMIT 1", (serial, did)).fetchone()
+
+            if not inv_row:
+                logger.info(f"[Auto-Inventory] First-time USB connection for {serial}: probing and persisting static facts...")
+                device_inventory.probe_and_persist_device_inventory(serial)
+                ws_manager.broadcast_from_thread("devices", {
+                    "event": "device_inventory_ready",
+                    "device_id": did,
+                    "serial": serial
+                })
+            else:
+                # Static facts already exist in DB: only run light dynamic refresh (free space, battery)
+                device_inventory.refresh_dynamic_stats_background(serial, did)
+        except Exception as ex:
+            logger.warning(f"[Auto-Inventory] Error handling device {serial}: {ex}")
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+
 async def _adb_watcher_loop():
     """Background task to detect connected/disconnected USB devices and push live events."""
     global _LAST_SERIALS
@@ -52,6 +86,8 @@ async def _adb_watcher_loop():
                 removed = [s for s in _LAST_SERIALS if s not in current]
                 logger.info(f"ADB devices changed: added={added}, removed={removed}, total={len(current)}")
                 _LAST_SERIALS = current
+                for s in added:
+                    _handle_device_connection(s)
                 await ws_manager.broadcast_json(
                     "devices",
                     {
@@ -79,6 +115,9 @@ async def lifespan(app: FastAPI):
     run_migrations()
     os.makedirs(CHAN_DIR, exist_ok=True)
     ws_manager.set_loop(asyncio.get_running_loop())
+    # Auto-seed static inventory in background for any devices currently connected
+    for s in attached_serials() or []:
+        _handle_device_connection(s)
     watcher_task = asyncio.create_task(_adb_watcher_loop())
     yield
     # Shutdown

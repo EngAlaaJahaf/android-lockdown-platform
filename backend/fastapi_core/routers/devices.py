@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import sys
+import threading
 import time
 from typing import Optional, Any, Dict
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 _CACHE_DETECTED = {"ts": 0.0, "data": []}
 _CACHE_ADB_STATUS = {"ts": 0.0, "data": {}}
 _CACHE_TTL = 2.0  # 2 seconds fast in-memory cache
+_PROBED_ATTACHED: set[str] = set()
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
@@ -155,13 +157,20 @@ def fetch_device_details(did: str) -> dict:
     from backend import device_inventory
     did = dev["device_id"]
     serial = dev.get("serial")
-    try:
-        inv = device_inventory.probe_and_persist_device_inventory(serial or did)
-    except Exception:
-        inv = device_inventory.get_device_inventory(did)
 
-    if not inv:
-        inv = device_inventory.get_device_inventory(did)
+    # 1. ALWAYS retrieve stored inventory from SQLite immediately (0ms delay)
+    inv = device_inventory.get_device_inventory(did)
+
+    # 2. Only if device has never been inventoried before and is attached, probe once
+    if not inv or not inv.get("mddeviceinfo"):
+        from backend import workflows
+        if serial and serial in workflows.attached_serials():
+            try:
+                inv = device_inventory.probe_and_persist_device_inventory(serial or did)
+            except Exception:
+                inv = device_inventory.get_device_inventory(did)
+        if not inv:
+            inv = device_inventory.get_device_inventory(did)
 
     if inv:
         dev["mddeviceinfo"] = inv.get("mddeviceinfo") or {}
@@ -175,14 +184,10 @@ def fetch_device_details(did: str) -> dict:
                 "system": [a["package_name"] for a in inv["installed_apps"] if a.get("app_type") != "Third-Party App"]
             }
 
-    try:
-        from backend import workflows
-        if serial and serial in workflows.attached_serials():
-            probe = workflows.live_probe(serial)
-            if probe:
-                dev["live_probe"] = probe
-    except Exception:
-        pass
+    # 3. Dynamic background refresh: check dynamic stats (free space, battery) in background
+    # This NEVER blocks the HTTP response! Response returns in 3-5ms directly from SQLite!
+    if serial:
+        device_inventory.refresh_dynamic_stats_background(serial, did)
 
     return dev
 
@@ -288,6 +293,30 @@ def provision_owner(req: ProvisionOwnerRequest, sess: dict = Depends(get_current
     return {"ok": True, "data": info}
 
 
+def _ensure_background_device_inventory(serial: str):
+    if serial in _PROBED_ATTACHED:
+        return
+    with connect() as c:
+        row = c.execute(
+            "SELECT 1 FROM mddeviceinfo WHERE serial_number=? OR device_id=? LIMIT 1",
+            (serial, f"AVD-{serial}")
+        ).fetchone()
+        if row:
+            _PROBED_ATTACHED.add(serial)
+            return
+
+    # Device plugged in via USB and never inventoried: probe once in background!
+    _PROBED_ATTACHED.add(serial)
+    def _worker():
+        try:
+            from backend import device_inventory
+            print(f"[devices] Auto-probing attached device inventory in background: {serial}")
+            device_inventory.probe_and_persist_device_inventory(serial)
+        except Exception as e:
+            print(f"[devices] Background auto-probe error for {serial}: {e}")
+    threading.Thread(target=_worker, daemon=True).start()
+
+
 @router.get("/devices/detected")
 def detected_devices(sess: dict = Depends(get_current_session)):
     authorize_action(sess, "VIEW", require_mfa=False)
@@ -297,6 +326,13 @@ def detected_devices(sess: dict = Depends(get_current_session)):
     data = get_controller().detected()
     _CACHE_DETECTED["ts"] = now
     _CACHE_DETECTED["data"] = data
+
+    # Auto-seed inventory in background upon first connection if missing
+    for d in data:
+        s = d.get("serial")
+        if s and d.get("ready"):
+            _ensure_background_device_inventory(s)
+
     return {"ok": True, "data": data}
 
 

@@ -2523,6 +2523,8 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true,
   window.CURRENT_COMP_DID = did;
   window.CURRENT_COMP_TAB = tab;
 
+  if (!window.COMP_DEVICE_DETAILS_CACHE) window.COMP_DEVICE_DETAILS_CACHE = {};
+
   if (!silent) {
     hideAllDeviceWorkspaces();
     const wsComp = $('workspaceComprehensiveDeviceDetails');
@@ -2534,55 +2536,56 @@ async function openComprehensiveDeviceDetails(did, tab = 'summary', push = true,
     updateNavSlider();
 
     if (push) {
-      history.pushState(null, '', `#/uems/mdm/inventory/devicesList/${encodeURIComponent(did)}/${tab}`);
+      history.pushState(null, '', `#/uems/mdm/inventory/devicesList/${encodeURIComponent(did)}/${tab || 'summary'}`);
     }
+  }
 
-    // 1. Immediate placeholder reset so stale or mock data never appears
+  // 1. Instant render from memory cache OR localStorage (0ms)
+  let cachedFull = window.COMP_DEVICE_DETAILS_CACHE[did];
+  if (!cachedFull) {
+    try {
+      const stored = localStorage.getItem('alp_comp_dev_' + did);
+      if (stored) {
+        cachedFull = JSON.parse(stored);
+        window.COMP_DEVICE_DETAILS_CACHE[did] = cachedFull;
+      }
+    } catch (e) {}
+  }
+  const cachedRow = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did) || x.serial === did);
+  const immediateDev = cachedFull || cachedRow;
+
+  if (immediateDev && !silent) {
+    CURRENT_COMP_DEVICE = immediateDev;
+    renderComprehensiveDeviceView(immediateDev, did, tab);
+  } else if (!silent) {
+    // Only if cold navigation with zero cache
     const breadName = $('compDevBreadName'); if (breadName) breadName.textContent = did;
     const headerName = $('compDevHeaderName'); if (headerName) headerName.textContent = did;
-    const headerModel = $('compDevHeaderModel'); if (headerModel) headerModel.textContent = 'Loading...';
-    const headerUsername = $('compDevHeaderUsername'); if (headerUsername) headerUsername.textContent = 'admin';
-    const headerOsVer = $('compDevHeaderOsVersion'); if (headerOsVer) headerOsVer.textContent = '--';
-    const headerRooted = $('compDevRooted'); if (headerRooted) headerRooted.textContent = '--';
-    const headerLastScan = $('compDevHeaderLastScan'); if (headerLastScan) headerLastScan.textContent = '--';
-    const headerNextContact = $('compDevHeaderNextContact'); if (headerNextContact) headerNextContact.textContent = '--';
     const sumName = $('compDevSumName'); if (sumName) sumName.textContent = did;
-    const sumModel = $('compDevSumModel'); if (sumModel) sumModel.textContent = 'Loading...';
+    switchCompTab(tab || 'summary');
   }
 
-  // 2. Instant render from memory cache if available (0ms)
-  const cached = (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did) || x.serial === did);
-  if (cached && !silent) {
-    CURRENT_COMP_DEVICE = cached;
-    renderComprehensiveDeviceView(cached, did, tab);
-  }
-
-  // 3. Load full telemetry from API
+  // 2. Load full telemetry from SQLite API (responds in ~3-5ms)
   let dev = null;
   try {
     const r = await api('/devices/' + encodeURIComponent(did) + '/details', 'GET');
     if (r && r.ok && r.data) {
       dev = r.data;
+      window.COMP_DEVICE_DETAILS_CACHE[did] = dev;
+      try {
+        localStorage.setItem('alp_comp_dev_' + did, JSON.stringify(dev));
+      } catch (e) {}
     }
   } catch (e) {
     console.warn('Failed to load device details from API:', e);
   }
   if (!dev) {
-    dev = cached || (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did));
+    dev = immediateDev || (ALL_REG_DEVICES || []).find(x => x.device_id === did || String(x.id) === String(did));
   }
-  if (!dev) {
-    dev = {
-      device_id: did,
-      serial: did.replace(/^AVD-/, ''),
-      model: 'Managed Device',
-      manufacturer: 'Android',
-      android_version: '15',
-      last_seen_at: formatNowMe(),
-      user_ref: 'admin'
-    };
+  if (dev) {
+    CURRENT_COMP_DEVICE = dev;
+    renderComprehensiveDeviceView(dev, did, tab);
   }
-  CURRENT_COMP_DEVICE = dev;
-  renderComprehensiveDeviceView(dev, did, tab);
 }
 window.openComprehensiveDeviceDetails = openComprehensiveDeviceDetails;
 
@@ -2595,10 +2598,11 @@ function renderComprehensiveDeviceView(dev, did, tab) {
 
   const devId = dev.device_id || did;
   const devSerial = dev.serial || mdi.serial_number || (live.identity && live.identity.serial) || devId;
-  const devModel = dev.model || mdi.model_name || (live.identity && live.identity.model) || 'Android Device';
-  const osVer = String((live.identity && live.identity.android_version) || dev.os_version || mdi.os_version || (dev.android_version ? dev.android_version : '') || '--');
-  const buildFingerprint = dev.build_fingerprint || mdi.build_version || (live.identity && live.identity.build_fingerprint) || '--';
-  const secPatch = dev.security_patch || mdi.security_patch_version || (live.identity && live.identity.security_patch) || '--';
+  const devModel = (live.identity && live.identity.model) || mdi.model_name || dev.model || 'Android Device';
+  const devManufacturer = dev.manufacturer || mdi.manufacturer || (live.identity && live.identity.manufacturer) || 'Android';
+  const osVer = String(mdi.os_version || (live.identity && live.identity.android_version) || dev.os_version || (dev.android_version ? dev.android_version : '') || '--');
+  const buildFingerprint = mdi.build_version || dev.build_fingerprint || (live.identity && live.identity.build_fingerprint) || '--';
+  const secPatch = mdi.security_patch_version || dev.security_patch || (live.identity && live.identity.security_patch) || '--';
 
   const ident = live.identity || {
     serial: devSerial,
@@ -2834,10 +2838,10 @@ function renderCompDeviceHardware(dev) {
   const hw = live.hardware || dev.hardware || {};
 
   const devId = dev.device_id || dev.serial || 'Managed Device';
-  const osVer = (live.identity && live.identity.android_version) || dev.os_version || mdi.os_version || dev.android_version || '--';
-  const buildVer = (live.identity && live.identity.build_fingerprint) || dev.build_fingerprint || mdi.build_version || '--';
-  const secUpdate = ((live.identity && live.identity.security_patch) || dev.security_patch || mdi.security_patch_version || '--') + ' (Updated On ' + (dev.last_seen_at || mdi.db_updated_time || formatNowMe()).split(' ')[0] + ')';
-  const modelNo = (live.identity && live.identity.model) || dev.model || mdi.model_name || 'Device';
+  const osVer = mdi.os_version || (live.identity && live.identity.android_version) || dev.os_version || dev.android_version || '--';
+  const buildVer = mdi.build_version || (live.identity && live.identity.build_fingerprint) || dev.build_fingerprint || '--';
+  const secUpdate = (mdi.security_patch_version || (live.identity && live.identity.security_patch) || dev.security_patch || '--') + ' (Updated On ' + (dev.last_seen_at || mdi.db_updated_time || formatNowMe()).split(' ')[0] + ')';
+  const modelNo = mdi.model_name || (live.identity && live.identity.model) || dev.model || 'Device';
   const devModel = modelNo + ' Enterprise';
   const devType = hw.device_type || mdi.device_type || (((dev.model || '').toLowerCase().includes('tab') || (dev.model || '').toLowerCase().includes('pad') || (dev.model || '').toLowerCase().includes('lt_')) ? 'Tablet' : 'SmartPhone');
   const prodName = hw.product_name || mdi.product_name || (live.identity && live.identity.model) || dev.model || 'Android Device';

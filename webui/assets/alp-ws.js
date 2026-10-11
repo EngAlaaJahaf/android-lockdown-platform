@@ -115,6 +115,17 @@
           const msg = JSON.parse(event.data);
           if (msg.topic === 'devices') {
             const data = msg.data || {};
+            if (data.action === 'dynamic_update') {
+              if (window.CURRENT_COMP_DID === data.device_id || window.CURRENT_COMP_DID === data.serial) {
+                if (data.data && typeof window.renderComprehensiveDeviceView === 'function') {
+                  if (window.COMP_DEVICE_DETAILS_CACHE) {
+                    window.COMP_DEVICE_DETAILS_CACHE[data.device_id] = Object.assign({}, window.COMP_DEVICE_DETAILS_CACHE[data.device_id] || {}, data.data);
+                  }
+                  window.renderComprehensiveDeviceView(data.data, data.device_id, window.CURRENT_COMP_TAB || 'summary');
+                }
+              }
+              return;
+            }
             if (data.added && data.added.length > 0) {
               showToast(
                 'USB Device Detected',
