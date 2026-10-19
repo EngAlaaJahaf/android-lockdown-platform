@@ -23,11 +23,13 @@
   <link href="assets/alp-table.css?v=20261008" rel="stylesheet" />
   <link href="assets/alp-enrollment.css" rel="stylesheet" />
   <link href="assets/alp-ws.css" rel="stylesheet" />
+  <link href="assets/alp-rtl.css?v=20261019" rel="stylesheet" />
   <!-- Authentic ManageEngine Core JavaScript Libraries -->
   <script src="js/jquery/jquery.min.js"></script>
   <script src="js/common.js"></script>
   <script src="js/validation.js"></script>
   <script src="js/DMEffects.js"></script>
+  <script src="assets/alp-i18n.js?v=20261019"></script>
 </head>
 
 <body class="ember-application" ems-theme="light" id="mdmapp">
@@ -113,19 +115,30 @@
                   </div>
                   <div class="right-half">
                     <div class="tab-component-element mdm-product-banner" id="ember14">
-                      <span class="banner-text">Your Trial expires in 28 days.</span>
-                      <a class="banner-link" href="javascript:void(0)">License</a> | <a class="banner-link"
-                        href="javascript:void(0)">Get Quote</a>
+                      <span class="banner-text" data-i18n="nav.trial_banner">Your Trial expires in 28 days.</span>
+                      <a class="banner-link" href="javascript:void(0)" data-i18n="nav.license">License</a> | <a class="banner-link"
+                        href="javascript:void(0)" data-i18n="nav.get_quote">Get Quote</a>
                     </div>
                     <span class="tab-component-element build-version font-sm-3 cursor-pointer ember-view" id="ember16">
-                      <span class="build-version-text"><span class="text">Build Version</span>: <span
-                          class="text">11.2.2508.01</span></span>
+                      <span class="build-version-text"><span class="text" data-i18n="nav.build_version">Build Version</span>: <span
+                          class="text font-mono ltr-data">11.2.2508.01</span></span>
                     </span>
                     <span class="tab-component-element alp-ws-live-badge offline" id="alpWsStatusBadge"
                       title="Real-Time WebSocket Control Channel">
                       <span class="alp-ws-dot" id="alpWsStatusDot"></span>
                       <span class="alp-ws-label" id="alpWsStatusText">WS Offline</span>
                     </span>
+                    <!-- ALP Language Switcher (AR / EN) -->
+                    <div class="tab-component-element alp-lang-switcher" id="alpLangSwitcherWrap">
+                      <button type="button" class="alp-lang-btn" id="alpLangToggleBtn" onclick="ALP_I18N.toggleLanguage(event)" title="تغيير اللغة / Switch Language">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="2" y1="12" x2="22" y2="12"></line>
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                        <span id="alpLangCurrentLabel">العربية</span>
+                      </button>
+                    </div>
                     <div class="tab-component-element" id="ember17">
                       <div class="quick-actions-list quick-actions font-sm-3 ember-view ucs-pos-relative" id="ember18">
                         <div class="quick-actions-icon" id="quickActions-ember18" onclick="toggleQuickActions(event)"
@@ -176,15 +189,15 @@
                             <div class="mdm-user-details-wrapper">
                               <div class="mdm-login-user-name text-bold uems-font-16" id="whoami">admin</div>
                               <div class="mdm-active-session pt-12">
-                                Active Session(s) : <span class="active-settion-count">1</span>
+                                <span data-i18n="nav.active_sessions">Active Session(s)</span> : <span class="active-settion-count">1</span>
                               </div>
                             </div>
                           </div>
                           <div class="mdm-user-actions flex--common p-10">
                             <button class="button-secondary-form secondaryActionBtn buttonnew1" id="personalizeUser"
-                              type="button">Personalize</button>
+                              type="button" data-i18n="nav.personalize">Personalize</button>
                             <button class="button-primary-form primaryActionBtn" id="logoutBtn" onclick="doLogout()"
-                              type="button">Sign Out</button>
+                              type="button" data-i18n="nav.sign_out">Sign Out</button>
                           </div>
                         </div>
                       </div>
@@ -197,21 +210,21 @@
                     <div class="utnb__left ucs-flex__nowrap" role="navigation">
                       <div class="utnb__left--float">
                         <a class="utnb--tab active" data-v="dashboard" href="#/dashboard"
-                          onclick="showView('dashboard');return false;" role="button" tabindex="0">Home</a>
+                          onclick="showView('dashboard');return false;" role="button" tabindex="0" data-i18n="nav.home">Home</a>
                         <a class="utnb--tab" data-v="devices" href="#/devices"
-                          onclick="showView('devices');return false;" role="button" tabindex="0">Device Mgmt</a>
+                          onclick="showView('devices');return false;" role="button" tabindex="0" data-i18n="nav.device_mgmt">Device Mgmt</a>
                         <a class="utnb--tab" data-v="apply" href="#/apply" onclick="showView('apply');return false;"
-                          role="button" tabindex="0">Inventory</a>
+                          role="button" tabindex="0" data-i18n="nav.inventory">Inventory</a>
                         <a class="utnb--tab" data-v="restrictions" href="#/restrictions"
-                          onclick="showView('restrictions');return false;" role="button" tabindex="0">Enrollment</a>
+                          onclick="showView('restrictions');return false;" role="button" tabindex="0" data-i18n="nav.enrollment">Enrollment</a>
                         <a class="utnb--tab" data-v="reports" href="#/reports"
-                          onclick="showView('reports');return false;" role="button" tabindex="0">Reports</a>
+                          onclick="showView('reports');return false;" role="button" tabindex="0" data-i18n="nav.reports">Reports</a>
                         <a class="utnb--tab" data-v="recovery" href="#/recovery"
-                          onclick="showView('recovery');return false;" role="button" tabindex="0">Admin</a>
+                          onclick="showView('recovery');return false;" role="button" tabindex="0" data-i18n="nav.admin">Admin</a>
                         <a class="utnb--tab" data-v="audit" href="#/audit" onclick="showView('audit');return false;"
-                          role="button" tabindex="0">Support</a>
+                          role="button" tabindex="0" data-i18n="nav.support">Support</a>
                         <a class="utnb--tab" data-v="branding" href="#/branding"
-                          onclick="showView('branding');return false;" role="button" tabindex="0">Branding</a>
+                          onclick="showView('branding');return false;" role="button" tabindex="0" data-i18n="nav.branding">Branding</a>
                       </div>
                     </div>
                     <div class="utnb__right ucs-flex__nowrap h-100 m-l-25 ucs-align__center">
@@ -944,7 +957,7 @@
 <title>Open</title>
 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#chevron-right" xlink:href="#global-chevron-right"></use>
 </svg>
-<span class="text-ellipsis m-l-5">Manage</span>
+<span class="text-ellipsis m-l-5" data-i18n="nav.manage">Manage</span>
 </div>
 <div class="nd--section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -954,7 +967,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 anchor-text__imp common-bg active m-l-10" data-focus-type="border" href="#/uems/mdm/manage/groups-and-devices" id="subTab_GroupsAndDevices" onclick="switchSidebarView('groups-devices'); return false;" tabindex="0" title="Groups &amp; Devices">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Groups &amp; Devices</span>
+<span class="text-ellipsis" data-i18n="nav.groups_devices">Groups &amp; Devices</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -964,7 +977,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/profile" id="subTab_profiles" onclick="switchSidebarView('profiles'); return false;" tabindex="0" title="Profiles">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Profiles</span>
+<span class="text-ellipsis" data-i18n="nav.profiles">Profiles</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -974,7 +987,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/dataUsage" id="subTab_dataUsage" onclick="handleNavDrawerItem(this, 'Telecom Expense Mgmt', '/uems/mdm/manage/dataUsage'); return false;" tabindex="0" title="Telecom Expense Mgmt">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Telecom Expense Mgmt</span>
+<span class="text-ellipsis" data-i18n="nav.telecom_mgmt">Telecom Expense Mgmt</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -984,7 +997,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/certRepo" id="subTab_CertificateRepo" onclick="handleNavDrawerItem(this, 'Certificates', '/uems/mdm/manage/certRepo'); return false;" tabindex="0" title="Certificates">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Certificates</span>
+<span class="text-ellipsis" data-i18n="nav.certificates">Certificates</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -994,7 +1007,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/alerts" id="subTab_alerts" onclick="handleNavDrawerItem(this, 'Alerts', '/uems/mdm/manage/alerts'); return false;" tabindex="0" title="Alerts">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Alerts</span>
+<span class="text-ellipsis" data-i18n="nav.alerts">Alerts</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1004,7 +1017,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/content" id="subTab_content" onclick="handleNavDrawerItem(this, 'Content Management', '/uems/mdm/manage/content'); return false;" tabindex="0" title="Content Management">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Content Management</span>
+<span class="text-ellipsis" data-i18n="nav.content_mgmt">Content Management</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1014,7 +1027,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/ospolicy" id="subTab_ospolicy" onclick="handleNavDrawerItem(this, 'Automate OS Updates', '/uems/mdm/manage/ospolicy'); return false;" tabindex="0" title="Automate OS Updates">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Automate OS Updates</span>
+<span class="text-ellipsis" data-i18n="nav.automate_updates">Automate OS Updates</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1030,7 +1043,7 @@
 <title>Open</title>
 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#chevron-right" xlink:href="#global-chevron-right"></use>
 </svg>
-<span class="text-ellipsis m-l-5">Apps</span>
+<span class="text-ellipsis m-l-5" data-i18n="nav.apps">Apps</span>
 </div>
 <div class="nd--section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1040,7 +1053,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/appRepo" id="subTab_appRepository" onclick="showView('restrictions'); return false;" tabindex="0" title="App Repository">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">App Repository</span>
+<span class="text-ellipsis" data-i18n="nav.app_repository">App Repository</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1050,7 +1063,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/appUpdate" id="subTab_appUpdate" onclick="showView('apply'); return false;" tabindex="0" title="App Update Policy">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">App Update Policy</span>
+<span class="text-ellipsis" data-i18n="nav.app_update_policy">App Update Policy</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1066,7 +1079,7 @@
 <title>Open</title>
 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#chevron-right" xlink:href="#global-chevron-right"></use>
 </svg>
-<span class="text-ellipsis m-l-5">Tools</span>
+<span class="text-ellipsis m-l-5" data-i18n="nav.tools">Tools</span>
 </div>
 <div class="nd--section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1076,7 +1089,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/announcement" id="subTab_announcement" onclick="handleNavDrawerItem(this, 'Announcements', '/uems/mdm/manage/announcement'); return false;" tabindex="0" title="Announcements">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Announcements</span>
+<span class="text-ellipsis" data-i18n="nav.announcements">Announcements</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1086,7 +1099,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/remoteControl" id="subTab_remoteControl" onclick="showView('recovery'); return false;" tabindex="0" title="Remote Control">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Remote Control</span>
+<span class="text-ellipsis" data-i18n="nav.remote_control">Remote Control</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1102,7 +1115,7 @@
 <title>Open</title>
 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#chevron-right" xlink:href="#global-chevron-right"></use>
 </svg>
-<span class="text-ellipsis m-l-5">Conditional Access</span>
+<span class="text-ellipsis m-l-5" data-i18n="nav.conditional_access">Conditional Access</span>
 </div>
 <div class="nd--section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1112,7 +1125,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/azure" id="subTab_azure" onclick="handleNavDrawerItem(this, 'Office 365', '/uems/mdm/manage/azure'); return false;" tabindex="0" title="Office 365">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Office 365</span>
+<span class="text-ellipsis" data-i18n="nav.office_365">Office 365</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1122,7 +1135,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/mamPolicies" id="subTab_mamPolicies" onclick="handleNavDrawerItem(this, 'Office 365 MAM policy', '/uems/mdm/manage/mamPolicies'); return false;" tabindex="0" title="Office 365 MAM policy">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Office 365 MAM policy</span>
+<span class="text-ellipsis" data-i18n="nav.office_365_mam">Office 365 MAM policy</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1138,7 +1151,7 @@
 <title>Open</title>
 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#chevron-right" xlink:href="#global-chevron-right"></use>
 </svg>
-<span class="text-ellipsis m-l-5">Geofencing</span>
+<span class="text-ellipsis m-l-5" data-i18n="nav.geofencing">Geofencing</span>
 </div>
 <div class="nd--section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1148,7 +1161,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/compliance" id="subTab_mdmCompliance" onclick="handleNavDrawerItem(this, 'Fence Policy', '/uems/mdm/manage/compliance'); return false;" tabindex="0" title="Fence Policy">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Fence Policy</span>
+<span class="text-ellipsis" data-i18n="nav.fence_policy">Fence Policy</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1158,7 +1171,7 @@
 <a class="nd--sub-section-container navigation--sub-bold key-focused text-no-underline flex--common font--medium color__black cursor-pointer m-r-10 m-l-10" data-focus-type="border" href="#/uems/mdm/manage/fencerepo" id="subTab_fencerepo" onclick="handleNavDrawerItem(this, 'Fence Repository', '/uems/mdm/manage/fencerepo'); return false;" tabindex="0" title="Fence Repository">
 <span class="nd--transparent ucs-justify__space-between ucs-flex__nowrap w-100 p-t-10 p-b-10 p-l-20 p-r-5" tabindex="-1">
 <div class="nd--sub-section-left ucs-flex__nowrap ucs-align__center">
-<span class="text-ellipsis">Fence Repository</span>
+<span class="text-ellipsis" data-i18n="nav.fence_repo">Fence Repository</span>
 </div>
 <div class="nd--sub-section-right ucs-flex__nowrap ucs-align__center"></div>
 </span>
@@ -1168,11 +1181,11 @@
 </div>
 <div class="nd--footer ember-view" id="ember81">
 <div class="dummy--nav-footer-2 m-t-10 p-20">
-<div class="text--bold">Need new features?</div>
-<div class="multi-line--text p-t-5">Share a new idea or prioritize your requirement in
+<div class="text--bold" data-i18n="nav.need_features">Need new features?</div>
+<div class="multi-line--text p-t-5" data-i18n="nav.roadmap_share_idea">Share a new idea or prioritize your requirement in
                                     our roadmap</div>
 <button class="button-primary-form m-t-10" id="needMoreRoadMapLink">
-<a class="ember-view" href="http://www.manageengine.com/mobile-device-management/product-roadmap.html?mdmod&amp;utm_source=In-Product" id="ember82" target="_blank">View Roadmap</a>
+<a class="ember-view" href="http://www.manageengine.com/mobile-device-management/product-roadmap.html?mdmod&amp;utm_source=In-Product" id="ember82" target="_blank" data-i18n="nav.view_roadmap">View Roadmap</a>
 </button>
 </div>
 </div>
@@ -2176,11 +2189,11 @@
 <div class="device-details-wrapper mdm-wrapper" id="workspaceComprehensiveDeviceDetails" style="display:none; padding:15px 25px;">
     <!-- Breadcrumbs navigation -->
     <div class="edit-profile-path" style="font-size:13px; margin-bottom:14px; display:flex; align-items:center;">
-        <span class="link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="backToDevicesSummary()" style="color:var(--ecs-base-clr-primary, #336699); text-decoration:none; cursor:pointer;">Groups &amp; Devices</span>
+        <span class="link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="backToDevicesSummary()" style="color:var(--ecs-base-clr-primary, #336699); text-decoration:none; cursor:pointer;" data-i18n="nav.groups_devices">Groups &amp; Devices</span>
         <span style="margin: 0 6px; color: var(--ecs-icon-fill-secondary, #94a3b8); font-size:11px;">&gt;</span>
-        <span class="link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="backToDevicesSummary()" style="color:var(--ecs-base-clr-primary, #336699); text-decoration:none; cursor:pointer;">Devices</span>
+        <span class="link--text-default anchor-text anchor-text__imp cursor-pointer" onclick="backToDevicesSummary()" style="color:var(--ecs-base-clr-primary, #336699); text-decoration:none; cursor:pointer;" data-i18n="common.devices">Devices</span>
         <span style="margin: 0 6px; color: var(--ecs-icon-fill-secondary, #94a3b8); font-size:11px;">&gt;</span>
-        <span id="compDevBreadName" style="color:var(--ecs-base-clr-primary, #1e293b); font-weight:600;">--</span>
+        <span id="compDevBreadName" class="font-mono ltr-data" style="color:var(--ecs-base-clr-primary, #1e293b); font-weight:600;">--</span>
     </div>
 
     <div class="mdm-main-page-container" id="compDevAppContainer" style="width:100%; box-sizing:border-box;">
@@ -2199,7 +2212,7 @@
                                 <div>
                                     <div class="device-name">
                                         <span>
-                                            <span id="compDevHeaderName">--</span>
+                                            <span id="compDevHeaderName" class="font-mono ltr-data">--</span>
                                             <span id="compDevEditAction" class="cursor-pointer" onclick="promptRenameCompDevice()" title="Edit Device Name">
                                                 <svg role="img" aria-label="edit" style="width: 16px; height: 16px; vertical-align: middle; margin: 0 4px;" class="svg-bucket-icon" data-icon="global::edit">
                                                     <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#edit"></use>
@@ -2208,9 +2221,9 @@
                                         </span>
                                     </div>
                                     <div class="device-model">
-                                        <span>Device Model: <span id="compDevHeaderModel">--</span></span>
+                                        <span><span data-i18n="device_header.device_model">Device Model</span>: <span id="compDevHeaderModel" class="font-mono ltr-data">--</span></span>
                                         <span> | </span>
-                                        <span>Username: <span id="compDevHeaderUsername">--</span></span>
+                                        <span><span data-i18n="device_header.username">Username</span>: <span id="compDevHeaderUsername" class="font-mono ltr-data">--</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -2220,7 +2233,7 @@
                         <div id="ember1225" class="ember-view">
                             <div class="summary-box">
                                 <div class="header-cell header-border" style="width:19.8%">
-                                    <div class="header-text">Platform</div>
+                                    <div class="header-text" data-i18n="device_header.platform">Platform</div>
                                     <div class="header-data">
                                         <svg role="img" aria-label="android" style="width:32px; height:32px;" class="svg-bucket-icon device-summary-img svg-fill-blue" data-icon="platform::android">
                                             <use href="/images/svg-bucket/platform-268f6b83b677689c97ea62fad0c4d622.svg#android"></use>
@@ -2228,25 +2241,25 @@
                                     </div>
                                 </div>
                                 <div class="header-cell header-border" style="width:19.8%">
-                                    <div class="header-text">OS Version</div>
+                                    <div class="header-text" data-i18n="device_header.os_version">OS Version</div>
                                     <div class="header-data">
-                                        <span class="undefined header-count"><span id="compDevHeaderOsVersion" class="verticalAlignMiddle">--</span></span>
+                                        <span class="undefined header-count"><span id="compDevHeaderOsVersion" class="verticalAlignMiddle font-mono ltr-data">--</span></span>
                                     </div>
                                 </div>
                                 <div class="header-cell header-border" style="width:19.8%">
-                                    <div class="header-text">Rooted Device</div>
+                                    <div class="header-text" data-i18n="device_header.rooted_device">Rooted Device</div>
                                     <div class="header-data">
                                         <span class="font-m-3-im data-text normal-grey"><span id="compDevHeaderRooted" class="verticalAlignMiddle">--</span></span>
                                     </div>
                                 </div>
                                 <div class="header-cell header-border" style="width:19.8%">
-                                    <div class="header-text">Last Scan Time</div>
+                                    <div class="header-text" data-i18n="device_header.last_scan_time">Last Scan Time</div>
                                     <div class="header-data">
                                         <span class="device-time header-count normal-grey"><span id="compDevHeaderLastScan" class="verticalAlignMiddle">--</span></span>
                                     </div>
                                 </div>
                                 <div class="header-cell" style="width:19.8%">
-                                    <div class="header-text">Next Contact Time</div>
+                                    <div class="header-text" data-i18n="device_header.next_contact_time">Next Contact Time</div>
                                     <div class="header-data">
                                         <span class="font-grey device-time header-count normal-grey"><span id="compDevHeaderNextContact" class="verticalAlignMiddle">--</span></span>
                                     </div>
@@ -2260,49 +2273,49 @@
                         <div class="slider" id="compDevTabsSlider" style="left: 2px; bottom: -1px; width: 68px;"></div>
                         <li data-summary-tab="" tab-name="summary" class="active" onclick="switchCompTab('summary')">
                             <a id="compTabBtn_summary" class="ember-view active" href="javascript:void(0)">
-                                Summary
+                                <span data-i18n="tabs.summary">Summary</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="device" onclick="switchCompTab('device')">
                             <a id="compTabBtn_device" class="ember-view" href="javascript:void(0)">
-                                Device
+                                <span data-i18n="tabs.device">Device</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="installedApps" onclick="switchCompTab('installedApps')">
                             <a id="compTabBtn_installedApps" class="ember-view" href="javascript:void(0)">
-                                Installed Apps
+                                <span data-i18n="tabs.installed_apps">Installed Apps</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="certificates" onclick="switchCompTab('certificates')">
                             <a id="compTabBtn_certificates" class="ember-view" href="javascript:void(0)">
-                                Certificates
+                                <span data-i18n="tabs.certificates">Certificates</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="restrictions" onclick="switchCompTab('restrictions')">
                             <a id="compTabBtn_restrictions" class="ember-view" href="javascript:void(0)">
-                                Restrictions
+                                <span data-i18n="tabs.restrictions">Restrictions</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="alerts" onclick="switchCompTab('alerts')">
                             <a id="compTabBtn_alerts" class="ember-view" href="javascript:void(0)">
-                                Alerts
+                                <span data-i18n="tabs.alerts">Alerts</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="geo-tracking" onclick="switchCompTab('geo-tracking')">
                             <a id="compTabBtn_geo-tracking" class="ember-view" href="javascript:void(0)">
-                                Geo-Tracking
+                                <span data-i18n="tabs.geo_tracking">Geo-Tracking</span>
                                 <label></label>
                             </a>
                         </li>
                         <li data-summary-tab="" tab-name="audit-logs" onclick="switchCompTab('audit-logs')">
                             <a id="compTabBtn_audit-logs" class="ember-view" href="javascript:void(0)">
-                                Audit Logs
+                                <span data-i18n="tabs.audit_logs">Audit Logs</span>
                                 <label></label>
                             </a>
                         </li>
@@ -2310,74 +2323,74 @@
                         <!-- Right-aligned Actions & Roadmap Link -->
                         <div class="comp-dev-tabs-right-actions" style="margin-left:auto; display:inline-flex; align-items:center; gap:16px; margin-bottom:4px; position:relative; z-index:1100;">
                             <span class="road-map-link font-sm-3" data-summary-tab-roadmap-link="" style="margin:0;">
-                                <a target="_blank" href="http://www.manageengine.com/mobile-device-management/product-roadmap-add-details.html?id=28&amp;mdmod&amp;utm_source=In-Product" id="ember1237" class="ember-view" style="color:#0073b6; font-size:13px; text-decoration:none;">Looking to manage calls?</a>
+                                <a target="_blank" href="http://www.manageengine.com/mobile-device-management/product-roadmap-add-details.html?id=28&amp;mdmod&amp;utm_source=In-Product" id="ember1237" class="ember-view" style="color:#0073b6; font-size:13px; text-decoration:none;" data-i18n="common.looking_manage_calls">Looking to manage calls?</a>
                             </span>
 
                             <div id="compDevActionsBtnWrap" data-summary-tab-button="0" class="tab-button-right font-sm-3" style="position:relative;">
                                 <button type="button" id="compDevActionsBtn" class="device-actions-button btn-actions-dropdown" onclick="toggleCompDevActionsMenu(event)" style="display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #cbd5e1; border-radius:3px; padding:4px 12px; font-size:13px; font-weight:500; color:#334155; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.04); transition:background 0.15s, border-color 0.15s;">
-                                    <span>Actions</span>
+                                    <span data-i18n="common.actions">Actions</span>
                                     <span style="font-size:9px; color:#64748b; line-height:1;">▼</span>
                                 </button>
 
                                 <!-- 3. Actions Dropdown Menu (Directly anchored beneath the Actions button) -->
                                 <ul class="device-action-dropdown" id="compDeviceActionDropDown" style="display:none; position:absolute; top:calc(100% + 4px); right:0; z-index:1200; background:#fff; border:1px solid #cbd5e1; box-shadow:0 6px 18px rgba(0,0,0,0.15); border-radius:4px; min-width:200px; margin:0; padding:4px 0; list-style:none; text-align:left;">
-                                    <li data-mdm-action="Scan Now" onclick="executeCompAction('Scan Now')">
+                                    <li data-mdm-action="Scan Now" onclick="executeCompAction('Scan Now')" data-i18n="actions_menu.scan_now">
                                         Scan Now
                                     </li>
-                                    <li data-mdm-action="Remote Lock" onclick="executeCompAction('Remote Lock')">
+                                    <li data-mdm-action="Remote Lock" onclick="executeCompAction('Remote Lock')" data-i18n="actions_menu.remote_lock">
                                         Remote Lock
                                     </li>
-                                    <li class="disabled-action" id="comp-action-li-2" onmouseenter="showCompActionPopover('comp-action-popover-2')" onmouseleave="hideCompActionPopover('comp-action-popover-2')">
+                                    <li class="disabled-action" id="comp-action-li-2" onmouseenter="showCompActionPopover('comp-action-popover-2')" onmouseleave="hideCompActionPopover('comp-action-popover-2')" data-i18n="actions_menu.remote_control">
                                         Remote Control
                                     </li>
                                     <div id="ember1261" class="ember-view">
                                         <div id="comp-action-popover-2" aria-haspopup="true" aria-expanded="false" tabindex="0" class="zh-draggable device-action-remarks-popover zpopover" style="display:none; position:absolute; left:-290px; top:40px; width:280px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:10px; font-size:12px; color:#334155; z-index:1060;">
                                             <div class="zpopover__content">
                                                 <div class="device-action-remarks-content">
-                                                    Remote Commands disabled through device privacy settings. <a href="javascript:void(0)" onclick="executeCompAction('Remote Control')" class="blueTxt">Modify</a> and re-try.
+                                                    <span data-i18n="popovers.remote_control_disabled">Remote Commands disabled through device privacy settings.</span> <a href="javascript:void(0)" onclick="executeCompAction('Remote Control')" class="blueTxt" data-i18n="common.modify">Modify</a> and re-try.
                                                 </div>
                                             </div>
                                             <div class="zpopover__pointer"></div>
                                         </div>
                                     </div>
-                                    <li data-mdm-action="Remote Alarm" onclick="executeCompAction('Remote Alarm')">
+                                    <li data-mdm-action="Remote Alarm" onclick="executeCompAction('Remote Alarm')" data-i18n="actions_menu.remote_alarm">
                                         Remote Alarm
                                     </li>
-                                    <li data-mdm-action="Clear Passcode" onclick="executeCompAction('Clear Passcode')">
+                                    <li data-mdm-action="Clear Passcode" onclick="executeCompAction('Clear Passcode')" data-i18n="actions_menu.clear_passcode">
                                         Clear Passcode
                                     </li>
-                                    <li data-mdm-action="Reset Passcode" onclick="executeCompAction('Reset Passcode')">
+                                    <li data-mdm-action="Reset Passcode" onclick="executeCompAction('Reset Passcode')" data-i18n="actions_menu.reset_passcode">
                                         Reset Passcode
                                     </li>
-                                    <li class="disabled-action" id="comp-action-li-6" onmouseenter="showCompActionPopover('comp-action-popover-6')" onmouseleave="hideCompActionPopover('comp-action-popover-6')">
+                                    <li class="disabled-action" id="comp-action-li-6" onmouseenter="showCompActionPopover('comp-action-popover-6')" onmouseleave="hideCompActionPopover('comp-action-popover-6')" data-i18n="actions_menu.locate_device">
                                         Locate device
                                     </li>
                                     <div id="ember1262" class="ember-view">
                                         <div id="comp-action-popover-6" aria-haspopup="true" aria-expanded="false" tabindex="0" class="zh-draggable device-action-remarks-popover zpopover" style="display:none; position:absolute; left:-290px; top:160px; width:280px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:10px; font-size:12px; color:#334155; z-index:1060;">
                                             <div class="zpopover__content">
                                                 <div class="device-action-remarks-content">
-                                                    Geo-Tracking disabled! <a href="javascript:void(0)" onclick="switchCompTab('geo-tracking')" class="blueTxt">Enable Geo-Tracking</a> to locate the managed devices.
+                                                    <span data-i18n="popovers.geo_tracking_disabled">Geo-Tracking disabled!</span> <a href="javascript:void(0)" onclick="switchCompTab('geo-tracking')" class="blueTxt" data-i18n="popovers.enable_geo_tracking">Enable Geo-Tracking</a> to locate the managed devices.
                                                 </div>
                                             </div>
                                             <div class="zpopover__pointer"></div>
                                         </div>
                                     </div>
-                                    <li data-mdm-action="Enable Lost Mode" onclick="executeCompAction('Enable Lost Mode')">
+                                    <li data-mdm-action="Enable Lost Mode" onclick="executeCompAction('Enable Lost Mode')" data-i18n="actions_menu.enable_lost_mode">
                                         Enable Lost Mode
                                     </li>
-                                    <li data-mdm-action="Restart Device" onclick="executeCompAction('Restart Device')">
+                                    <li data-mdm-action="Restart Device" onclick="executeCompAction('Restart Device')" data-i18n="actions_menu.restart_device">
                                         Restart Device
                                     </li>
-                                    <li data-mdm-action="Pause Kiosk" onclick="executeCompAction('Pause Kiosk')">
+                                    <li data-mdm-action="Pause Kiosk" onclick="executeCompAction('Pause Kiosk')" data-i18n="actions_menu.pause_kiosk">
                                         Pause Kiosk
                                     </li>
-                                    <li data-mdm-action="Request Bug Report" onclick="executeCompAction('Request Bug Report')">
+                                    <li data-mdm-action="Request Bug Report" onclick="executeCompAction('Request Bug Report')" data-i18n="actions_menu.request_bug_report">
                                         Request Bug Report
                                     </li>
-                                    <li data-mdm-action="Clear App Data" onclick="executeCompAction('Clear App Data')">
+                                    <li data-mdm-action="Clear App Data" onclick="executeCompAction('Clear App Data')" data-i18n="actions_menu.clear_app_data">
                                         Clear App Data
                                     </li>
-                                    <li data-mdm-action="Deprovision (Wipe)" onclick="executeCompAction('Deprovision (Wipe)')" style="color:var(--ecs-base-clr-error, #dc2626); font-weight:500; border-top:1px solid #f1f5f9;">
+                                    <li data-mdm-action="Deprovision (Wipe)" onclick="executeCompAction('Deprovision (Wipe)')" style="color:var(--ecs-base-clr-error, #dc2626); font-weight:500; border-top:1px solid #f1f5f9;" data-i18n="actions_menu.deprovision_wipe">
                                         Deprovision (Wipe)
                                     </li>
                                 </ul>
@@ -2701,10 +2714,10 @@
                                 <div class="edit-payload restrictions inv-device-tab" style="display:flex; min-height:540px; background:#fff;">
                                     <div class="sub-tree-types" style="width:180px; min-width:180px; background:#f1f2f4; border-right:1px solid #e3e4e9;">
                                         <ul id="compDeviceSubNav">
-                                            <li class="selected" id="compDeviceSubTab_info" onclick="switchCompDeviceSubTab('info')">Device information</li>
-                                            <li id="compDeviceSubTab_network" onclick="switchCompDeviceSubTab('network')">Network Information</li>
-                                            <li id="compDeviceSubTab_sim" onclick="switchCompDeviceSubTab('sim')">SIM Information</li>
-                                            <li id="compDeviceSubTab_additional" onclick="switchCompDeviceSubTab('additional')">Additional Information</li>
+                                            <li class="selected" id="compDeviceSubTab_info" onclick="switchCompDeviceSubTab('info')" data-i18n="device_subtabs.device_info">Device information</li>
+                                            <li id="compDeviceSubTab_network" onclick="switchCompDeviceSubTab('network')" data-i18n="device_subtabs.network_info">Network Information</li>
+                                            <li id="compDeviceSubTab_sim" onclick="switchCompDeviceSubTab('sim')" data-i18n="device_subtabs.sim_info">SIM Information</li>
+                                            <li id="compDeviceSubTab_additional" onclick="switchCompDeviceSubTab('additional')" data-i18n="device_subtabs.additional_info">Additional Information</li>
                                         </ul>
                                     </div>
                                     <div class="sub-tree-selection" style="flex:1; padding:10px; min-width:0; overflow-y:auto;">
@@ -2787,13 +2800,13 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Restrictions on Device</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.restrictions_on_device">Restrictions on Device</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
                                                     <div class="zebra-table">
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Camera </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.camera"> Camera </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_camera0" title="Allowed">
@@ -2805,7 +2818,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Allow camera in lock screen </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.allow_camera_lockscreen"> Allow camera in lock screen </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_camera_in_keyguard0" title="Allowed">
@@ -2817,7 +2830,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Video Recording </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.video_recording"> Video Recording </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_video_record0" title="Allowed">
@@ -2829,7 +2842,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Microphone </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.microphone"> Microphone </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_microphone0" title="Allowed">
@@ -2841,7 +2854,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Audio Recording </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.audio_recording"> Audio Recording </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_audio_record0" title="Allowed">
@@ -2853,7 +2866,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Firmware Recovery </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.firmware_recovery"> Firmware Recovery </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_firmware_recovery0" title="Allowed">
@@ -2865,7 +2878,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> OS upgrade </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.os_upgrade"> OS upgrade </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_ota_upgrade0" title="Allowed">
@@ -2877,7 +2890,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Screen Capture </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.screen_capture"> Screen Capture </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_screen_capture0" title="Allowed">
@@ -2889,7 +2902,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Smart Clip Mode </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.smart_clip_mode"> Smart Clip Mode </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_smart_clip_mode0" title="Allowed">
@@ -2901,7 +2914,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> S Voice </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.s_voice"> S Voice </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_s_voice0" title="Allowed">
@@ -2913,7 +2926,7 @@
                                                             </label>
                                                         </span>
                                                         <span class="zebra-table-rows">
-                                                            <label class="zebra-table-fieldname"> Add accounts </label>
+                                                            <label class="zebra-table-fieldname" data-i18n="restrictions.add_accounts"> Add accounts </label>
                                                             <label class="zebra-table-value">
                                                                 <span>
                                                                     <label id="allow_user_add_accounts0" title="Allowed">
@@ -2933,7 +2946,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Security</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.security">Security</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3091,7 +3104,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">NFC and Bluetooth</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.nfc_bluetooth">NFC and Bluetooth</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3213,7 +3226,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Sync and Storage</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.sync_storage">Sync and Storage</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3323,7 +3336,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Browser Restriction</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.browser_restriction">Browser Restriction</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3412,7 +3425,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Network and Roaming</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.network_and_roaming">Network and Roaming</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3546,7 +3559,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Application</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.application">Application</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3632,7 +3645,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Phone</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.phone">Phone</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3730,7 +3743,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Location services</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.location_services">Location services</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3780,7 +3793,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Tethering</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.tethering">Tethering</label>
                                                             <span></span>
                                                         </span>
                                                     </div>
@@ -3830,7 +3843,7 @@
                                                 <div class="main-box fade-in-medium">
                                                     <div class="main-box-header">
                                                         <span class="main-box-heading">
-                                                            <label class="main-box-fieldName">Miscellaneous</label>
+                                                            <label class="main-box-fieldName" data-i18n="restrictions.miscellaneous">Miscellaneous</label>
                                                             <span></span>
                                                         </span>
                                                     </div>

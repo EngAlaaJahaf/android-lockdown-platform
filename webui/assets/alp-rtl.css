@@ -1,0 +1,453 @@
+/**
+ * ALP Comprehensive RTL (Right-to-Left) Stylesheet (alp-rtl.css)
+ * Tailored for authentic ManageEngine MDM layout mirroring.
+ * Strictly scoped under html[dir="rtl"] to prevent any LTR regression.
+ */
+
+/* ==========================================================================
+   1. Typography & Global RTL Baseline
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
+
+html[dir="rtl"],
+html[dir="rtl"] body {
+  direction: rtl !important;
+  text-align: right !important;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+}
+
+html[dir="rtl"] input,
+html[dir="rtl"] select,
+html[dir="rtl"] textarea,
+html[dir="rtl"] button {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+}
+
+/* ==========================================================================
+   2. Technical Identifiers & BiDi Isolation (Never scramble ADB/Serials)
+   ========================================================================== */
+html[dir="rtl"] .ltr-data,
+html[dir="rtl"] .font-mono,
+html[dir="rtl"] .code-token,
+html[dir="rtl"] .device-id-badge,
+html[dir="rtl"] .ip-addr,
+html[dir="rtl"] .serial-num,
+html[dir="rtl"] .mac-addr,
+html[dir="rtl"] .guid-token,
+html[dir="rtl"] code,
+html[dir="rtl"] pre,
+html[dir="rtl"] .raw-log,
+html[dir="rtl"] [data-bidi="ltr"] {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+  display: inline-block !important;
+  text-align: left !important;
+  font-family: 'Consolas', 'Courier New', monospace !important;
+}
+
+/* ==========================================================================
+   3. Top Header Bar RTL Mirroring
+   ========================================================================== */
+html[dir="rtl"] .mdmp-tab-components-top {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .mdmp-tab-components-top .left-half {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-direction: row !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .mdmp-tab-components-top .right-half {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-direction: row !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .uems-nav-bar {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .utnb__left {
+  display: flex !important;
+  flex-direction: row !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .utnb__right {
+  margin-left: 0 !important;
+  margin-right: 25px !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .tab-component-element.mdm-product-banner {
+  margin-right: 12px !important;
+  margin-left: 0 !important;
+}
+
+html[dir="rtl"] .alp-ws-live-badge {
+  margin-right: 8px !important;
+  margin-left: 0 !important;
+}
+
+/* Header Popovers & Dropdowns in RTL */
+html[dir="rtl"] #userDropdownMenu {
+  right: auto !important;
+  left: 10px !important;
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .helpDropDownDiv.quick-actions-dropdown {
+  right: auto !important;
+  left: 0 !important;
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* ==========================================================================
+   4. Language Switcher Button UI
+   ========================================================================== */
+.alp-lang-switcher {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.alp-lang-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  user-select: none !important;
+}
+
+.alp-lang-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #0073b6 !important;
+  color: #0073b6 !important;
+}
+
+.alp-lang-btn svg {
+  color: #0073b6 !important;
+  flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   5. Sidebar Navigation (MDM Sidebar) RTL Mirroring
+   ========================================================================== */
+html[dir="rtl"] .mdm-module-root-page {
+  display: flex !important;
+  flex-direction: row !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .navigation--wrapper {
+  direction: rtl !important;
+  border-left: 1px solid #e2e8f0 !important;
+  border-right: none !important;
+}
+
+html[dir="rtl"] .nd--container {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .nd--section-title {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .nd--sub-section-container {
+  direction: rtl !important;
+  text-align: right !important;
+  padding-right: 20px !important;
+  padding-left: 5px !important;
+}
+
+html[dir="rtl"] .uems-navigation-container,
+html[dir="rtl"] .side-nav,
+html[dir="rtl"] .devices-navigation {
+  float: right !important;
+  border-left: 1px solid #e2e8f0 !important;
+  border-right: none !important;
+}
+
+html[dir="rtl"] .devices-navigation-item .nav-icon,
+html[dir="rtl"] .devices-navigation-item svg {
+  margin-left: 8px !important;
+  margin-right: 0 !important;
+}
+
+html[dir="rtl"] .devices-navigation-item .nav-arrow,
+html[dir="rtl"] .tree-arrow {
+  transform: rotate(180deg) !important;
+}
+
+html[dir="rtl"] .devices-navigation-item {
+  text-align: right !important;
+}
+
+/* Sidebar Toggle Handle in RTL */
+html[dir="rtl"] #sidebarToggleHandle {
+  left: auto !important;
+  right: 240px !important;
+  transition: right 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html[dir="rtl"] #sidebarToggleHandle .nd--toggle-menu,
+html[dir="rtl"] #sidebarToggleHandle svg.nd--toggle-menu {
+  border-right: none !important;
+  border-left: 1px solid var(--ecs-container-border-clr, #d8dce2) !important;
+  border-radius: 4px 0 0 4px !important;
+  transform: scaleX(-1) !important;
+}
+
+html[dir="rtl"] .navigation-drawer.collapsed ~ #sidebarToggleHandle,
+html[dir="rtl"] .nd--container[data-visibility="hidden"] ~ #sidebarToggleHandle,
+html[dir="rtl"] .navigation--wrapper:has(.navigation-drawer.collapsed) #sidebarToggleHandle {
+  right: 0 !important;
+  left: auto !important;
+}
+
+/* ==========================================================================
+   6. Comprehensive Device 360 Header & Overview Cards RTL
+   ========================================================================== */
+html[dir="rtl"] .edit-profile-path {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .device-details-header {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .summary-box {
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .summary-box .header-cell.header-border {
+  border-left: 1px solid #e2e8f0 !important;
+  border-right: none !important;
+}
+
+html[dir="rtl"] .device-title-area {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  direction: rtl !important;
+}
+
+/* ==========================================================================
+   7. Tabs Bar & Slider Mathematics in RTL
+   ========================================================================== */
+html[dir="rtl"] ul.summaryTab.device-details-tabs,
+html[dir="rtl"] ul.summaryTab.profile-tabs,
+html[dir="rtl"] ul.summaryTab.enr-tabs {
+  direction: rtl !important;
+  text-align: right !important;
+  padding-right: 0 !important;
+}
+
+html[dir="rtl"] .comp-dev-tabs-right-actions {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+html[dir="rtl"] .btn-actions-dropdown {
+  flex-direction: row-reverse !important;
+}
+
+/* Actions Dropdown Anchor in RTL: open aligned to the left of the button */
+html[dir="rtl"] ul.device-action-dropdown,
+html[dir="rtl"] .device-action-dropdown {
+  right: auto !important;
+  left: 0 !important;
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] ul.device-action-dropdown li,
+html[dir="rtl"] .device-action-dropdown li {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* Popovers inside actions menu (pop to the right in RTL) */
+html[dir="rtl"] .device-action-remarks-popover.zpopover {
+  left: auto !important;
+  right: -290px !important;
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* Subtree types in Device Tab */
+html[dir="rtl"] .inv-device-tab {
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .sub-tree-types {
+  border-left: 1px solid #e3e4e9 !important;
+  border-right: none !important;
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] #compDeviceSubNav li {
+  text-align: right !important;
+  padding-right: 15px !important;
+  padding-left: 10px !important;
+}
+
+/* ==========================================================================
+   8. Restrictions Matrix & Two-Column Grid RTL
+   ========================================================================== */
+html[dir="rtl"] .empty {
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .restrictions-column.device-restriction {
+  margin: 0 0.5% 1% 0 !important;
+}
+
+html[dir="rtl"] .device-restriction .main-box-header {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .device-restriction .zebra-table-rows {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .device-restriction .zebra-table-fieldname {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .device-restriction .zebra-table-value {
+  direction: ltr !important;
+}
+
+html[dir="rtl"] .zebra-table-rows {
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .zebra-row,
+html[dir="rtl"] .table-row-zebra {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .zebra-label {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .zebra-value {
+  text-align: left !important;
+  direction: ltr !important;
+}
+
+/* Restrictions icon on left of row in RTL */
+html[dir="rtl"] .restriction-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 8px 12px !important;
+}
+
+html[dir="rtl"] .restriction-label {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .restriction-icon {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* ==========================================================================
+   9. Tables, Search Bars, & Filters RTL
+   ========================================================================== */
+html[dir="rtl"] table.table,
+html[dir="rtl"] .table-display-div table {
+  direction: rtl !important;
+}
+
+html[dir="rtl"] table.table th,
+html[dir="rtl"] table.table td,
+html[dir="rtl"] .table-display-div th,
+html[dir="rtl"] .table-display-div td {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .table-search-input,
+html[dir="rtl"] .filter-input {
+  text-align: right !important;
+  padding-right: 32px !important;
+  padding-left: 10px !important;
+}
+
+html[dir="rtl"] .table-search-icon {
+  right: 10px !important;
+  left: auto !important;
+}
+
+html[dir="rtl"] .table-pagination {
+  direction: rtl !important;
+  justify-content: space-between !important;
+}
+
+/* ==========================================================================
+   10. Modals, Alerts, & Floating Action Buttons RTL
+   ========================================================================== */
+html[dir="rtl"] .alp-dialog-box {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .alp-dialog-header {
+  display: flex !important;
+  flex-direction: row-reverse !important;
+  justify-content: space-between !important;
+}
+
+html[dir="rtl"] .alp-dialog-actions {
+  display: flex !important;
+  flex-direction: row-reverse !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+}
+
+html[dir="rtl"] .floating-action-button,
+html[dir="rtl"] .floating-button--container {
+  right: auto !important;
+  left: 24px !important;
+}
+
+html[dir="rtl"] .alp-toast-container {
+  right: auto !important;
+  left: 20px !important;
+  direction: rtl !important;
+  text-align: right !important;
+}

@@ -3404,22 +3404,26 @@ function renderCompDeviceCertificates(dev) {
 function setMeRestriction(id, isRestricted, isUserControlled, customTitle) {
   const el = $(id);
   if (!el) return;
+  const tRestricted = (typeof window.t === 'function') ? window.t('restrictions.restricted', 'Restricted') : 'Restricted';
+  const tUserControlled = (typeof window.t === 'function') ? window.t('restrictions.user_controlled', 'User Controlled') : 'User Controlled';
+  const tAllowed = (typeof window.t === 'function') ? window.t('restrictions.allowed', 'Allowed') : 'Allowed';
+
   if (isRestricted) {
-    el.title = customTitle || "Restricted";
+    el.title = customTitle || tRestricted;
     el.innerHTML = `
       <svg role="img" aria-label="block" style="width: 20px; height: 20px;" class="svg-bucket-icon svg-fill-red" data-icon="global::block">
         <use href="#global-block" xlink:href="#global-block"></use>
       </svg>
     `;
   } else if (isUserControlled) {
-    el.title = customTitle || "User Controlled";
+    el.title = customTitle || tUserControlled;
     el.innerHTML = `
       <svg role="img" aria-label="minus-circle" style="width: 20px; height: 20px;" class="svg-bucket-icon svg-fill-grey" data-icon="global::minus-circle">
         <use href="#global-minus-circle" xlink:href="#global-minus-circle"></use>
       </svg>
     `;
   } else {
-    el.title = customTitle || "Allowed";
+    el.title = customTitle || tAllowed;
     el.innerHTML = `
       <svg role="img" aria-label="tick-circle" style="width: 20px; height: 20px;" class="svg-bucket-icon svg-fill-green" data-icon="global::tick-circle">
         <use href="#global-tick-circle" xlink:href="#global-tick-circle"></use>
