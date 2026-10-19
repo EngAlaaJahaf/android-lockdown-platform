@@ -451,3 +451,169 @@ html[dir="rtl"] .alp-toast-container {
   direction: rtl !important;
   text-align: right !important;
 }
+
+/* ==========================================================================
+   11. Profile Creation Wizard & Configuration Tree RTL Mirroring
+   ========================================================================== */
+html[dir="rtl"] .create-profile,
+html[dir="rtl"] #workspaceCreateProfile,
+html[dir="rtl"] #workspaceConfigureProfile {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .create-profile-title,
+html[dir="rtl"] .profile-path,
+html[dir="rtl"] .edit-profile-path {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .edit-profile {
+  display: flex !important;
+  flex-direction: row !important;
+  direction: rtl !important;
+}
+
+/* Category Tree placed on the right side in RTL with left border divider */
+html[dir="rtl"] .profile-left-tree {
+  border-left: 1px solid #e3e4e9 !important;
+  border-right: none !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .left-tab-element {
+  flex-direction: row !important;
+  text-align: right !important;
+  direction: rtl !important;
+  border-left: none !important;
+}
+
+html[dir="rtl"] .left-tab-element.bg-grey,
+html[dir="rtl"] .left-tab-element.selected {
+  border-right: 3px solid #0073b6 !important;
+  border-left: none !important;
+}
+
+html[dir="rtl"] .left-tab-bottom {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+/* Sub-categories and Configuration Outlet */
+html[dir="rtl"] .profile-outlet {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .edit-payload.restrictions {
+  direction: rtl !important;
+  flex-direction: row !important;
+}
+
+html[dir="rtl"] .sub-tree-types {
+  border-left: none !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .sub-tree-types ul li {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .sub-tree-selection {
+  border-right: 1px solid #e3e4e9 !important;
+  border-left: none !important;
+  padding: 20px 40px !important;
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .sub-tree-selection ul li {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+}
+
+html[dir="rtl"] .sub-restriction {
+  padding-right: 24px !important;
+  padding-left: 0 !important;
+}
+
+/* Form Elements & Inputs */
+html[dir="rtl"] .form-element {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .form-element .fieldName,
+html[dir="rtl"] .form-element .bodytext.label {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .form-element .colon {
+  margin: 0 8px !important;
+}
+
+html[dir="rtl"] .create-buttons,
+html[dir="rtl"] .payload-submit {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+}
+
+html[dir="rtl"] .publish-buttons {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  direction: rtl !important;
+}
+
+/* Info banners inside wizard forms */
+html[dir="rtl"] .msg-banner-info {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+/* Profiles Summary & Stat Cards */
+html[dir="rtl"] .profile-id-summary {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html[dir="rtl"] .profile-details-header {
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .profile-details-header .platform-holder {
+  margin-left: 12px !important;
+  margin-right: 0 !important;
+}
+
+html[dir="rtl"] .summary-box .count-info {
+  direction: ltr !important;
+}
+
+html[dir="rtl"] .summary-box.info-border > div {
+  border-left: 1px solid #e2e8f0 !important;
+  border-right: none !important;
+}
+
+html[dir="rtl"] .summary-box.info-border > div:last-child {
+  border-left: none !important;
+}
+
+html[dir="rtl"] .profile-tabs {
+  direction: rtl !important;
+  display: flex !important;
+  flex-direction: row !important;
+}
+

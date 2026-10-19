@@ -1674,13 +1674,21 @@ function openCreateProfile(platform, push = true) {
     'visionos': 'visionOS'
   };
   const pName = platNames[platform] || 'Android';
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
+  const actionText = isAr ? ('إنشاء ملف تعريف ' + (pName === 'Android' ? 'أندرويد' : pName)) : ('Create ' + pName + ' Profile');
 
   const breadWrapper = $('cpBreadcrumbWrapper');
   if (breadWrapper) breadWrapper.style.display = 'block';
   const bread = $('cpBreadPlatLabel');
   const title = $('cpFormTitle');
-  if (bread) bread.textContent = 'Create ' + pName + ' Profile';
-  if (title) title.textContent = 'Create ' + pName + ' Profile';
+  if (bread) {
+    bread.setAttribute('data-i18n', 'wizard.crumb_create_android');
+    bread.textContent = actionText;
+  }
+  if (title) {
+    title.setAttribute('data-i18n', 'wizard.title_create');
+    title.textContent = actionText;
+  }
 
   const nameInput = $('profile_name') || $('cpProfileName');
   if (nameInput) {
@@ -1740,10 +1748,18 @@ async function openModifyProfile(pid, push = true) {
   // Update header and hide breadcrumbs to match Image 2 precisely
   const breadWrapper = $('cpBreadcrumbWrapper');
   if (breadWrapper) breadWrapper.style.display = 'none';
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
+  const modText = isAr ? 'تعديل ملف تعريف أندرويد' : 'Modify Android Profile';
   const bread = $('cpBreadPlatLabel');
-  if (bread) bread.textContent = 'Modify Android Profile';
+  if (bread) {
+    bread.setAttribute('data-i18n', 'wizard.crumb_modify_android');
+    bread.textContent = modText;
+  }
   const title = $('cpFormTitle');
-  if (title) title.textContent = 'Modify Android Profile';
+  if (title) {
+    title.setAttribute('data-i18n', 'wizard.title_modify');
+    title.textContent = modText;
+  }
 
   // Fetch profile details
   let r = await api('/profiles/' + encodeURIComponent(pid), 'GET');
@@ -2028,35 +2044,39 @@ function renderProfileSummaryPayload(p) {
     CURRENT_PROF_DETAILS_SUBCAT = 'Device Functionality';
   }
 
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
+  const restTitle = isAr ? 'القيود (Restrictions)' : 'Restrictions';
+  const needPolicyText = isAr ? 'هل تحتاج إلى سياسة جديدة؟' : 'Need a new policy?';
+
   // Authentic 3-column layout matching ManageEngine MDM exactly
   area.innerHTML = `
-    <div class="edit-profile" style="display:flex; border:1px solid #c7cad2; background:#fff; min-height:560px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+    <div class="edit-profile" style="display:flex; border:1px solid #c7cad2; background:#fff; min-height:560px; box-shadow:0 1px 3px rgba(0,0,0,0.02); direction:${isAr ? 'rtl' : 'ltr'};">
       <!-- Column 1: Configured Payloads (Left Tree) -->
-      <div class="details-left-tree" style="width:200px; border-right:1px solid #c7cad2; background:#f1f2f4; display:flex; flex-direction:column; justify-content:space-between; flex-shrink:0;">
+      <div class="details-left-tree" style="width:200px; ${isAr ? 'border-left:1px solid #c7cad2;' : 'border-right:1px solid #c7cad2;'} background:#f1f2f4; display:flex; flex-direction:column; justify-content:space-between; flex-shrink:0;">
         <div class="profile-left-tab">
-          <div class="left-tab-element bg-grey active" style="padding:10px 14px; display:flex; align-items:center; gap:10px; font-size:13px; color:#17181c; background:#fff; border-bottom:1px solid #c7cad2; border-right:2px solid #4276e0; cursor:pointer;">
+          <div class="left-tab-element bg-grey active" style="padding:10px 14px; display:flex; align-items:center; gap:10px; font-size:13px; color:#17181c; background:#fff; border-bottom:1px solid #c7cad2; ${isAr ? 'border-left:2px solid #4276e0;' : 'border-right:2px solid #4276e0;'} cursor:pointer;">
             <svg role="img" aria-label="block" style="width: 18px; height: 18px; fill:#4276e0;" class="svg-bucket-icon" data-icon="global::block">
               <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#block" xlink:href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#block"></use>
             </svg>
-            <span style="font-weight:600;">Restrictions</span>
+            <span style="font-weight:600;">${restTitle}</span>
           </div>
         </div>
         <div class="left-tab-bottom" style="padding:12px 14px; border-top:1px solid #c7cad2; display:flex; align-items:center; gap:8px;">
           <svg role="img" aria-label="roadmap" style="width: 18px; height: 18px; fill:#4276e0;" class="svg-bucket-icon" data-icon="mdm-profile::roadmap">
             <use href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#roadmap" xlink:href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#roadmap"></use>
           </svg>
-          <a href="javascript:void(0)" onclick="alpAlert('Need a new policy? Configure additional payloads in Lockdown policies.')" style="font-size:12px; color:#4276e0; text-decoration:none;">Need a new policy?</a>
+          <a href="javascript:void(0)" onclick="alpAlert('${isAr ? 'هل تحتاج إلى سياسة جديدة؟ يمكنك تهيئة عناصر إضافية في سياسات المنصة.' : 'Need a new policy? Configure additional payloads in Lockdown policies.'}')" style="font-size:12px; color:#4276e0; text-decoration:none;">${needPolicyText}</a>
         </div>
       </div>
 
       <!-- Column 2: Restrictions Sub-categories -->
-      <div class="sub-tree-types" style="width:190px; border-right:1px solid #c7cad2; background:#fff; flex-shrink:0;">
+      <div class="sub-tree-types" style="width:190px; ${isAr ? 'border-left:1px solid #c7cad2;' : 'border-right:1px solid #c7cad2;'} background:#fff; flex-shrink:0;">
         <ul id="profDetailsSubcatList" style="list-style:none; padding:0; margin:0;">
         </ul>
       </div>
 
       <!-- Column 3: Features of Selected Subcategory -->
-      <div class="sub-tree-selection android-restriction" style="flex:1; background:#fff; padding:10px 30px; overflow-y:auto; max-height:640px;">
+      <div class="sub-tree-selection android-restriction" style="flex:1; background:#fff; padding:10px 30px; overflow-y:auto; max-height:640px; text-align:${isAr ? 'right' : 'left'};">
         <ul id="profDetailsFeaturesList" style="list-style:none; padding:0; margin:0;">
         </ul>
       </div>
@@ -2070,6 +2090,7 @@ function renderProfileSummaryPayload(p) {
 function renderProfileDetailsSubcats() {
   const ul = $('profDetailsSubcatList');
   if (!ul) return;
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
   const data = window.ALP_AUTHENTIC_RESTRICTIONS_DATA || {};
   const categories = Object.keys(data);
   const fallbackCats = [
@@ -2082,7 +2103,8 @@ function renderProfileDetailsSubcats() {
 
   ul.innerHTML = listToUse.map(cat => {
     const isSel = (cat === CURRENT_PROF_DETAILS_SUBCAT);
-    return `<li class="${isSel ? 'selected' : ''}" onclick="switchProfDetailsSubcat('${cat}')" style="color:${isSel ? 'rgb(255,255,255)' : 'rgb(23,24,28)'}; background-color:${isSel ? 'rgb(66,118,224)' : 'transparent'}; font-size:13px; line-height:37px; padding:0 15px; cursor:pointer;" onmouseover="if(!this.classList.contains('selected')) this.style.backgroundColor='#f1f2f4'" onmouseout="if(!this.classList.contains('selected')) this.style.backgroundColor='transparent'">${cat}</li>`;
+    const catDisplay = isAr ? (window.alpI18n.translateLabel(cat) || cat) : cat;
+    return `<li class="${isSel ? 'selected' : ''}" onclick="switchProfDetailsSubcat('${cat}')" style="color:${isSel ? 'rgb(255,255,255)' : 'rgb(23,24,28)'}; background-color:${isSel ? 'rgb(66,118,224)' : 'transparent'}; font-size:13px; line-height:37px; padding:0 15px; cursor:pointer;" onmouseover="if(!this.classList.contains('selected')) this.style.backgroundColor='#f1f2f4'" onmouseout="if(!this.classList.contains('selected')) this.style.backgroundColor='transparent'">${esc(catDisplay)}</li>`;
   }).join('');
 }
 
@@ -2092,7 +2114,7 @@ function switchProfDetailsSubcat(catName) {
   if (ul) {
     const lis = ul.querySelectorAll('li');
     lis.forEach(li => {
-      if (li.innerText.trim() === catName) {
+      if (li.getAttribute('onclick') && li.getAttribute('onclick').includes("'" + catName + "'")) {
         li.classList.add('selected');
         li.style.color = 'rgb(255, 255, 255)';
         li.style.backgroundColor = 'rgb(66, 118, 224)';
@@ -2110,6 +2132,7 @@ function renderProfileDetailsFeatures(catName, profile) {
   const ul = $('profDetailsFeaturesList');
   if (!ul) return;
 
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
   const data = window.ALP_AUTHENTIC_RESTRICTIONS_DATA || {};
   const items = data[catName] || [];
 
@@ -2124,62 +2147,58 @@ function renderProfileDetailsFeatures(catName, profile) {
   });
 
   if (!items.length) {
-    ul.innerHTML = '<li style="padding:20px; color:#64748b; font-size:13px;">No restrictions configured in this category.</li>';
+    ul.innerHTML = `<li style="padding:20px; color:#64748b; font-size:13px;">${isAr ? 'لا توجد قيود مهيأة في هذا التصنيف.' : 'No restrictions configured in this category.'}</li>`;
     return;
   }
 
+  const notSetText = isAr ? 'غير معيّن' : 'Not set';
+  const restrictedText = isAr ? 'مقيّد (ممنوع)' : 'Restricted';
+  const allowedText = isAr ? 'مسموح' : 'Allowed';
+
   ul.innerHTML = items.map(item => {
-    // Lane key is stamped on every catalog row, so the lookup never depends on
-    // guessing the lane from the display label. Matching by label used to miss
-    // silently (e.g. "Location services" -> LOCATION_SERVICES while the policy
-    // lane is LOCATION), so a RESTRICT lane rendered as its catalog default.
     const lane = item.feature || (item.name || '').toUpperCase().replace(/[^A-Z0-9]/g, '_');
     const st = reqMap[lane];
 
-    // No lane in this profile => the policy says nothing about it. Showing the
-    // catalog default here invented an "Allowed"/"Restricted" the admin never
-    // asked for, so an ungoverned lane is stated as Undefined instead.
     const defined = typeof st === 'string' && st !== '';
-    const isRestricted = defined ? (st === 'RESTRICT' || st === 'BLOCK')
-      : false;
-    const isAllowed = defined ? (st === 'ALLOW' || st === 'TRUE' || st === 'YES')
-      : false;
+    const isRestricted = defined ? (st === 'RESTRICT' || st === 'BLOCK') : false;
+    const isAllowed = defined ? (st === 'ALLOW' || st === 'TRUE' || st === 'YES') : false;
+    const itemDisplayName = isAr ? (window.alpI18n.translateLabel(item.name) || item.name) : item.name;
 
     return `
-      <li style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f1f2f4;">
-        <div style="display:flex; align-items:center; font-size:13px; color:rgb(23, 24, 28); ${item.isSub ? 'padding-left:22px;' : ''}">
-          <span class="${item.isSub ? 'sub-restriction' : ''}">${esc(item.name)}</span>
-          ${item.versionBox ? `<label class="version-box" style="display:inline-block; border:1px solid rgb(0, 106, 255); color:rgb(0, 106, 255); font-size:10px; padding:0 3px; border-radius:2px; margin-left:6px; line-height:12px; vertical-align:middle;">${item.versionBox}</label>` : ''}
+      <li style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f1f2f4; direction:${isAr ? 'rtl' : 'ltr'};">
+        <div style="display:flex; align-items:center; font-size:13px; color:rgb(23, 24, 28); ${item.isSub ? (isAr ? 'padding-right:22px;' : 'padding-left:22px;') : ''}">
+          <span class="${item.isSub ? 'sub-restriction' : ''}">${esc(itemDisplayName)}</span>
+          ${item.versionBox ? `<label class="version-box" style="display:inline-block; border:1px solid rgb(0, 106, 255); color:rgb(0, 106, 255); font-size:10px; padding:0 3px; border-radius:2px; ${isAr ? 'margin-right:6px;' : 'margin-left:6px;'} line-height:12px; vertical-align:middle;">${item.versionBox}</label>` : ''}
           ${item.hasSafe ? `
-            <span class="tooltip-image" title="Samsung SAFE supported" style="margin-left:6px; display:inline-flex; align-items:center;">
+            <span class="tooltip-image" title="Samsung SAFE supported" style="${isAr ? 'margin-right:6px;' : 'margin-left:6px;'} display:inline-flex; align-items:center;">
               <svg role="img" aria-label="SAFE" style="width: 15px; height: 15px;" class="svg-bucket-icon" data-icon="mdm-common::SAFE">
                 <use href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#SAFE" xlink:href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#SAFE"></use>
               </svg>
             </span>
           ` : ''}
           ${item.hasDeviceOwner ? `
-            <span class="tooltip-image" title="Device Owner" style="margin-left:6px; display:inline-flex; align-items:center;">
+            <span class="tooltip-image" title="Device Owner" style="${isAr ? 'margin-right:6px;' : 'margin-left:6px;'} display:inline-flex; align-items:center;">
               <svg role="img" aria-label="Device_owner" style="width: 16px; height: 16px;" class="svg-bucket-icon svg-fill-green" data-icon="mdm-profile::Device_owner">
                 <use href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#Device_owner" xlink:href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#Device_owner"></use>
               </svg>
             </span>
           ` : ''}
           ${item.hasProfileOwner ? `
-            <span class="tooltip-image" title="Profile Owner" style="margin-left:6px; display:inline-flex; align-items:center;">
+            <span class="tooltip-image" title="Profile Owner" style="${isAr ? 'margin-right:6px;' : 'margin-left:6px;'} display:inline-flex; align-items:center;">
               <svg role="img" aria-label="Profile_owner" style="width: 16px; height: 16px;" class="svg-bucket-icon svg-fill-blue" data-icon="mdm-profile::Profile_owner">
                 <use href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#Profile_owner" xlink:href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#Profile_owner"></use>
               </svg>
             </span>
           ` : ''}
           ${item.hasDeviceWide ? `
-            <span class="tooltip-image" title="Device Wide Policy" style="margin-left:6px; display:inline-flex; align-items:center;">
+            <span class="tooltip-image" title="Device Wide Policy" style="${isAr ? 'margin-right:6px;' : 'margin-left:6px;'} display:inline-flex; align-items:center;">
               <svg role="img" aria-label="devicewide_policy" style="width: 16px; height: 16px;" class="svg-bucket-icon svg-fill-dark-grey" data-icon="mdm-common::devicewide_policy">
                 <use href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#devicewide_policy" xlink:href="/images/svg-bucket/mdm-common-38f54d8b04de20ad79ff34707c87d72c.svg#devicewide_policy"></use>
               </svg>
             </span>
           ` : ''}
           ${item.hasInfo ? `
-            <span class="tooltip-image" title="More Info" style="margin-left:6px; display:inline-flex; align-items:center; cursor:pointer;">
+            <span class="tooltip-image" title="More Info" style="${isAr ? 'margin-right:6px;' : 'margin-left:6px;'} display:inline-flex; align-items:center; cursor:pointer;">
               <svg role="img" aria-label="info-circle" style="width: 16px; height: 16px;" class="svg-bucket-icon" data-icon="global::info-circle">
                 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#info-circle" xlink:href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#info-circle"></use>
               </svg>
@@ -2193,21 +2212,21 @@ function renderProfileDetailsFeatures(catName, profile) {
                 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#info-circle" xlink:href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#info-circle"></use>
               </svg>
             </span>
-            <span style="color:#94a3b8; font-size:13px; font-weight:400;">Not set</span>
+            <span style="color:#94a3b8; font-size:13px; font-weight:400;">${notSetText}</span>
           ` : isRestricted ? `
             <span style="display:inline-flex; align-items:center;">
               <svg role="img" aria-label="block" style="width: 16px; height: 16px; fill:#ef4444;" class="svg-bucket-icon svg-bucket-icon-state__error" data-icon="global::block">
                 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#block" xlink:href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#block"></use>
               </svg>
             </span>
-            <span style="color:#ef4444; font-size:13px; font-weight:400;">Restricted</span>
+            <span style="color:#ef4444; font-size:13px; font-weight:400;">${restrictedText}</span>
           ` : `
             <span style="display:inline-flex; align-items:center;">
               <svg role="img" aria-label="tick-circle" style="width: 16px; height: 16px; fill:#16a34a;" class="svg-bucket-icon svg-bucket-icon-state__success" data-icon="global::tick-circle">
                 <use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#tick-circle" xlink:href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#tick-circle"></use>
               </svg>
             </span>
-            <span style="color:#16a34a; font-size:13px; font-weight:400;">Allowed</span>
+            <span style="color:#16a34a; font-size:13px; font-weight:400;">${allowedText}</span>
           `}
         </div>
       </li>
@@ -2218,29 +2237,30 @@ function renderProfileDetailsFeatures(catName, profile) {
 function renderProfileSummaryGroups(p) {
   const el = $('profSumGroupsList');
   if (!el) return;
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
   const groups = p.assigned_groups || [];
   if (!groups.length) {
     el.innerHTML = `
-      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:24px 20px; font-size:13px; color:#64748b; line-height:1.5;">
-        No groups associated with this profile. Use "Associate to Group" to deploy.
+      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:24px 20px; font-size:13px; color:#64748b; line-height:1.5; text-align:${isAr ? 'right' : 'left'};">
+        ${isAr ? 'لا توجد أي مجموعات مرتبطة بهذا الملف حالياً. انقر على "ربط بمجموعة" لتوزيع ونشر السياسة.' : 'No groups associated with this profile. Use "Associate to Group" to deploy.'}
       </div>
     `;
     return;
   }
   el.innerHTML = `
-    <div style="border:1px solid #c7cad2; border-radius:4px; overflow:hidden; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+    <div style="border:1px solid #c7cad2; border-radius:4px; overflow:hidden; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.02); direction:${isAr ? 'rtl' : 'ltr'};">
       <table style="width:100%; border-collapse:collapse; font-size:13px;">
         <thead>
-          <tr style="background:#f1f2f4; border-bottom:1px solid #c7cad2; text-align:left; color:#17181c; font-weight:600; height:38px;">
+          <tr style="background:#f1f2f4; border-bottom:1px solid #c7cad2; text-align:${isAr ? 'right' : 'left'}; color:#17181c; font-weight:600; height:38px;">
             <th style="padding:0 12px; width:36px; text-align:center;"><input type="checkbox" disabled style="cursor:default;"></th>
-            <th style="padding:0 14px;">Group Name</th>
-            <th style="padding:0 14px;">Members</th>
-            <th style="padding:0 14px;">Version</th>
-            <th style="padding:0 14px;">Associated Time</th>
-            <th style="padding:0 14px;">Associated by</th>
-            <th style="padding:0 14px;">Status</th>
-            <th style="padding:0 14px;">Remarks</th>
-            <th style="padding:0 14px; text-align:right;">Action</th>
+            <th style="padding:0 14px;">${isAr ? 'اسم المجموعة' : 'Group Name'}</th>
+            <th style="padding:0 14px;">${isAr ? 'الأعضاء' : 'Members'}</th>
+            <th style="padding:0 14px;">${isAr ? 'الإصدار' : 'Version'}</th>
+            <th style="padding:0 14px;">${isAr ? 'وقت الربط' : 'Associated Time'}</th>
+            <th style="padding:0 14px;">${isAr ? 'تم الربط بواسطة' : 'Associated by'}</th>
+            <th style="padding:0 14px;">${isAr ? 'الحالة' : 'Status'}</th>
+            <th style="padding:0 14px;">${isAr ? 'ملاحظات' : 'Remarks'}</th>
+            <th style="padding:0 14px; text-align:${isAr ? 'left' : 'right'};">${isAr ? 'إجراء' : 'Action'}</th>
           </tr>
         </thead>
         <tbody>
@@ -2257,11 +2277,11 @@ function renderProfileSummaryGroups(p) {
                 <td style="padding:0 14px; color:#475569;">${esc(g.associated_by || 'admin')}</td>
                 <td style="padding:0 14px;"><span style="display:inline-flex; align-items:center; gap:4px; color:#16a34a; font-weight:500;">
                   <svg style="width:14px;height:14px;fill:#16a34a;" role="img" class="svg-bucket-icon"><use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#tick-circle"></use></svg>
-                  ${esc(g.status || 'Associated')}
+                  ${esc(g.status || (isAr ? 'مرتبطة' : 'Associated'))}
                 </span></td>
                 <td style="padding:0 14px; color:#64748b;">${esc(g.remarks || '—')}</td>
-                <td style="padding:0 14px; text-align:right;">
-                  <button type="button" onclick="disassociateProfileFromGroup('${gid}', '${p.policy_id}')" style="padding:3px 10px; font-size:12px; color:#dc2626; border:1px solid #fca5a5; background:#fff; border-radius:3px; cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">Disassociate</button>
+                <td style="padding:0 14px; text-align:${isAr ? 'left' : 'right'};">
+                  <button type="button" onclick="disassociateProfileFromGroup('${gid}', '${p.policy_id}')" style="padding:3px 10px; font-size:12px; color:#dc2626; border:1px solid #fca5a5; background:#fff; border-radius:3px; cursor:pointer;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">${isAr ? 'فك الارتباط' : 'Disassociate'}</button>
                 </td>
               </tr>
             `;
@@ -2275,29 +2295,30 @@ function renderProfileSummaryGroups(p) {
 function renderProfileSummaryDevices(p) {
   const el = $('profSumDevicesList');
   if (!el) return;
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
   const devices = p.target_devices || [];
   if (!devices.length) {
     el.innerHTML = `
-      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:24px 20px; font-size:13px; color:#64748b; line-height:1.5;">
-        No devices associated with this profile.
+      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:4px; padding:24px 20px; font-size:13px; color:#64748b; line-height:1.5; text-align:${isAr ? 'right' : 'left'};">
+        ${isAr ? 'لا توجد أجهزة مرتبطة بهذا الملف حالياً.' : 'No devices associated with this profile.'}
       </div>
     `;
     return;
   }
   el.innerHTML = `
-    <div style="border:1px solid #c7cad2; border-radius:4px; overflow:hidden; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+    <div style="border:1px solid #c7cad2; border-radius:4px; overflow:hidden; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.02); direction:${isAr ? 'rtl' : 'ltr'};">
       <table style="width:100%; border-collapse:collapse; font-size:13px;">
         <thead>
-          <tr style="background:#f1f2f4; border-bottom:1px solid #c7cad2; text-align:left; color:#17181c; font-weight:600; height:38px;">
+          <tr style="background:#f1f2f4; border-bottom:1px solid #c7cad2; text-align:${isAr ? 'right' : 'left'}; color:#17181c; font-weight:600; height:38px;">
             <th style="padding:0 12px; width:36px; text-align:center;"><input type="checkbox" disabled style="cursor:default;"></th>
-            <th style="padding:0 14px;">Device Name</th>
-            <th style="padding:0 14px;">Device Type</th>
-            <th style="padding:0 14px;">UDID / Serial</th>
-            <th style="padding:0 14px;">Version</th>
-            <th style="padding:0 14px;">Last Contact Time</th>
-            <th style="padding:0 14px;">Status</th>
-            <th style="padding:0 14px;">Remarks</th>
-            <th style="padding:0 14px; text-align:right;">Action</th>
+            <th style="padding:0 14px;">${isAr ? 'اسم الجهاز' : 'Device Name'}</th>
+            <th style="padding:0 14px;">${isAr ? 'نوع الجهاز' : 'Device Type'}</th>
+            <th style="padding:0 14px;">${isAr ? 'الرقم التسلسلي / المعرف' : 'UDID / Serial'}</th>
+            <th style="padding:0 14px;">${isAr ? 'الإصدار' : 'Version'}</th>
+            <th style="padding:0 14px;">${isAr ? 'آخر اتصال' : 'Last Contact Time'}</th>
+            <th style="padding:0 14px;">${isAr ? 'الحالة' : 'Status'}</th>
+            <th style="padding:0 14px;">${isAr ? 'ملاحظات' : 'Remarks'}</th>
+            <th style="padding:0 14px; text-align:${isAr ? 'left' : 'right'};">${isAr ? 'إجراء' : 'Action'}</th>
           </tr>
         </thead>
         <tbody>
@@ -2319,11 +2340,11 @@ function renderProfileSummaryDevices(p) {
                 <td style="padding:0 14px; color:#64748b;">${esc(d.last_contact_time || '—')}</td>
                 <td style="padding:0 14px;"><span style="display:inline-flex; align-items:center; gap:4px; color:#16a34a; font-weight:500;">
                   <svg style="width:14px;height:14px;fill:#16a34a;" role="img" class="svg-bucket-icon"><use href="/images/svg-bucket/global-ad8991927609f9db376ce73a09f940e5.svg#tick-circle"></use></svg>
-                  ${esc(d.status || 'Applied')}
+                  ${esc(d.status || (isAr ? 'مطبّقة' : 'Applied'))}
                 </span></td>
-                <td style="padding:0 14px; color:#64748b;">${esc(d.remarks || 'Success')}</td>
-                <td style="padding:0 14px; text-align:right;">
-                  <button type="button" onclick="switchSidebarView('groups-devices'); openDeviceDetails('${devId}')" style="padding:3px 10px; font-size:12px; color:#2563eb; border:1px solid #bfdbfe; background:#fff; border-radius:3px; cursor:pointer;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'">View</button>
+                <td style="padding:0 14px; color:#64748b;">${esc(d.remarks || (isAr ? 'ناجح' : 'Success'))}</td>
+                <td style="padding:0 14px; text-align:${isAr ? 'left' : 'right'};">
+                  <button type="button" onclick="switchSidebarView('groups-devices'); openDeviceDetails('${devId}')" style="padding:3px 10px; font-size:12px; color:#2563eb; border:1px solid #bfdbfe; background:#fff; border-radius:3px; cursor:pointer;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'">${isAr ? 'عرض' : 'View'}</button>
                 </td>
               </tr>
             `;
@@ -2338,71 +2359,163 @@ async function openAssociateGroupFromSummary() {
   if (!CURRENT_SUMMARY_PID) return;
   const pid = CURRENT_SUMMARY_PID;
   const p = CURRENT_SUMMARY_PROFILE;
-  const r = await api('/groups', 'GET');
-  const allGroups = (r.ok && Array.isArray(r.data)) ? r.data : (ALL_GROUPS || []);
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
 
-  if (!allGroups.length) {
-    alpAlert('لا توجد أي مجموعات أجهزة متاحة. يرجى إنشاء مجموعة أولاً من قسم Groups & Devices.');
+  const [gr, dr] = await Promise.all([
+    api('/groups', 'GET'),
+    api('/devices', 'GET')
+  ]);
+
+  const allGroups = (gr.ok && Array.isArray(gr.data)) ? gr.data : (ALL_GROUPS || []);
+  const allDevices = (dr.ok && Array.isArray(dr.data)) ? dr.data : (ALL_DEVICES || []);
+
+  if (!allGroups.length && !allDevices.length) {
+    alpAlert(isAr
+      ? 'لا توجد مجموعات أو أجهزة متاحة للربط. يرجى تسجيل أجهزة أو إنشاء مجموعة أولاً.'
+      : 'No groups or devices available. Please enroll devices or create a group first.');
     return;
   }
 
-  // Already assigned group IDs
-  const assigned = (p && p.assigned_groups) ? p.assigned_groups.map(g => String(g.id || g.group_id)) : [];
+  // Already assigned group IDs & device IDs
+  const assignedGroups = (p && p.assigned_groups) ? p.assigned_groups.map(g => String(g.id || g.group_id)) : [];
+  const assignedDevices = (p && p.target_devices) ? p.target_devices.map(d => String(d.device_id || d.id)) : [];
 
   const html = `
-    <div style="padding:6px 0;">
-      <div style="font-size:13px; color:#475569; margin-bottom:14px;">
-        اختر المجموعات التي ترغب بربط الملف الشخصي <strong>${esc(p?.name || pid)}</strong> بها:
+    <div style="padding:4px 0; direction:${isAr ? 'rtl' : 'ltr'}; text-align:${isAr ? 'right' : 'left'};">
+      <div style="font-size:13px; color:#475569; margin-bottom:12px;">
+        ${isAr
+          ? `اختر المجموعات أو الأجهزة المستهدفة لربط وتطبيق الملف الشخصي <strong>${esc(p?.name || pid)}</strong> عليها:`
+          : `Select target groups or devices to associate and deploy profile <strong>${esc(p?.name || pid)}</strong>:`}
       </div>
-      <div style="max-height:280px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:4px; padding:8px 12px; background:#fafafa;">
-        ${allGroups.map(g => {
-    const isAssigned = assigned.includes(String(g.id));
-    return `
+
+      <!-- Navigation Tabs for Target Selection -->
+      <div style="display:flex; gap:8px; border-bottom:1px solid #cbd5e1; margin-bottom:12px;">
+        <button type="button" id="alpAssocTabGroups" onclick="switchAssocModalTab('groups')" style="padding:6px 14px; font-size:13px; font-weight:600; color:#2563eb; border:none; border-bottom:2px solid #2563eb; background:transparent; cursor:pointer;">
+          ${isAr ? 'المجموعات المستهدفة' : 'Target Groups'} (${allGroups.length})
+        </button>
+        <button type="button" id="alpAssocTabDevices" onclick="switchAssocModalTab('devices')" style="padding:6px 14px; font-size:13px; font-weight:500; color:#64748b; border:none; border-bottom:2px solid transparent; background:transparent; cursor:pointer;">
+          ${isAr ? 'الأجهزة المستهدفة' : 'Target Devices'} (${allDevices.length})
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Groups -->
+      <div id="alpAssocContentGroups" style="display:block; max-height:260px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:4px; padding:6px 12px; background:#fafafa;">
+        ${allGroups.length ? allGroups.map(g => {
+          const isAssigned = assignedGroups.includes(String(g.id));
+          return `
             <label style="display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid #f1f5f9; cursor:pointer;">
               <input type="checkbox" class="alp-summary-group-chk" value="${g.id}" ${isAssigned ? 'checked' : ''} style="cursor:pointer; accent-color:#2563eb;">
               <span style="font-size:13px; font-weight:500; color:#1e293b;">${esc(g.name || g.group_key)}</span>
-              <span style="font-size:12px; color:#64748b;">(${g.member_count || 0} أجهزة)</span>
-              ${isAssigned ? '<span style="font-size:11px; color:#16a34a; margin-right:auto;">(مرتبطة حالياً)</span>' : ''}
+              <span style="font-size:12px; color:#64748b;">(${g.member_count || 0} ${isAr ? 'أجهزة' : 'devices'})</span>
+              ${isAssigned ? `<span style="font-size:11px; color:#16a34a; ${isAr ? 'margin-right:auto;' : 'margin-left:auto;'}">(${isAr ? 'مرتبطة حالياً' : 'Currently associated'})</span>` : ''}
             </label>
           `;
-  }).join('')}
+        }).join('') : `<div style="padding:14px; text-align:center; color:#94a3b8; font-size:12px;">${isAr ? 'لا توجد مجموعات' : 'No groups available'}</div>`}
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-        <button type="button" class="btn ghost" onclick="closeModal()" style="padding:6px 16px; font-size:13px;">إلغاء</button>
-        <button type="button" class="btn primary" onclick="submitAssociateGroupsFromSummary('${pid}')" style="padding:6px 20px; font-size:13px; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer;">Associate & Deploy</button>
+
+      <!-- Tab Content 2: Devices -->
+      <div id="alpAssocContentDevices" style="display:none; max-height:260px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:4px; padding:6px 12px; background:#fafafa;">
+        ${allDevices.length ? allDevices.map(d => {
+          const did = d.device_id || d.id;
+          const isAssigned = assignedDevices.includes(String(did));
+          const devName = d.model || d.device_name || did;
+          return `
+            <label style="display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid #f1f5f9; cursor:pointer;">
+              <input type="checkbox" class="alp-summary-device-chk" value="${did}" ${isAssigned ? 'checked' : ''} style="cursor:pointer; accent-color:#2563eb;">
+              <span style="font-size:13px; font-weight:500; color:#1e293b;">${esc(devName)}</span>
+              <span style="font-size:12px; font-family:monospace; color:#64748b;">(${esc(d.serial || did)})</span>
+              ${isAssigned ? `<span style="font-size:11px; color:#16a34a; ${isAr ? 'margin-right:auto;' : 'margin-left:auto;'}">(${isAr ? 'مطبّقة حالياً' : 'Currently applied'})</span>` : ''}
+            </label>
+          `;
+        }).join('') : `<div style="padding:14px; text-align:center; color:#94a3b8; font-size:12px;">${isAr ? 'لا توجد أجهزة' : 'No devices available'}</div>`}
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button type="button" class="btn ghost" onclick="closeModal()" style="padding:6px 16px; font-size:13px; border:1px solid #cbd5e1; background:#fff; border-radius:4px; cursor:pointer;">${isAr ? 'إلغاء' : 'Cancel'}</button>
+        <button type="button" class="btn primary" onclick="submitAssociateGroupsFromSummary('${pid}')" style="padding:6px 20px; font-size:13px; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:500;">${isAr ? 'ربط وتطبيق فوري' : 'Associate & Deploy Now'}</button>
       </div>
     </div>
   `;
-  openModal('Associate Profile to Group', html);
+
+  window.switchAssocModalTab = function(tab) {
+    const isG = (tab === 'groups');
+    const tg = $('alpAssocTabGroups');
+    const td = $('alpAssocTabDevices');
+    const cg = $('alpAssocContentGroups');
+    const cd = $('alpAssocContentDevices');
+    if (tg && td && cg && cd) {
+      tg.style.fontWeight = isG ? '600' : '500';
+      tg.style.color = isG ? '#2563eb' : '#64748b';
+      tg.style.borderBottomColor = isG ? '#2563eb' : 'transparent';
+
+      td.style.fontWeight = isG ? '500' : '600';
+      td.style.color = isG ? '#64748b' : '#2563eb';
+      td.style.borderBottomColor = isG ? 'transparent' : '#2563eb';
+
+      cg.style.display = isG ? 'block' : 'none';
+      cd.style.display = isG ? 'none' : 'block';
+    }
+  };
+
+  openModal(isAr ? 'ربط وتوزيع السياسة على المجموعات والأجهزة' : 'Associate Profile to Groups & Devices', html);
 }
 
 async function submitAssociateGroupsFromSummary(pid) {
-  const chks = Array.from(document.querySelectorAll('.alp-summary-group-chk:checked')).map(c => c.value);
+  const grpChks = Array.from(document.querySelectorAll('.alp-summary-group-chk:checked')).map(c => c.value);
+  const devChks = Array.from(document.querySelectorAll('.alp-summary-device-chk:checked')).map(c => c.value);
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
+
   closeModal();
-  if (!chks.length) {
-    alpAlert('لم يتم تحديد أي مجموعة.');
+
+  if (!grpChks.length && !devChks.length) {
+    alpAlert(isAr ? 'يرجى تحديد مجموعة أو جهاز واحد على الأقل للربط.' : 'Please select at least one group or device to associate.');
     return;
   }
-  for (const gid of chks) {
+
+  // 1. Associate to Groups
+  for (const gid of grpChks) {
     await apiWriteOrReport('/groups/' + gid + '/profiles', 'POST', {
       policy_ids: [pid],
       deploy: true,
       skip_approval: true,
       reason: 'Associate from profile details'
-    }, 'ربط الملف بالمجموعة');
+    }, isAr ? 'ربط الملف بالمجموعة' : 'Associate profile to group');
   }
+
+  // 2. Associate & Apply to Devices
+  for (const did of devChks) {
+    await apiWriteOrReport('/apply', 'POST', {
+      device_id: did,
+      policy: pid,
+      real: true
+    }, isAr ? 'تطبيق السياسة على الجهاز' : 'Apply policy to device');
+  }
+
+  const successMsg = isAr
+    ? 'تم ربط وتطبيق السياسة بنجاح على الأهداف المحددة.'
+    : 'Profile associated and deployed successfully to selected targets.';
+  alpAlert(successMsg);
+  if (window.ALP_WS && typeof window.ALP_WS.showToast === 'function') {
+    window.ALP_WS.showToast(isAr ? 'نجاح الربط' : 'Association Success', successMsg, 'success');
+  }
+
   // Refresh profile details and tab
   await openProfileDetails(pid, false, 'groups');
 }
 
 async function disassociateProfileFromGroup(gid, pid) {
-  if (!await alpConfirm('هل أنت متأكد من فك ارتباط الملف بالمجموعة؟')) return;
-  const dr = await apiWrite('/groups/' + gid + '/profiles/' + encodeURIComponent(pid), 'DELETE', {}, 'فك الارتباط');
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
+  const confirmMsg = isAr
+    ? 'هل أنت متأكد من فك ارتباط الملف بالمجموعة؟'
+    : 'Are you sure you want to disassociate this profile from the group?';
+  if (!await alpConfirm(confirmMsg)) return;
+
+  const dr = await apiWrite('/groups/' + gid + '/profiles/' + encodeURIComponent(pid), 'DELETE', {}, isAr ? 'فك الارتباط' : 'Disassociate');
   if (dr && dr.ok) {
-    alpAlert('تم فك الارتباط بنجاح.');
+    alpAlert(isAr ? 'تم فك الارتباط بنجاح.' : 'Disassociated successfully.');
     await openProfileDetails(pid, false, 'groups');
   } else {
-    alpAlert('تعذّر فك الارتباط: ' + (dr?.error || 'خطأ'));
+    alpAlert((isAr ? 'تعذّر فك الارتباط: ' : 'Failed to disassociate: ') + (dr?.error || 'خطأ'));
   }
 }
 
@@ -5267,7 +5380,10 @@ async function openCreateProfileContinue() {
     const bread = $('cfgProfNameBread');
     if (bread) bread.textContent = name;
     const step1Bread = $('cfgBreadStep1Label');
-    if (step1Bread) step1Bread.textContent = 'Modify Android Profile';
+    if (step1Bread) {
+      step1Bread.setAttribute('data-i18n', 'wizard.crumb_modify_android');
+      step1Bread.textContent = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar') ? 'تعديل ملف تعريف أندرويد' : 'Modify Android Profile';
+    }
 
     cfgSetEditable(true, CFG_DRAFT_ID);
     showCfgWorkspace();
@@ -5290,7 +5406,10 @@ async function openCreateProfileContinue() {
   const bread = $('cfgProfNameBread');
   if (bread) bread.textContent = r.data.name;
   const step1Bread = $('cfgBreadStep1Label');
-  if (step1Bread) step1Bread.textContent = 'Create Android Profile';
+  if (step1Bread) {
+    step1Bread.setAttribute('data-i18n', 'wizard.crumb_create_android');
+    step1Bread.textContent = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar') ? 'إنشاء ملف تعريف أندرويد' : 'Create Android Profile';
+  }
 
   setStatus('cpStatus', 'مسودة ' + r.data.policy_id + ' — عدّل القيود ثم احفظ أو انشر');
   cfgSetEditable(true, r.data.policy_id);
@@ -5330,6 +5449,11 @@ async function editProfile(pid) {
 
   const bread = $('cfgProfNameBread');
   if (bread) bread.textContent = p.name || pid;
+  const step1Bread = $('cfgBreadStep1Label');
+  if (step1Bread) {
+    step1Bread.setAttribute('data-i18n', 'wizard.crumb_modify_android');
+    step1Bread.textContent = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar') ? 'تعديل ملف تعريف أندرويد' : 'Modify Android Profile';
+  }
 
   cfgSetEditable(true, p.policy_id);
   showCfgWorkspace();
@@ -5344,10 +5468,22 @@ async function editProfile(pid) {
 
 async function saveProfile(publish) {
   const pid = CFG_DRAFT_ID;
+  const isAr = (window.alpI18n && window.alpI18n.getCurrentLang() === 'ar');
+
   if (!pid) {
-    setStatus('cfgStatus', 'لا توجد مسودة محفوظة بعد — أكمل خطوة Create Profile', 'err');
+    setStatus('cfgStatus', isAr ? 'لا توجد مسودة محفوظة بعد — أكمل خطوة Create Profile' : 'No draft saved yet — complete Create Profile step', 'err');
     return;
   }
+
+  // Passcode & Kiosk payload support
+  const kioskPkg = ($('cfgKioskAppPackage') ? $('cfgKioskAppPackage').value.trim() : '');
+  if (kioskPkg && CFG_REQ['LOCK_TASK'] === undefined) {
+    const kioskEl = $('androidkioskpolicy');
+    if (kioskEl && (kioskEl.classList.contains('selected') || kioskEl.classList.contains('bg-grey') || kioskPkg !== 'com.android.chrome')) {
+      CFG_REQ['LOCK_TASK'] = 'RESTRICT';
+    }
+  }
+
   const reqs = Object.keys(CFG_REQ).map(function (f) {
     return { feature: f, desired_state: CFG_REQ[f], risk: 'MEDIUM' };
   });
@@ -5362,27 +5498,27 @@ async function saveProfile(publish) {
 
   let targetPid = pid;
   if (CFG_ORIGINAL_STATUS === 'ACTIVE' || CFG_ORIGINAL_STATUS === 'RETIRED') {
-    setStatus('cfgStatus', 'جارٍ فتح إصدار جديد للتعديل…');
+    setStatus('cfgStatus', isAr ? 'جارٍ فتح إصدار جديد للتعديل…' : 'Opening a new revision for edit…');
     const rev = await apiWrite('/profiles/' + encodeURIComponent(pid) + '/revision', 'POST',
-      { change_reason: 'edit profile from console' }, 'إنشاء إصدار جديد');
-    if (!rev) { setStatus('cfgStatus', 'أُلغي الحفظ', 'err'); return; }
-    if (!rev.ok) { setStatus('cfgStatus', explainApiError(rev, 'إنشاء إصدار جديد'), 'err'); return; }
+      { change_reason: 'edit profile from console' }, isAr ? 'إنشاء إصدار جديد' : 'Create revision');
+    if (!rev) { setStatus('cfgStatus', isAr ? 'أُلغي الحفظ' : 'Save cancelled', 'err'); return; }
+    if (!rev.ok) { setStatus('cfgStatus', explainApiError(rev, isAr ? 'إنشاء إصدار جديد' : 'Create revision'), 'err'); return; }
     targetPid = rev.data.policy_id;
     CFG_DRAFT_ID = targetPid;
     CFG_ORIGINAL_STATUS = 'DRAFT';
   }
 
-  setStatus('cfgStatus', 'جارٍ حفظ القيود…');
+  setStatus('cfgStatus', isAr ? 'جارٍ حفظ القيود…' : 'Saving restrictions…');
   const putBody = { name: name, description: desc, requirements: reqs, change_reason: 'saved from console' };
   if (recoveryAttempts !== undefined) {
     putBody.recovery_attempts = recoveryAttempts;
   }
   let r = await apiWrite('/profiles/' + encodeURIComponent(targetPid), 'PUT',
     putBody,
-    'حفظ القيود');
-  if (r === null) { setStatus('cfgStatus', 'أُلغي الحفظ (لم يُدخل رمز TOTP)', 'err'); return; }
+    isAr ? 'حفظ القيود' : 'Save restrictions');
+  if (r === null) { setStatus('cfgStatus', isAr ? 'أُلغي الحفظ (لم يُدخل رمز TOTP)' : 'Save cancelled (TOTP code not entered)', 'err'); return; }
   if (!r.ok) {
-    setStatus('cfgStatus', explainApiError(r, 'حفظ القيود'), 'err');
+    setStatus('cfgStatus', explainApiError(r, isAr ? 'حفظ القيود' : 'Save restrictions'), 'err');
     return;
   }
 
@@ -5390,10 +5526,12 @@ async function saveProfile(publish) {
   // CASE 1: SAVE BUTTON (حفظ كمسودة دون خروج ودون إعادة تحميل)
   // ============================================================
   if (!publish) {
-    const msg = 'تم حفظ التعديلات كمسودة بنجاح — ' + targetPid + ' (' + reqs.length + ' قيداً مُعدَّلاً).';
-    setStatus('cfgStatus', msg + ' يمكنك متابعة ضبط القيود أو النقر على Publish لنشرها فوراً على الأجهزة.', 'ok');
+    const msg = isAr
+      ? ('تم حفظ التعديلات كمسودة بنجاح — ' + targetPid + ' (' + reqs.length + ' قيداً مُعدَّلاً).')
+      : ('Draft saved successfully — ' + targetPid + ' (' + reqs.length + ' modified requirements).');
+    setStatus('cfgStatus', msg + (isAr ? ' يمكنك متابعة ضبط القيود أو النقر على Publish لنشرها فوراً على الأجهزة.' : ' You can continue configuring or click Publish to deploy now.'), 'ok');
     if (window.ALP_WS && typeof window.ALP_WS.showToast === 'function') {
-      window.ALP_WS.showToast('حفظ كمسودة (Save Draft)', msg, 'success');
+      window.ALP_WS.showToast(isAr ? 'حفظ كمسودة (Save Draft)' : 'Save Draft', msg, 'success');
     }
     // Update breadcrumbs and in-memory details
     const bread = $('cfgProfNameBread');
@@ -5412,30 +5550,31 @@ async function saveProfile(publish) {
   // CASE 2: PUBLISH BUTTON (نشر التحديثات وتطبيقها على الأجهزة)
   // ============================================================
   if (!reqs.length) {
-    setStatus('cfgStatus', 'لا يمكن نشر ملف بلا قيود — فعّل قيداً واحداً على الأقل', 'err');
+    const noReqMsg = isAr ? 'لا يمكن نشر ملف بلا قيود — فعّل قيداً واحداً على الأقل' : 'Cannot publish an empty profile — configure at least one restriction';
+    setStatus('cfgStatus', noReqMsg, 'err');
     if (window.ALP_WS && typeof window.ALP_WS.showToast === 'function') {
-      window.ALP_WS.showToast('تنبيه', 'لا يمكن نشر ملف بلا قيود — فعّل قيداً واحداً على الأقل', 'warning');
+      window.ALP_WS.showToast(isAr ? 'تنبيه' : 'Warning', noReqMsg, 'warning');
     }
     return;
   }
-  setStatus('cfgStatus', 'جارٍ نشر الملف الشخصي وتطبيق التحديثات على الأجهزة…');
+  setStatus('cfgStatus', isAr ? 'جارٍ نشر الملف الشخصي وتطبيق التحديثات على الأجهزة…' : 'Publishing profile and deploying to devices…');
   r = await apiWrite('/profiles/' + encodeURIComponent(targetPid) + '/publish', 'POST',
-    { skip_approval: true, reason: 'publish from console' }, 'نشر الملف');
-  if (r === null) { setStatus('cfgStatus', 'أُلغي النشر (لم يُدخل رمز TOTP)', 'err'); return; }
+    { skip_approval: true, reason: 'publish from console' }, isAr ? 'نشر الملف' : 'Publish profile');
+  if (r === null) { setStatus('cfgStatus', isAr ? 'أُلغي النشر (لم يُدخل رمز TOTP)' : 'Publish cancelled (TOTP code not entered)', 'err'); return; }
   if (!r.ok) {
-    setStatus('cfgStatus', explainApiError(r, 'نشر الملف'), 'err');
+    setStatus('cfgStatus', explainApiError(r, isAr ? 'نشر الملف' : 'Publish profile'), 'err');
     return;
   }
   const lanes = (r.data.unenforceable_lanes && r.data.unenforceable_lanes.length)
-    ? (' — مسارات غير قابلة للإنفاذ: ' + r.data.unenforceable_lanes.join('، ')) : '';
+    ? ((isAr ? ' — مسارات غير قابلة للإنفاذ: ' : ' — Unenforceable lanes: ') + r.data.unenforceable_lanes.join(', ')) : '';
   const groups = (r.data && r.data.affected_groups) || [];
-  setStatus('cfgStatus', 'نُشر ' + targetPid + '.' + lanes + ' جارٍ إرسال التغييرات إلى الأجهزة المتصلة…', 'ok');
+  setStatus('cfgStatus', (isAr ? 'نُشر ' : 'Published ') + targetPid + '.' + lanes + (isAr ? ' جارٍ إرسال التغييرات إلى الأجهزة المتصلة…' : ' Deploying changes to connected devices…'), 'ok');
   await autoDeployAffectedGroups(groups, targetPid);
   await refreshProfileList();
   if (window.ALP_WS && typeof window.ALP_WS.showToast === 'function') {
-    window.ALP_WS.showToast('نشر الملف (Publish)', 'تم نشر الملف الشخصي وتطبيق التحديثات على الأجهزة بنجاح.', 'success');
+    window.ALP_WS.showToast(isAr ? 'نشر الملف (Publish)' : 'Publish Profile', isAr ? 'تم نشر الملف الشخصي وتطبيق التحديثات على الأجهزة بنجاح.' : 'Profile published and changes deployed successfully.', 'success');
   }
-  alpAlert('تم نشر الملف الشخصي وتطبيق التحديثات على الأجهزة المتصلة بنجاح.');
+  alpAlert(isAr ? 'تم نشر الملف الشخصي وتطبيق التحديثات على الأجهزة المتصلة بنجاح.' : 'Profile published and changes deployed to connected devices successfully.');
   await openProfileDetails(targetPid);
 }
 
@@ -5556,6 +5695,7 @@ function selectCfgCat(cat, el) {
     if (target) {
       target.classList.add('active');
       target.style.setProperty('display', 'block', 'important');
+      if (window.ALP_I18N) window.ALP_I18N.applyTranslations(target);
     }
   }
 }
@@ -7053,15 +7193,19 @@ async function loadCfgRestrictions() {
       const hasDo = (x.method === 'DPM_RESTRICTION' || x.tier === 'SUPPORTED' || ['Camera', 'Allow camera in lock screen', 'Microphone', 'Screen Capture'].includes(x.label));
       const doHtml = hasDo ? '<span class="data-tooltip" title="Device Owner"><label class="tooltip-image"><svg aria-label="Device_owner" class="svg-bucket-icon svg-fill-green" role="img" style="width:16px;height:16px;"><use href="/images/svg-bucket/mdm-profile-9fe9367cd1d8fc33d733ed7a218c9307.svg#Device_owner"></use></svg></label></span>' : '';
 
+      const isAr = (document.documentElement.getAttribute('dir') === 'rtl' || (window.ALP_I18N && window.ALP_I18N.getLang() === 'ar'));
+      const lblMap = (window.ALP_I18N && window.ALP_I18N.LABELS_MAP) || {};
+      const displayLabel = (isAr && lblMap[x.label]) ? lblMap[x.label] : esc(x.label);
+
       const leftVal = isYesNo ? 'RESTRICT' : 'ALLOW';
       const rightVal = isYesNo ? 'ALLOW' : 'RESTRICT';
-      const leftText = isYesNo ? 'Yes' : 'Allow';
-      const rightText = isYesNo ? 'No' : 'Restrict';
+      const leftText = isYesNo ? (isAr ? 'نعم' : 'Yes') : (isAr ? 'سماح' : 'Allow');
+      const rightText = isYesNo ? (isAr ? 'لا' : 'No') : (isAr ? 'تقييد' : 'Restrict');
 
       return '<li class="cfg-rest-row" data-feat="' + fid + '">' +
         '<div>' +
         '<span class="' + (isSub ? 'sub-restriction' : '') + '">' +
-        esc(x.label) + ' ' +
+        displayLabel + ' ' +
         verHtml + ' ' +
         safeHtml + ' ' +
         doHtml +
